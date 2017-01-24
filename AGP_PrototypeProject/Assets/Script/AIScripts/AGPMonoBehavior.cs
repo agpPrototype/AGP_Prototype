@@ -46,4 +46,52 @@ public class AGPMonoBehavior : MonoBehaviour
 
     }
 
+    public class Float : IComparable
+    {
+        public float value;
+
+        public Float(float val)
+        {
+            value = val;
+        }
+
+        int IComparable.CompareTo(object obj)
+        {
+            Float other = (Float)obj;
+            if (value > other.value)
+            {
+                return 1;
+            }
+            else if (value < other.value)
+            {
+                return -1;
+            }
+            else
+                return 0;
+        }
+
+    }
+
+    public class Bool : IComparable
+    {
+        public bool value;
+
+        public Bool(bool val)
+        {
+            value = val;
+        }
+
+        int IComparable.CompareTo(object obj)
+        {
+            Bool other = (Bool)obj;
+            if (value != other.value)
+            {
+                return 1;
+            }
+            else
+                return 0;
+        }
+
+    }
+
 }

@@ -3,6 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum ConditionComparison
+{
+    Greater,
+    GreaterOrEqual,
+    Less,
+    LessOrEqual,
+    Equal,
+    NotEqual
+}
 
 /// <summary>
 /// 
@@ -13,17 +22,9 @@ using UnityEngine;
 /// </summary>
 /// 
 [System.Serializable]
-public class Condition<T> : AGPMonoBehavior where T : IComparable{
+public class ConditionInternal<T> : AGPMonoBehavior where T : IComparable{
 
-    public enum ConditionComparison
-    {
-        Greater,
-        GreaterOrEqual,
-        Less,
-        LessOrEqual,
-        Equal,
-        NotEqual
-    }
+    
 
     [SerializeField]
     private ConditionComparison m_Comparator;
@@ -38,9 +39,8 @@ public class Condition<T> : AGPMonoBehavior where T : IComparable{
 
 	// Use this for initialization
 	void Start () {
-        action = new Action();
 
-        GetTypeDelegate getValueFct = new GetTypeDelegate(action.GetMyValue);
+       // GetTypeDelegate getValueFct = new GetTypeDelegate(action.GetMyValue);
 	}
 	
 
@@ -74,7 +74,7 @@ public class Condition<T> : AGPMonoBehavior where T : IComparable{
 
         }
 
-        Debug.Assert(false, "Error: Condition.cs: No comparator contained for the desired operation!");
+        Debug.Assert(false, "Error: Condition.cs: Condition: No comparator contained for the desired operation!");
         return false;
     }
 
@@ -115,4 +115,83 @@ public class Condition<T> : AGPMonoBehavior where T : IComparable{
 
     #endregion
 
+}
+
+/// <summary>
+/// 
+/// Condition is a wrapper used so that the Decision Node can contain multiple ConditionInternal<T> instances without know which type each one is.
+///     This way, the Decision Node can have an array or list of them and check the wrapper's implementation of IsMet() which will
+///     abstract the checking of the condition as it knows which type of condition it contains. Possibly look for a better solution?
+///     
+/// </summary>
+/// 
+public class Condition : AGPMonoBehavior
+{
+    [SerializeField]
+    private VariableType m_MyType;
+
+    ConditionInternal<Int> m_IntCond;
+    ConditionInternal<Float> m_FloatCond;
+    ConditionInternal<Bool> m_BoolCond;
+
+    BoolTypeDelegate m_BoolFunc0;
+
+    public enum VariableType
+    {
+        Int,
+        Float,
+        Bool,
+        BoolFunc  // Call a bool-returning function to test for IsMet()
+    }
+
+    public bool IsMet()
+    {
+        switch (m_MyType)
+        {
+            case VariableType.Int:
+                return m_IntCond.IsMet();
+
+            case VariableType.Float:
+                return m_FloatCond.IsMet();
+
+            case VariableType.Bool:
+                return m_BoolCond.IsMet();
+
+            case VariableType.BoolFunc:
+                return m_BoolFunc0.Invoke();
+        }
+
+        Debug.Assert(false, "Error: Condition.cs: ConditionWrapper:  No valid type of Condition<T> exists for the wrapper");
+        return false;
+    }
+
+    
+    #region Overloaded Constructors
+    public Condition(Int lhs, ConditionComparison comparisonType, Int rhs)
+    {
+        m_MyType = VariableType.Int;
+        m_IntCond = new ConditionInternal<Int>();
+        m_IntCond.InitializeCondition(lhs, comparisonType, rhs);
+    }
+
+    public Condition(Float lhs, ConditionComparison comparisonType, Float rhs)
+    {
+        m_MyType = VariableType.Float;
+        m_FloatCond = new ConditionInternal<Float>();
+        m_FloatCond.InitializeCondition(lhs, comparisonType, rhs);
+    }
+
+    public Condition(Bool lhs, ConditionComparison comparisonType, Bool rhs)
+    {
+        m_MyType = VariableType.Bool;
+        m_BoolCond = new ConditionInternal<Bool>();
+        m_BoolCond.InitializeCondition(lhs, comparisonType, rhs);
+    }
+
+    public Condition(BoolTypeDelegate boolDelegate)
+    {
+        m_MyType = VariableType.BoolFunc;
+        m_BoolFunc0 = boolDelegate;
+    }
+    #endregion
 }

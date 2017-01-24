@@ -58,20 +58,7 @@ public class CompanionAISM : AIStateMachine {
     #endregion
 
 
-    #region Temp Variables (To go in another file later)
-
-    private NavMeshAgent WolfNavAgent;
-    private Vector3 TargetMoveToLocation;
-
-    [SerializeField]
-    private float FollowDistance;
-
-    [SerializeField]
-    private Int testConditionValue;
-
-    [SerializeField]
-    Condition<Int> cond;
-    #endregion
+#region Accalia Main States
 
     [SerializeField]
     private WolfMainState m_CurrentMainState;
@@ -98,9 +85,28 @@ public class CompanionAISM : AIStateMachine {
         set { m_FollowState = value; }
     }
 
+#endregion
+
     [SerializeField]
     public GameObject Player;
 
+
+#region Temp Variables For Testing (To go in another file later)
+
+    private NavMeshAgent WolfNavAgent;
+    private Vector3 TargetMoveToLocation;
+
+    [SerializeField]
+    private float FollowDistance;
+
+    [SerializeField]
+    private Int testConditionValue;
+
+    [SerializeField]
+    Condition cond2;
+    Action printMe;
+
+#endregion
 
 
     // Use this for initialization
@@ -113,8 +119,10 @@ public class CompanionAISM : AIStateMachine {
         testConditionValue = new Int(0);
         Int testRight = new Int(1);
 
-        cond = new Condition<Int>();
-        cond.InitializeCondition(ref testConditionValue, Condition<Int>.ConditionComparison.Equal,  testRight);
+
+        cond2 = new Condition(testConditionValue, ConditionComparison.Equal, testRight);
+
+        printMe = new Action(new VoidTypeDelegate(TestActionPrintFunc));
 
         StartCoroutine(waitFiveSeconds());
 
@@ -133,10 +141,12 @@ public class CompanionAISM : AIStateMachine {
         // Check for events or player suggestions
 
         // Determine what the current state should be
-        if(!cond.IsMet())
+        if (!cond2.IsMet())
             UpdateStateMachine();
+        else
+            printMe.PerformAction();
 
-            TempPlayerMovement();
+            //TempPlayerMovement();
 	}
 
     public override void UpdateStateMachine() 
@@ -273,4 +283,9 @@ public class CompanionAISM : AIStateMachine {
         }
     }
     
+
+    public void TestActionPrintFunc()
+    {
+        Debug.Log("Action delegate worked!!!");
+    }
 }
