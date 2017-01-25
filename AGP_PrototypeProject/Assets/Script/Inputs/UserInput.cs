@@ -9,7 +9,7 @@ namespace Inputs
     public class UserInput : MonoBehaviour
     {
         private InputPacket[] m_inputArray;
-        private InputDevice m_device = InputManager.ActiveDevice;
+        private InputDevice m_device;
         private Queue<InputPacket> m_InputPacketQueue;
         
         public InputPacket[] InputPackets
@@ -22,11 +22,12 @@ namespace Inputs
 
         void Awake()
         {
+            m_device = InputManager.ActiveDevice; 
             m_inputArray = new InputPacket[16];
             m_InputPacketQueue = new Queue<InputPacket>();
         }
 
-        void FixedUpdate()
+        void Update()
         {
             GetInputs();
 
@@ -34,19 +35,25 @@ namespace Inputs
 
         void GetInputs()
         {
-            m_InputPacketQueue.Clear();
+            //m_InputPacketQueue.Clear();
+            m_device = InputManager.ActiveDevice;
             {
                 float amount = m_device.LeftStickX;
-                InputPacket packet = new InputPacket(EnumService.InputType.LeftStickX, amount);
+                InputPacket packet = new InputPacket(EnumService.InputType.LeftStickX, 0.3f);
+                Debug.Log("LEFT X: " + amount);
                 m_inputArray[(int)EnumService.InputType.LeftStickX] = packet;
             }
 
             {
                 float amount = m_device.LeftStickY;
+                if (amount > 0)
+                {
+                    Debug.Log("LEFT Y: " + amount);
+                }
                 InputPacket packet = new InputPacket(EnumService.InputType.LeftStickY, amount);
                 m_inputArray[(int)EnumService.InputType.LeftStickY] = packet;
             }
-          
+
             {
                 float amount = m_device.RightStickX;
                 InputPacket packet = new InputPacket(EnumService.InputType.RightStickX, amount);
