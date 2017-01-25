@@ -54,9 +54,17 @@ public class MoveComponent : MonoBehaviour {
 
     public void ProcessMovement(PlayerControl.PCActions pca)
     {
-        float h = pca.InputPackets[(int)EnumService.InputType.LeftStickX].Value;
-        float v = pca.InputPackets[(int)EnumService.InputType.LeftStickY].Value;
-        Debug.Log("H: " + h + " ----- V: " + v);
+        float h = 0.0f;
+        float v = 0.0f;
+        if (pca.InputPackets[(int)EnumService.InputType.LeftStickX] != null)
+        {
+            h = pca.InputPackets[(int)EnumService.InputType.LeftStickX].Value;
+        }
+        if (pca.InputPackets[(int)EnumService.InputType.LeftStickY] != null)
+        {
+            v = pca.InputPackets[(int)EnumService.InputType.LeftStickY].Value;
+        }
+
         if (m_cam != null)
         {
             pca.CamForward = Vector3.Scale(m_cam.forward, new Vector3(1, 0, 1)).normalized;
@@ -72,12 +80,13 @@ public class MoveComponent : MonoBehaviour {
         //speed mutiplier
         //TODO later
 
-        //Move(pca);
+        Move(pca);
     }
 
     void Move(PlayerControl.PCActions pca)
     {
         Vector3 move = pca.Move;
+        //Debug.Log("MOVE: " + move);
         if (move.magnitude > 1f) move.Normalize();
         move = transform.InverseTransformDirection(move);
         CheckGroundStatus();
@@ -87,7 +96,7 @@ public class MoveComponent : MonoBehaviour {
 
         ApplyExtraTurnRotation();
 
-        // control and velocity handling is different when grounded and airborne:
+        //control and velocity handling is different when grounded and airborne:
         if (m_IsGrounded)
         {
             //HandleGroundedMovement(crouch, jump);
@@ -99,8 +108,8 @@ public class MoveComponent : MonoBehaviour {
         }
 
         //ScaleCapsuleForCrouching(crouch);
-        ScaleCapsuleForCrouching(false);
-        PreventStandingInLowHeadroom();
+        //ScaleCapsuleForCrouching(false);
+       // PreventStandingInLowHeadroom();
 
         // send input and other state parameters to the animator
         UpdateAnimator(move);
@@ -109,6 +118,7 @@ public class MoveComponent : MonoBehaviour {
     private void UpdateAnimator(Vector3 move)
     {
         // update the animator parameters
+        Debug.Log("FORW: " + m_ForwardAmount);
         m_Animator.SetFloat("Forward", m_ForwardAmount, 0.1f, Time.deltaTime);
         m_Animator.SetFloat("Turn", m_TurnAmount, 0.1f, Time.deltaTime);
         m_Animator.SetBool("Crouch", m_Crouching);
@@ -149,7 +159,7 @@ public class MoveComponent : MonoBehaviour {
         Vector3 extraGravityForce = (Physics.gravity * m_GravityMultiplier) - Physics.gravity;
         m_Rigidbody.AddForce(extraGravityForce);
 
-        m_GroundCheckDistance = m_Rigidbody.velocity.y < 0 ? m_OrigGroundCheckDistance : 0.01f;
+        m_GroundCheckDistance = m_Rigidbody.velocity.y < 0 ? m_OrigGroundCheckDistance : 0.3f;
     }
 
     private void ScaleCapsuleForCrouching(bool crouch)
@@ -163,7 +173,7 @@ public class MoveComponent : MonoBehaviour {
         Vector3 extraGravityForce = (Physics.gravity * m_GravityMultiplier) - Physics.gravity;
         m_Rigidbody.AddForce(extraGravityForce);
 
-        m_GroundCheckDistance = m_Rigidbody.velocity.y < 0 ? m_OrigGroundCheckDistance : 0.01f;
+        m_GroundCheckDistance = m_Rigidbody.velocity.y < 0 ? m_OrigGroundCheckDistance : 0.3f;
     }
 
     private void HandleGroundedMovement(bool crouch, bool jump)
@@ -207,5 +217,6 @@ public class MoveComponent : MonoBehaviour {
             m_GroundNormal = Vector3.up;
             m_Animator.applyRootMotion = false;
         }
+        Debug.Log("CHECK : " + m_Animator.applyRootMotion);
     }
 }

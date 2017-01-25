@@ -37,7 +37,7 @@ public class PlayerControl : MonoBehaviour {
         m_PCActions.InputPackets = new InputPacket[16];
     }
 
-	void Update()
+	void FixedUpdate()
     {
         
         if (m_UserInput)

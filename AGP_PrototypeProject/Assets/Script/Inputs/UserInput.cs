@@ -27,7 +27,7 @@ namespace Inputs
             m_InputPacketQueue = new Queue<InputPacket>();
         }
 
-        void Update()
+        void FixedUpdate()
         {
             GetInputs();
 
@@ -39,17 +39,14 @@ namespace Inputs
             m_device = InputManager.ActiveDevice;
             {
                 float amount = m_device.LeftStickX;
-                InputPacket packet = new InputPacket(EnumService.InputType.LeftStickX, 0.3f);
-                Debug.Log("LEFT X: " + amount);
+                InputPacket packet = new InputPacket(EnumService.InputType.LeftStickX, amount);
+                //Debug.Log("LEFT X: " + amount);
                 m_inputArray[(int)EnumService.InputType.LeftStickX] = packet;
             }
 
             {
                 float amount = m_device.LeftStickY;
-                if (amount > 0)
-                {
-                    Debug.Log("LEFT Y: " + amount);
-                }
+                //Debug.Log("LEFT Y: " + amount);
                 InputPacket packet = new InputPacket(EnumService.InputType.LeftStickY, amount);
                 m_inputArray[(int)EnumService.InputType.LeftStickY] = packet;
             }
