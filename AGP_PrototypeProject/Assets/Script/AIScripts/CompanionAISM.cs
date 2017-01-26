@@ -1,7 +1,8 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
+//using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using MalbersAnimations;
 
 public class CompanionAISM : AIStateMachine {
 
@@ -58,7 +59,7 @@ public class CompanionAISM : AIStateMachine {
     #endregion
 
 
-#region Accalia Main States
+    #region Accalia Main States
 
     [SerializeField]
     private WolfMainState m_CurrentMainState;
@@ -85,10 +86,23 @@ public class CompanionAISM : AIStateMachine {
         set { m_FollowState = value; }
     }
 
+    #endregion
+
+    #region Accalia's Behavior Trees
+    BehaviorTree m_CurrentBT;
+
+    BehaviorTree m_FollowTree;
+    BehaviorTree m_IdleTree;
+
 #endregion
+
 
     [SerializeField]
     public GameObject Player;
+    private Vector3 playerLoc;
+
+    [SerializeField]
+    private Float DistToPlayerSq;
 
 
 #region Temp Variables For Testing (To go in another file later)
@@ -98,6 +112,9 @@ public class CompanionAISM : AIStateMachine {
 
     [SerializeField]
     private float FollowDistance;
+
+    [SerializeField]
+    private float StartToFollowDistance;
 
     [SerializeField]
     private Int testConditionValue;
@@ -112,22 +129,81 @@ public class CompanionAISM : AIStateMachine {
     // Use this for initialization
     void Start () {
 
-        SetMainState(WolfMainState.Follow);
+        SetMainState(WolfMainState.Idle);
         SetPrevousMainState(WolfMainState.Attack);
         WolfNavAgent = GetComponentInParent<NavMeshAgent>();
 
-        testConditionValue = new Int(0);
-        Int testRight = new Int(1);
+        //testConditionValue = new Int(0);
+        //Int testRight = new Int(1);
 
 
-        cond2 = new Condition(testConditionValue, ConditionComparison.Equal, testRight);
+        //cond2 = new Condition(testConditionValue, ConditionComparison.Equal, testRight);
 
-        printMe = new Action(new VoidTypeDelegate(TestActionPrintFunc));
+        //printMe = new Action(new VoidTypeDelegate(TestActionPrintFunc));
 
-        StartCoroutine(waitFiveSeconds());
 
+        playerLoc = Player.transform.position;
+        DistToPlayerSq = new Float((playerLoc - transform.position).sqrMagnitude);
+         
+        InitializeStateBehaviorTrees();
 	}
-	
+
+    private void InitializeStateBehaviorTrees()
+    {
+        CreateIdleBT();
+        CreateFollowBT();
+
+        // Start in Idle state
+        m_CurrentBT = m_IdleTree;
+    }
+
+    private void CreateFollowBT()
+    {
+        /// NODE ///
+        // 
+        DecisionNode rootNode = new DecisionNode(DecisionNode.DecisionType.RepeatUntilCanProgress, "RootFollow");
+        rootNode.AddAction(new Action(FollowBehind));
+
+        m_FollowTree = new BehaviorTree(WolfMainState.Idle, rootNode);
+
+        /// NODE ///
+        // Node to decide when to stop following the player (if close enough to player)
+        // if DistToPlayer < FollowDist, switch to Idle state
+        DecisionNode stopFollowingNode = new DecisionNode(DecisionNode.DecisionType.SwitchStates, "StopFollow->Idle");
+        Condition sfCond1 = new Condition(DistToPlayerSq, ConditionComparison.Less, new Float(FollowDistance * FollowDistance));
+        Action switchToIdleAction = new Action(SetMainState, WolfMainState.Idle);
+
+        stopFollowingNode.AddCondition(sfCond1);
+        stopFollowingNode.AddAction(switchToIdleAction);
+
+        // Add new Node to parent
+        m_FollowTree.AddDecisionNodeTo(rootNode, stopFollowingNode);
+
+    }
+    
+    private void CreateIdleBT()
+    {
+        /// NODE ///
+        // For now, idle will just do nothing
+        DecisionNode rootNode = new DecisionNode(DecisionNode.DecisionType.RepeatUntilCanProgress, "RootIdle");
+        rootNode.AddAction(new Action(DoNothing));
+
+        m_IdleTree = new BehaviorTree(WolfMainState.Idle, rootNode);
+
+        /// NODE ///
+        // Node to decide if wolf should follow player
+        // if DistToPlayer > StartToFollowDist, switch to Follow state
+        DecisionNode toFollowNode = new DecisionNode(DecisionNode.DecisionType.SwitchStates, "StartFollow->Follow");
+        Condition tfCond1 = new Condition(DistToPlayerSq, ConditionComparison.Greater, new Float(StartToFollowDistance * StartToFollowDistance));
+        Action switchToFollowAction = new Action(SetMainState, WolfMainState.Follow);
+
+        toFollowNode.AddCondition(tfCond1);
+        toFollowNode.AddAction(switchToFollowAction);
+
+        // Add new Node to parent
+        m_IdleTree.AddDecisionNodeTo(rootNode, toFollowNode);
+    }
+
     IEnumerator waitFiveSeconds()
     {
         yield return new WaitForSeconds(5);
@@ -138,16 +214,25 @@ public class CompanionAISM : AIStateMachine {
 	// Update is called once per frame
 	void Update () {
 
-        // Check for events or player suggestions
+        UpdateFactors();
+
+        // Check for events or player suggestions to switch State
+
+        // Traverse current Behavior Tree
+        m_CurrentBT.ContinueBehaviorTree();
+
 
         // Determine what the current state should be
-        if (!cond2.IsMet())
-            UpdateStateMachine();
-        else
-            printMe.PerformAction();
+        //if (!cond2.IsMet())
+        // UpdateStateMachine();
 
-            //TempPlayerMovement();
-	}
+    }
+
+    private void UpdateFactors()
+    {
+        DistToPlayerSq.value = (Player.transform.position - transform.position).sqrMagnitude;
+    }
+
 
     public override void UpdateStateMachine() 
     {
@@ -180,7 +265,26 @@ public class CompanionAISM : AIStateMachine {
 
     void SetMainState(WolfMainState newState)
     {
+        m_PreviousMainState = m_CurrentMainState;
         m_CurrentMainState = newState;
+
+        // Switch the current behavior tree to the new state's tree
+        switch (m_CurrentMainState)
+        {
+            case WolfMainState.Idle:
+                m_CurrentBT = m_IdleTree;
+                break;
+
+            case WolfMainState.Follow:
+                m_CurrentBT = m_FollowTree;
+                break;
+
+            default:
+                Debug.Log("Error: CompanionAISM.cs : No Behavior Tree to switch to for desired new state.");
+                break;
+
+
+        }
     }
 
     void SetPrevousMainState(WolfMainState newState)
@@ -188,6 +292,33 @@ public class CompanionAISM : AIStateMachine {
         m_PreviousMainState = newState;
     }
 
+
+    #region MovementFunctions
+
+    public void MoveTo(Vector3 Location)
+    {
+        WolfNavAgent.SetDestination(Location);
+        WolfNavAgent.Resume();
+    }
+
+    public void FollowBehind()
+    {
+        Vector3 toPlayer = Player.transform.position - this.transform.position;
+        toPlayer.Normalize();
+
+        TargetMoveToLocation = Player.transform.position - FollowDistance * toPlayer;
+        MoveTo(TargetMoveToLocation);
+    }
+    #endregion
+
+    #region Idle Functions
+
+    public void DoNothing()
+    {
+
+    }
+
+    #endregion
 
     #region State Execution Functions
 
@@ -218,6 +349,8 @@ public class CompanionAISM : AIStateMachine {
             }
         }
 
+        // temp
+        CurrentFollowState = WolfFollowSubState.FollowBehind;
         Vector3 playerLocation = Player.transform.position;
         
         switch (CurrentFollowState)
@@ -229,6 +362,10 @@ public class CompanionAISM : AIStateMachine {
                 toPlayer.Normalize();
 
                 TargetMoveToLocation = playerLocation - FollowDistance * toPlayer;
+                Animal an = GetComponentInParent<Animal>();
+                
+                //if(an != null)
+                 //   an.Move(playerLocation, false);
                 WolfNavAgent.SetDestination(TargetMoveToLocation);
                 break;
 

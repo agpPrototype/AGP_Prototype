@@ -4,6 +4,7 @@ using UnityEngine;
 
 
 public delegate void VoidTypeDelegate();
+public delegate void VoidTypeDelegate1(CompanionAISM.WolfMainState State);
 public delegate bool BoolTypeDelegate();
 
 /// <summary>
@@ -18,23 +19,52 @@ public delegate bool BoolTypeDelegate();
 public class Action  {
 
     // Delegate names will take the form of "<returnType> Func <#arguments>" 
-    VoidTypeDelegate m_VoidFunc0;
+    private VoidTypeDelegate m_VoidFunc0;
 
+    private VoidTypeDelegate1 m_VoidFunc1;
+    private CompanionAISM.WolfMainState m_StateToChangeTo;
 
-    public Action(VoidTypeDelegate voidFunc)
+    private bool m_ActionComplete;
+
+    public Action(VoidTypeDelegate voidFunc0)
     {
-        m_VoidFunc0 = voidFunc;
+        m_VoidFunc0 = voidFunc0;
+
+        m_ActionComplete = false;
+
+        m_VoidFunc1 = null;
+    }
+
+    public Action(VoidTypeDelegate1 voidFunc1, CompanionAISM.WolfMainState newState)
+    {
+        m_VoidFunc1 = voidFunc1;
+        m_StateToChangeTo = newState;
+
+        m_ActionComplete = false;
+
+        m_VoidFunc0 = null;
     }
 
     public void PerformAction()
     {
-        m_VoidFunc0.Invoke();
+        if (ReferenceEquals(m_VoidFunc1, null))
+            m_VoidFunc0.Invoke();
+        else
+            m_VoidFunc1.Invoke(m_StateToChangeTo);
     }
 
     // For now has the same functionality as PerformAction but may be different in the future
     public void Continue()
     {
-        m_VoidFunc0.Invoke();
+        if (ReferenceEquals(m_VoidFunc1, null))
+            m_VoidFunc0.Invoke();
+        else
+            m_VoidFunc1.Invoke(m_StateToChangeTo);
+    }
+
+    public bool IsComplete()
+    {
+        return m_ActionComplete;
     }
 
 

@@ -18,6 +18,8 @@ public class AGPMonoBehavior : MonoBehaviour
 
     }
 
+
+
     public delegate int GetTypeDelegate();
 
     public class Int : IComparable
@@ -46,8 +48,10 @@ public class AGPMonoBehavior : MonoBehaviour
 
     }
 
+    [System.Serializable]
     public class Float : IComparable
     {
+        [SerializeField]
         public float value;
 
         public Float(float val)

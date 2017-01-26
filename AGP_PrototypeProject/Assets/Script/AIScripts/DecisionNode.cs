@@ -10,9 +10,16 @@ using UnityEngine;
 ///     an Action that tells the AI object specifically what to do, as well as possible links to determine where the AI will progress to after 
 ///     the contained Action is complete.
 ///     
+///     IMPORTANT!!!!!
+///**** The order that the Links are added MATTERS. The order determines a preference to which
+///     Link should be tested first!
+///     
 /// </summary>
 /// 
 public class DecisionNode : AGPMonoBehavior {
+
+    [SerializeField]
+    private string m_nameTag;
 
     private Action m_Action;
 
@@ -21,6 +28,10 @@ public class DecisionNode : AGPMonoBehavior {
     private List<DecisionNode> m_Links;
 
     private DecisionType m_MyType;
+
+    private bool m_DecisionComplete;
+
+    
 
     /// <summary>
     /// 
@@ -41,8 +52,28 @@ public class DecisionNode : AGPMonoBehavior {
     public enum DecisionType
     {
         RepeatUntilActionComplete,
-        RepeatUntilCanProgress
+        RepeatUntilCanProgress,
+        SwitchStates
     }
+
+
+    public DecisionNode(DecisionType decisionType, string tag)
+    {
+        if (decisionType == DecisionType.RepeatUntilActionComplete)
+        {
+            m_DecisionComplete = false;
+        }
+        else
+        {
+            // We can just continue the Action until we can move on to another child Node
+            m_DecisionComplete = true;
+        }
+
+        m_nameTag = tag;
+        m_Links = new List<DecisionNode>();
+        m_Conditions = new List<Condition>();
+    }
+
 
     // Test that all Conditions of this node are met. If any are not, this node cannot be travelled to.
     public bool TestConditions()
@@ -58,34 +89,64 @@ public class DecisionNode : AGPMonoBehavior {
         return true;
     }
 
+
+    public bool DecisionComplete()
+    {
+        return m_DecisionComplete;
+    }
+
+
     // This function is called when the statemachine decides to remain in the state that it is in
     public void ProcessDecision()
     {
         if(m_MyType == DecisionType.RepeatUntilActionComplete)
         {
-            // test if action is complete and then
-            if (TestConditions())
+            // test if action is complete and then see if it can move to next Node
+            if (m_Action.IsComplete())
             {
-                DecisionNode next = FindNextNode();
-
-                if(next == null)
+                m_DecisionComplete = true;
+                return;
+            }
+            else
+            {
+                m_Action.Continue();
+            }
+        }
+        else if(m_MyType == DecisionType.RepeatUntilCanProgress)
+        {
+            for(int i = 0; i < m_Links.Count; ++i)
+            {
+                if (m_Links[i].TestConditions())
                 {
-                    Debug.Log("Warning: DecisionNode.cs : no action to perform but cannot progress to next node");
-                }
-                else
-                {
-                    // Progress to next Node
+                    m_DecisionComplete = true;
+                    return;
                 }
             }
+
+            m_Action.Continue();
+        }
+        else if(m_MyType == DecisionType.SwitchStates)
+        {
+            m_Action.PerformAction();
+            m_DecisionComplete = true;
         }
     }
 
-    private DecisionNode FindNextNode()
+
+    // For use outside of this class, should be called by the StateMachine/Behavior tree class.
+    //
+    // if(DecisionComplete()){
+    //      CurrentNode = CurrentNode->FindNextNode()
+    // else
+    //      CurrentNode->ProcessDecision();
+    //
+    public DecisionNode FindNextNode()
     {
         for (int i = 0; i < m_Links.Count; ++i)
         {
             if (m_Links[i].TestConditions())
             {
+                m_DecisionComplete = false;
                 return m_Links[i];
             }
         }
@@ -93,8 +154,26 @@ public class DecisionNode : AGPMonoBehavior {
         return null;
     }
 
-	// Use this for initialization
-	void Start () {
+#region Functions to build DecisionNode
+    public void AddDecisionNodeLink(DecisionNode node)
+    {
+        m_Links.Add(node);
+    }
+
+    public void AddCondition(Condition condition)
+    {
+        m_Conditions.Add(condition);
+    }
+
+    public void AddAction(Action action)
+    {
+        m_Action = action;
+    }
+
+#endregion
+
+    // Use this for initialization
+    void Start () {
 		
 	}
 	
