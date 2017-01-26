@@ -22,7 +22,9 @@ namespace Utility {
             X = 12,
             O = 13,
             Triangle = 14,
-            Square = 15
+            Square = 15,
+            LeftStickButton = 16,
+            RightStickButton = 17
         }
     }
 }

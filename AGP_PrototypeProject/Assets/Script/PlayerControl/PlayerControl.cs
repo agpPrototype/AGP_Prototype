@@ -5,6 +5,10 @@ using Inputs;
 using Utility;
 using System;
 
+[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(CapsuleCollider))]
+[RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(MoveComponent))]
 public class PlayerControl : MonoBehaviour {
 
     [SerializeField]
@@ -25,6 +29,8 @@ public class PlayerControl : MonoBehaviour {
         public Vector3 CamForward;
         public Vector3 CamRight;
         public InputPacket[] InputPackets;
+        public bool Jump;
+        public bool Crouch;
 
     }
 
@@ -32,9 +38,17 @@ public class PlayerControl : MonoBehaviour {
 
     void Start()
     {
+        if (Camera.main)
+        {
+            m_cam = Camera.main.transform;
+        } else
+        {
+            Debug.Log("SCENE MSISING CAMERA");
+        }
         m_moveComp = GetComponent<MoveComponent>();
         m_PCActions = new PCActions();
-        m_PCActions.InputPackets = new InputPacket[16];
+        m_PCActions.InputPackets = new InputPacket[18];
+        m_UserInput = FindObjectOfType<UserInput>();
     }
 
 	void FixedUpdate()

@@ -23,7 +23,7 @@ namespace Inputs
         void Awake()
         {
             m_device = InputManager.ActiveDevice; 
-            m_inputArray = new InputPacket[16];
+            m_inputArray = new InputPacket[18];
             m_InputPacketQueue = new Queue<InputPacket>();
         }
 
@@ -134,6 +134,19 @@ namespace Inputs
                 InputPacket packet = new InputPacket(EnumService.InputType.Triangle, amount);
                 m_inputArray[(int)EnumService.InputType.Triangle] = packet;
             }
+
+            {
+                float amount = m_device.LeftStickButton;
+                InputPacket packet = new InputPacket(EnumService.InputType.LeftStickButton, amount);
+                m_inputArray[(int)EnumService.InputType.LeftStickButton] = packet;
+            }
+
+            {
+                float amount = m_device.RightStickButton;
+                InputPacket packet = new InputPacket(EnumService.InputType.RightStickButton, amount);
+                m_inputArray[(int)EnumService.InputType.RightStickButton] = packet;
+            }
+            
         }
     }
 }
