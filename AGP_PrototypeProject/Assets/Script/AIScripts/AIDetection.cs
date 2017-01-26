@@ -5,52 +5,76 @@ using UnityEngine;
 public class AIDetection : MonoBehaviour
 {
     [Tooltip("field of view of the AI, this is used for things like line of sight.")]
-    public float FOV;
+    [SerializeField]
+    float FOV;
     private float m_FOVHalfed; // This just stores half the fov as a pre-calculated float since it won't change.
 
     [Tooltip("Max range determines how far the far plane is defined.")]
-    public float MaxRange;
+    [SerializeField]
+    private float MaxRange;
 
     [Tooltip("Min range determines how close the near plane is defined.")]
-    public float MinRange;
+    [SerializeField]
+    private float MinRange;
 
     [Tooltip("transform that will be used as apex/origin of camera frustum.")]
-    public Transform Apex;
+    [SerializeField]
+    private Transform Apex;
 
     [Tooltip("Aspect defines the relationship between width and height of the frustum.")]
-    public float Aspect = 16.0f / 9.0f;
+    [SerializeField]
+    private float Aspect = 16.0f / 9.0f;
 
-    public GameObject PlayerTarget; // used just for testing calculations.
+    [Tooltip("Layer mask for raycast to see if target is visible in view.")]
+    [SerializeField]
+    private LayerMask RaycastLayerMask;
+
+    [Tooltip("Maximum distance of raycast to attempt to find target in view.")]
+    [SerializeField]
+    private float RaycastMaxDistance;
+
+    [SerializeField]
+    private GameObject PlayerTarget; // used just for testing calculations.
 
     [Tooltip("Length of frustum forward debug line.")]
-    public float ForwardDebugLineLength;
+    [SerializeField]
+    private float ForwardDebugLineLength;
 
     [Tooltip("Color of frustum drawn, why not? :)")]
-    public Color FrustumColor;
+    [SerializeField]
+    private Color FrustumColor;
 
     [Tooltip("Color of frustum forward debug line, why not? :)")]
-    public Color ForwardDebugLineColor;
+    [SerializeField]
+    private Color ForwardDebugLineColor;
 
     [Tooltip("Color of plane normal debug lines, why not? :)")]
-    public Color PlaneNormalColor;
+    [SerializeField]
+    private Color PlaneNormalColor;
 
     [Tooltip("Color of raycast toward player when in view of AI.")]
-    public Color RaycastNotSeenColor;
+    [SerializeField]
+    private Color RaycastNotSeenColor;
 
     [Tooltip("Color of raycast toward player when seen by AI.")]
-    public Color RaycastSeenColor;
+    [SerializeField]
+    private Color RaycastSeenColor;
 
     [Tooltip("Should we draw forward of frustum.")]
-    public bool IsDrawForward;
+    [SerializeField]
+    private bool IsDrawForward;
 
     [Tooltip("Should we draw raycast to target.")]
-    public bool IsDrawRaycastToTarget;
+    [SerializeField]
+    private bool IsDrawRaycastToTarget;
 
     [Tooltip("Should we draw frustum.")]
-    public bool IsDrawFrustum;
+    [SerializeField]
+    private bool IsDrawFrustum;
 
     [Tooltip("If checked will do basic dot products to find if enemy seen. If not, will attempt frustum check (may not be working yet).")]
-    public bool IsUsePeripheralVision;
+    [SerializeField]
+    private bool IsUsePeripheralVision;
 
     private Vector3[] m_FaceNormals = new Vector3[6];
     private Vector3[] m_PlanePositions = new Vector3[6];
@@ -59,19 +83,42 @@ public class AIDetection : MonoBehaviour
 
     void Start()
     {
-        m_FOVHalfed = FOV;
+        m_FOVHalfed = FOV/2;
     }
 
     void Update()
     {
         if(IsInPeripherals())
         {
-            m_IsCanSeePlayer = true;
+            if(IsInLineOfSight())
+            {
+                m_IsCanSeePlayer = true;
+            }
+            else
+            {
+                m_IsCanSeePlayer = false;
+            }
         }
         else
         {
             m_IsCanSeePlayer = false;
         }
+    }
+
+    // Shoot raycast at player to see if AI can see them.
+    bool IsInLineOfSight()
+    {
+        RaycastHit raycastHit;
+        Vector3 dirVect = (PlayerTarget.transform.position - Apex.position).normalized;
+        if (Physics.Raycast(Apex.position, dirVect, out raycastHit, RaycastMaxDistance, RaycastLayerMask))
+        {
+            Collider collider = raycastHit.collider;
+            if(collider != null && collider.tag == "Player")
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Check to see if within peripherals.
