@@ -15,6 +15,15 @@ public class CommandHandler : MonoBehaviour
     [SerializeField]
     private UIManager UIManager;
 
+    void Start()
+    {
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if(canvas)
+        {
+            UIManager = canvas.GetComponent<UIManager>();
+        }
+    }
+
     // Update is called once per frame
     void Update()
     {

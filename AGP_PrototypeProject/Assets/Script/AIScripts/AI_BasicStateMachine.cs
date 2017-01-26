@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(AILineOfSightDetection))]
 public class AI_BasicStateMachine : AIStateMachine
 {
-
     // Define possible states for AI. Subject to change.
     public enum State
     {
@@ -25,10 +25,13 @@ public class AI_BasicStateMachine : AIStateMachine
         }
     }
 
+    private AILineOfSightDetection m_AILineOfSightDetection;
+
     // Use this for initialization
     void Start ()
     {
         m_State = State.IDLE;
+        m_AILineOfSightDetection = GetComponent<AILineOfSightDetection>();
     }
 	
 	// Update is called once per frame
@@ -42,6 +45,16 @@ public class AI_BasicStateMachine : AIStateMachine
         if(state == State.IDLE)
         {
             // Look for hostiles.
+            if(m_AILineOfSightDetection != null)
+            {
+                if(m_AILineOfSightDetection.IsCanSeePlayer)
+                {
+                    state = State.CHASE;
+                }
+            }
+        }
+        else if(state == State.CHASE)
+        {
 
         }
     }

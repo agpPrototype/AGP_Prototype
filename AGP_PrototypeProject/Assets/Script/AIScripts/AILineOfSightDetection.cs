@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AIDetection : MonoBehaviour
+public class AILineOfSightDetection : MonoBehaviour
 {
+    [SerializeField]
+    private GameObject Target; // used just for testing calculations.
+
     [Tooltip("field of view of the AI, this is used for things like line of sight.")]
     [SerializeField]
     float FOV;
@@ -25,16 +28,13 @@ public class AIDetection : MonoBehaviour
     [SerializeField]
     private float Aspect = 16.0f / 9.0f;
 
-    [Tooltip("Layer mask for raycast to see if target is visible in view.")]
+    [Tooltip("Layer mask for raycast to see if target is visible in line of sight.")]
     [SerializeField]
-    private LayerMask RaycastLayerMask;
+    private LayerMask SightRaycastLayerMask;
 
     [Tooltip("Maximum distance of raycast to attempt to find target in view.")]
     [SerializeField]
     private float RaycastMaxDistance;
-
-    [SerializeField]
-    private GameObject PlayerTarget; // used just for testing calculations.
 
     [Tooltip("Length of frustum forward debug line.")]
     [SerializeField]
@@ -80,6 +80,10 @@ public class AIDetection : MonoBehaviour
     private Vector3[] m_PlanePositions = new Vector3[6];
 
     private bool m_IsCanSeePlayer;
+    public bool IsCanSeePlayer
+    {
+        get { return m_IsCanSeePlayer; }
+    }
 
     void Start()
     {
@@ -103,14 +107,21 @@ public class AIDetection : MonoBehaviour
         {
             m_IsCanSeePlayer = false;
         }
+
+
+    }
+
+    public bool IsAudible()
+    {
+        return true;
     }
 
     // Shoot raycast at player to see if AI can see them.
-    bool IsInLineOfSight()
+    private bool IsInLineOfSight()
     {
         RaycastHit raycastHit;
-        Vector3 dirVect = (PlayerTarget.transform.position - Apex.position).normalized;
-        if (Physics.Raycast(Apex.position, dirVect, out raycastHit, RaycastMaxDistance, RaycastLayerMask))
+        Vector3 dirVect = (Target.transform.position - Apex.position).normalized;
+        if (Physics.Raycast(Apex.position, dirVect, out raycastHit, RaycastMaxDistance, SightRaycastLayerMask))
         {
             Collider collider = raycastHit.collider;
             if(collider != null && collider.tag == "Player")
@@ -122,9 +133,9 @@ public class AIDetection : MonoBehaviour
     }
 
     // Check to see if within peripherals.
-    bool IsInPeripherals()
+    private bool IsInPeripherals()
     { 
-        Vector3 nTarget = (PlayerTarget.transform.position - Apex.position).normalized;
+        Vector3 nTarget = (Target.transform.position - Apex.position).normalized;
         Vector3 nForward = Apex.forward;
 
         float dotResult = Vector3.Dot(nTarget, nForward);
@@ -174,11 +185,11 @@ public class AIDetection : MonoBehaviour
         {
             if(m_IsCanSeePlayer)
             {
-                Debug.DrawRay(Apex.position, PlayerTarget.transform.position - Apex.position, RaycastSeenColor);
+                Debug.DrawRay(Apex.position, Target.transform.position - Apex.position, RaycastSeenColor);
             }
             else
             {
-                Debug.DrawRay(Apex.position, PlayerTarget.transform.position - Apex.position, RaycastNotSeenColor);
+                Debug.DrawRay(Apex.position, Target.transform.position - Apex.position, RaycastNotSeenColor);
             }
         }
     }
@@ -192,7 +203,7 @@ public class AIDetection : MonoBehaviour
      * 4 - up face normal
      * 5 - down face normal
      * */
-    void CalculateFrustumPlanes()
+    private void CalculateFrustumPlanes()
     {
         // DO NORMAL CALCULATIONS::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // far face normal
@@ -252,11 +263,11 @@ public class AIDetection : MonoBehaviour
     }
 
     // Check to see if within peripherals.
-    bool IsInFrustumUsingPlanes()
+    private bool IsInFrustumUsingPlanes()
     {
         for (int i = 0; i < m_FaceNormals.Length; i++)
         {
-            float lengthOfProjection = Vector3.Dot(PlayerTarget.transform.position, m_FaceNormals[i]);
+            float lengthOfProjection = Vector3.Dot(Target.transform.position, m_FaceNormals[i]);
             Vector3 normalProjectedVect = lengthOfProjection * m_FaceNormals[i];
             Vector3 fromPlaneToTarget = normalProjectedVect - m_PlanePositions[i];
             if (fromPlaneToTarget.magnitude < 0)

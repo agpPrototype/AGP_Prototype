@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(AIDetection))]
 abstract public class AIStateMachine : StateMachineBase {
 
 	// Use this for initialization
