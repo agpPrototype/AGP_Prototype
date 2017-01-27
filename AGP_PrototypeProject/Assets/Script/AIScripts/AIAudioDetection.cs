@@ -45,10 +45,19 @@ public class AIAudioDetection : MonoBehaviour
         get { return m_IsTargetAudible; }
     }
 
+    void Awake()
+    {
+        if (Target == null)
+        {
+            Debug.LogError("Target is null and must be set.");
+        }
+    }
+
     // Use this for initialization
-    void Start () {
-		
-	}
+    void Start ()
+    {
+
+    }
 	
 	// Update is called once per frame
 	void Update () {
@@ -62,7 +71,7 @@ public class AIAudioDetection : MonoBehaviour
         }
     }
 
-    // Shoot raycast at player to see if AI can see them.
+    // Shoot raycast at target to see if AI can see them.
     private bool IsInLAudibleRange()
     {
         Vector3 toTargetVect = (Target.transform.position - Ears.position);

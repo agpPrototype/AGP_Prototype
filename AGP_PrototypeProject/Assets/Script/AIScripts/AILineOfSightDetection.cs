@@ -36,6 +36,21 @@ public class AILineOfSightDetection : MonoBehaviour
     [SerializeField]
     private float RaycastMaxDistance;
 
+    [Tooltip("Radius of cone used when firing numerous raycasts.")]
+    [SerializeField]
+    [Range(.001f,8f)]
+    private float ConeRadius;
+
+    [Tooltip("Number of raycasts used in cone raycasting, this will also determine the spacing between the raycasts in the cone.")]
+    [SerializeField]
+    [Range(1,8)]
+    private uint NumberOfRaycasts = 1;
+
+    [Tooltip("Number of rings in the raycast cone. (Number of raycasts * number of rings) is how many total raycasts there will be.")]
+    [SerializeField]
+    [Range(1, 2)]
+    private uint NumberOfRings = 1;
+
     [Tooltip("Length of frustum forward debug line.")]
     [SerializeField]
     private float ForwardDebugLineLength;
@@ -72,17 +87,22 @@ public class AILineOfSightDetection : MonoBehaviour
     [SerializeField]
     private bool IsDrawFrustum;
 
-    [Tooltip("If checked will do basic dot products to find if enemy seen. If not, will attempt frustum check (may not be working yet).")]
+    [Tooltip("Draws the cone of raycasts if there is one.")]
     [SerializeField]
-    private bool IsUsePeripheralVision;
+    private bool IsDrawConeRaycast;
 
-    private Vector3[] m_FaceNormals = new Vector3[6];
-    private Vector3[] m_PlanePositions = new Vector3[6];
-
-    private bool m_IsCanSeePlayer;
-    public bool IsCanSeePlayer
+    private bool m_IsCanSeeTarget;
+    public bool IsCanSeeTarget
     {
-        get { return m_IsCanSeePlayer; }
+        get { return m_IsCanSeeTarget; }
+    }
+    
+    void Awake()
+    {
+        if(Target == null)
+        {
+            Debug.LogError("Target is null and must be set.");
+        }
     }
 
     void Start()
@@ -96,39 +116,107 @@ public class AILineOfSightDetection : MonoBehaviour
         {
             if(IsInLineOfSight())
             {
-                m_IsCanSeePlayer = true;
+                m_IsCanSeeTarget = true;
             }
             else
             {
-                m_IsCanSeePlayer = false;
+                m_IsCanSeeTarget = false;
             }
         }
         else
         {
-            m_IsCanSeePlayer = false;
+            m_IsCanSeeTarget = false;
         }
-
-
-    }
-
-    public bool IsAudible()
-    {
-        return true;
     }
 
     // Shoot raycast at player to see if AI can see them.
     private bool IsInLineOfSight()
     {
+        #region single raycast first
+        // Shoot single raycast to see if we can see the target.
         RaycastHit raycastHit;
-        Vector3 dirVect = (Target.transform.position - Apex.position).normalized;
-        if (Physics.Raycast(Apex.position, dirVect, out raycastHit, RaycastMaxDistance, SightRaycastLayerMask))
+        Vector3 singleRaycastDir = (Target.transform.position - Apex.position).normalized;
+        if (Physics.Raycast(Apex.position, singleRaycastDir, out raycastHit, RaycastMaxDistance, SightRaycastLayerMask))
         {
             Collider collider = raycastHit.collider;
             if(collider != null && collider.tag == "Player")
             {
+                // Draw raycast with not seen color to indicate target seen by AI.
+                if (IsDrawConeRaycast)
+                {
+                    Debug.DrawRay(Apex.position, RaycastMaxDistance * singleRaycastDir, RaycastSeenColor);
+                }
                 return true;
             }
         }
+
+        // Draw raycast with not seen color to indicate nothing being seen by AI with single raycast.
+        if (IsDrawConeRaycast)
+        {
+            Debug.DrawRay(Apex.position, RaycastMaxDistance * singleRaycastDir, RaycastNotSeenColor);
+        }
+        #endregion
+
+        // Shoot multiple raycasts more than 1 raycast was specified to shoot, in order ti see if we can see the target. 
+        if (NumberOfRaycasts <= 1)
+        {
+            return false;
+        }
+
+        #region raycast in cone
+        // Raycast in cone.
+        float angleSpacing = 360.0f / NumberOfRaycasts;
+        bool aRaycastHitTarget = false;
+        for (int j = 0; j < NumberOfRings; j++)
+        {
+            float adjustedConeRadius = ConeRadius * (j + 1);
+            for (int i = 0; i < NumberOfRaycasts; i++)
+            {
+                float currAngle = (i * angleSpacing) * Mathf.PI / 180.0f;
+                Vector3 rightOfMiddleRaycast = Vector3.Cross(Apex.up, singleRaycastDir); // Need right vector of previous single raycast shot.
+                Vector3 xOfTarget = Mathf.Cos(currAngle) * adjustedConeRadius * rightOfMiddleRaycast;
+                Vector3 yOfTarget = Mathf.Sin(currAngle) * adjustedConeRadius * Apex.up;
+                Vector3 zOfTarget = RaycastMaxDistance * singleRaycastDir; // Mathf.Sqrt(Mathf.Pow(ConeRadius, 2) + Mathf.Pow(RaycastMaxDistance, 2));
+                Vector3 targetPos = xOfTarget + yOfTarget + zOfTarget + Apex.position;
+                // Shoot single raycast to see if we can see the target.
+                Vector3 dirVect = (targetPos - Apex.position).normalized;
+                // Do raycasts.
+                if (Physics.Raycast(Apex.position, dirVect, out raycastHit, RaycastMaxDistance, SightRaycastLayerMask))
+                {
+                    Collider collider = raycastHit.collider;
+                    if (collider != null && collider.tag == "Player")
+                    {
+                        // THIS BLOCK OF CODE SHOULD JUST RETURN TRUE BUT IF WE WANT TO DRAW RAY CONE WE CAN'T HENCE THE CHECK!
+                        if (IsDrawConeRaycast)
+                        {
+                            Debug.DrawRay(Apex.position, targetPos - Apex.position, RaycastSeenColor);
+                            aRaycastHitTarget = true;
+                            continue;
+                        }
+                        else
+                        {
+                            // If we don't want to draw the raycast cone we can 
+                            // return right away to allow for faster runtime.
+                            return true;
+                        }
+                    }
+                }
+
+                // Draw failed raycast line for debug purposes.
+                if (IsDrawConeRaycast)
+                {
+                    Debug.DrawRay(Apex.position, targetPos - Apex.position, RaycastNotSeenColor);
+                }
+            }
+        }
+
+        if(IsDrawConeRaycast)
+        {
+            return aRaycastHitTarget;
+        }
+        #endregion
+
+        // If we got this far AI hasn't seen target.
         return false;
     }
 
@@ -178,103 +266,5 @@ public class AILineOfSightDetection : MonoBehaviour
         {
             Debug.DrawRay(Apex.position, Apex.forward * ForwardDebugLineLength, ForwardDebugLineColor);
         }
-
-        // Draw line to target.
-        Gizmos.color = Color.red;
-        if (IsDrawRaycastToTarget)
-        {
-            if(m_IsCanSeePlayer)
-            {
-                Debug.DrawRay(Apex.position, Target.transform.position - Apex.position, RaycastSeenColor);
-            }
-            else
-            {
-                Debug.DrawRay(Apex.position, Target.transform.position - Apex.position, RaycastNotSeenColor);
-            }
-        }
-    }
-
-    /* 
-     * AFTER THIS FUNCTION THESE INDICES WILL BE FILLED AS SUCH:
-     * 0 - far face normal
-     * 1 - near face normal
-     * 2 - left face normal
-     * 3 - right face normal
-     * 4 - up face normal
-     * 5 - down face normal
-     * */
-    private void CalculateFrustumPlanes()
-    {
-        // DO NORMAL CALCULATIONS::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // far face normal
-        m_FaceNormals[0] = -Apex.forward;
-        // near face normal
-        m_FaceNormals[1] = Apex.forward;
-        // left face normal
-        Vector3 leftFaceVect = (Quaternion.AngleAxis(-m_FOVHalfed, Apex.up) * Apex.forward).normalized;
-        m_FaceNormals[2] = Vector3.Cross(leftFaceVect, -Apex.up);
-        // right face normal
-        Vector3 rightFaceVect = (Quaternion.AngleAxis(m_FOVHalfed, Apex.up) * Apex.forward).normalized;
-        m_FaceNormals[3] = Vector3.Cross(rightFaceVect, Apex.up);
-        // up face normal
-        Vector3 upFaceVect = (Quaternion.AngleAxis(-m_FOVHalfed / Aspect, Apex.right) * Apex.forward).normalized;
-        m_FaceNormals[4] = Vector3.Cross(upFaceVect, -Apex.right);
-        // down face normal
-        Vector3 downFaceVect = (Quaternion.AngleAxis(m_FOVHalfed / Aspect, Apex.right) * Apex.forward).normalized;
-        m_FaceNormals[5] = Vector3.Cross(downFaceVect, Apex.right);
-
-        // DO PLANE CALCULATIONS:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Draw far face normal.
-        m_PlanePositions[0] = Apex.forward * MaxRange + Apex.position;
-        Debug.DrawRay(m_PlanePositions[0], m_FaceNormals[0], PlaneNormalColor);
-
-        // Draw near face normal.
-        m_PlanePositions[1] = Apex.forward * MinRange + Apex.position;
-        Debug.DrawRay(m_PlanePositions[1], m_FaceNormals[1], PlaneNormalColor);
-
-        // find dist to center of frustum used for all plane normal calculation proceeding.
-        float distToCenterFrustum = MinRange + ((MaxRange - MinRange) / 2.0f);
-        Vector3 vectToCenterFrustum = Apex.forward * distToCenterFrustum;
-        Debug.DrawRay(Apex.position, vectToCenterFrustum);
-
-        // Draw normal of left plane
-        float dotProdResult = Vector3.Dot(vectToCenterFrustum, leftFaceVect);
-        m_PlanePositions[2] = leftFaceVect * dotProdResult;
-        Debug.DrawRay(Apex.position, m_PlanePositions[2]);
-        Debug.DrawRay(m_PlanePositions[2], m_FaceNormals[2], PlaneNormalColor);
-
-        // Draw normal of right plane
-        dotProdResult = Vector3.Dot(vectToCenterFrustum, rightFaceVect);
-        m_PlanePositions[3] = rightFaceVect * dotProdResult;
-        Debug.DrawRay(Apex.position, m_PlanePositions[3]);
-        Debug.DrawRay(m_PlanePositions[3], m_FaceNormals[3], PlaneNormalColor);
-
-        // Draw normal of up plane
-        dotProdResult = Vector3.Dot(vectToCenterFrustum, upFaceVect);
-        m_PlanePositions[4] = upFaceVect * dotProdResult;
-        Debug.DrawRay(Apex.position, m_PlanePositions[4]);
-        Debug.DrawRay(m_PlanePositions[4], m_FaceNormals[4], PlaneNormalColor);
-
-        // Draw normal of down plane
-        dotProdResult = Vector3.Dot(vectToCenterFrustum, downFaceVect);
-        m_PlanePositions[5] = downFaceVect * dotProdResult;
-        Debug.DrawRay(Apex.position, m_PlanePositions[5]);
-        Debug.DrawRay(m_PlanePositions[5], m_FaceNormals[5], PlaneNormalColor);
-    }
-
-    // Check to see if within peripherals.
-    private bool IsInFrustumUsingPlanes()
-    {
-        for (int i = 0; i < m_FaceNormals.Length; i++)
-        {
-            float lengthOfProjection = Vector3.Dot(Target.transform.position, m_FaceNormals[i]);
-            Vector3 normalProjectedVect = lengthOfProjection * m_FaceNormals[i];
-            Vector3 fromPlaneToTarget = normalProjectedVect - m_PlanePositions[i];
-            if (fromPlaneToTarget.magnitude < 0)
-            {
-                return false;
-            }
-        }
-        return true;
     }
 }

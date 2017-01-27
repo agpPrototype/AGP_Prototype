@@ -47,7 +47,7 @@ public class AI_BasicStateMachine : AIStateMachine
             // Look for hostiles.
             if(m_AILineOfSightDetection != null)
             {
-                if(m_AILineOfSightDetection.IsCanSeePlayer)
+                if(m_AILineOfSightDetection.IsCanSeeTarget)
                 {
                     state = State.CHASE;
                 }
