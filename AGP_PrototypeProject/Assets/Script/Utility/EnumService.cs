@@ -24,7 +24,17 @@ namespace Utility {
             Triangle = 14,
             Square = 15,
             LeftStickButton = 16,
-            RightStickButton = 17
+            RightStickButton = 17,
+            Size //must be last
+        }
+
+        public enum BondProperty
+        {
+            Trust,
+            Irritation,
+            Neglect,
+            Cooperation,
+            Size //must be last
         }
     }
 }
