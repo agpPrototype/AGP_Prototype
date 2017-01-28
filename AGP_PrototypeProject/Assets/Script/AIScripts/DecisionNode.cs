@@ -16,22 +16,8 @@ using UnityEngine;
 ///     
 /// </summary>
 /// 
-public class DecisionNode : AGPMonoBehavior {
-
-    [SerializeField]
-    private string m_nameTag;
-
-    private Action m_Action;
-
-    private List<Condition> m_Conditions;
-
-    private List<DecisionNode> m_Links;
-
-    private DecisionType m_MyType;
-
-    private bool m_DecisionComplete;
-
-    
+namespace AI
+{
 
     /// <summary>
     /// 
@@ -56,129 +42,157 @@ public class DecisionNode : AGPMonoBehavior {
         SwitchStates
     }
 
-
-    public DecisionNode(DecisionType decisionType, string tag)
+    public class DecisionNode : AGPMonoBehavior
     {
-        if (decisionType == DecisionType.RepeatUntilActionComplete)
-        {
-            m_DecisionComplete = false;
-        }
-        else
-        {
-            // We can just continue the Action until we can move on to another child Node
-            m_DecisionComplete = true;
-        }
 
-        m_nameTag = tag;
-        m_Links = new List<DecisionNode>();
-        m_Conditions = new List<Condition>();
-    }
+        [SerializeField]
+        private string m_nameTag;
+
+        private Action m_Action;
+
+        private List<Condition> m_Conditions;
+
+        private List<DecisionNode> m_Links;
+
+        private DecisionType m_MyType;
+
+        private bool m_DecisionComplete;
 
 
-    // Test that all Conditions of this node are met. If any are not, this node cannot be travelled to.
-    public bool TestConditions()
-    {
-        for(int i = 0; i < m_Conditions.Count; ++i)
+        public DecisionNode(DecisionType decisionType, string tag)
         {
-            if (!m_Conditions[i].IsMet())
+            m_MyType = decisionType;
+
+            if (decisionType == DecisionType.RepeatUntilActionComplete)
             {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-
-    public bool DecisionComplete()
-    {
-        return m_DecisionComplete;
-    }
-
-
-    // This function is called when the statemachine decides to remain in the state that it is in
-    public void ProcessDecision()
-    {
-        if(m_MyType == DecisionType.RepeatUntilActionComplete)
-        {
-            // test if action is complete and then see if it can move to next Node
-            if (m_Action.IsComplete())
-            {
-                m_DecisionComplete = true;
-                return;
+                m_DecisionComplete = false;
             }
             else
             {
-                m_Action.Continue();
+                // We can just continue the Action until we can move on to another child Node
+                m_DecisionComplete = true;
             }
+
+            m_nameTag = tag;
+            m_Links = new List<DecisionNode>();
+            m_Conditions = new List<Condition>();
         }
-        else if(m_MyType == DecisionType.RepeatUntilCanProgress)
+
+
+        // Test that all Conditions of this node are met. If any are not, this node cannot be travelled to.
+        public bool TestConditions()
         {
-            for(int i = 0; i < m_Links.Count; ++i)
+            for (int i = 0; i < m_Conditions.Count; ++i)
             {
-                if (m_Links[i].TestConditions())
+                if (!m_Conditions[i].IsMet())
                 {
-                    m_DecisionComplete = true;
-                    return;
+                    return false;
                 }
             }
 
-            m_Action.Continue();
+            return true;
         }
-        else if(m_MyType == DecisionType.SwitchStates)
-        {
-            m_Action.PerformAction();
-            m_DecisionComplete = true;
-        }
-    }
 
 
-    // For use outside of this class, should be called by the StateMachine/Behavior tree class.
-    //
-    // if(DecisionComplete()){
-    //      CurrentNode = CurrentNode->FindNextNode()
-    // else
-    //      CurrentNode->ProcessDecision();
-    //
-    public DecisionNode FindNextNode()
-    {
-        for (int i = 0; i < m_Links.Count; ++i)
+        public bool IsDecisionComplete()
         {
-            if (m_Links[i].TestConditions())
+            return m_DecisionComplete;
+        }
+
+
+        // This function is called when the statemachine decides to remain in the state that it is in
+        public void ProcessDecision()
+        {
+            Debug.Log("Current DecisionNode is " + m_nameTag.ToString());
+            if (m_MyType == DecisionType.RepeatUntilActionComplete)
             {
-                m_DecisionComplete = false;
-                return m_Links[i];
+                // test if action is complete and then see if it can move to next Node
+                if (m_Action.IsComplete())
+                {
+                    m_DecisionComplete = true;
+                    m_Action.SetComplete(false);
+                    return;
+                }
+                else
+                {
+                    m_Action.Continue();
+                }
+            }
+            else if (m_MyType == DecisionType.RepeatUntilCanProgress)
+            {
+                for (int i = 0; i < m_Links.Count; ++i)
+                {
+                    if (m_Links[i].TestConditions())
+                    {
+                        m_DecisionComplete = true;
+                        return;
+                    }
+                }
+
+                m_Action.Continue();
+            }
+            else if (m_MyType == DecisionType.SwitchStates)
+            {
+                m_Action.PerformAction();
+                m_DecisionComplete = true;
             }
         }
 
-        return null;
+
+        // For use outside of this class, should be called by the StateMachine/Behavior tree class.
+        //
+        // if(DecisionComplete()){
+        //      CurrentNode = CurrentNode->FindNextNode()
+        // else
+        //      CurrentNode->ProcessDecision();
+        //
+        public DecisionNode FindNextNode()
+        {
+            for (int i = 0; i < m_Links.Count; ++i)
+            {
+                if (m_Links[i].TestConditions())
+                {
+                    m_DecisionComplete = false;
+                    return m_Links[i];
+                }
+            }
+
+            return null;
+        }
+
+        #region Functions to build DecisionNode
+        public void AddDecisionNodeLink(DecisionNode node)
+        {
+            m_Links.Add(node);
+        }
+
+        public void AddCondition(Condition condition)
+        {
+            m_Conditions.Add(condition);
+        }
+
+        public void AddAction(Action action)
+        {
+            m_Action = action;
+        }
+
+        public Action GetNodeAction()
+        {
+            return m_Action;
+        }
+
+        #endregion
+
+        // Use this for initialization
+        void Start()
+        {
+
+        }
+
+        // Update is called once per frame
+        void Update()
+        {
+
+        }
     }
-
-#region Functions to build DecisionNode
-    public void AddDecisionNodeLink(DecisionNode node)
-    {
-        m_Links.Add(node);
-    }
-
-    public void AddCondition(Condition condition)
-    {
-        m_Conditions.Add(condition);
-    }
-
-    public void AddAction(Action action)
-    {
-        m_Action = action;
-    }
-
-#endregion
-
-    // Use this for initialization
-    void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
 }
