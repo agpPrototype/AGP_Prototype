@@ -5,12 +5,13 @@ using UnityEngine;
 abstract public class AIStateMachine : StateMachineBase {
 
 	// Use this for initialization
-	void Start () {
-		
+	void Start ()
+    {
 	}
 	
 	// Update is called once per frame
-	void Update () {
-		
+	public override void Update ()
+    {
+        base.Update();
 	}
 }

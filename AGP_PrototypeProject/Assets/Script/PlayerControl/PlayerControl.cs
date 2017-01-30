@@ -5,6 +5,10 @@ using Inputs;
 using Utility;
 using System;
 
+[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(CapsuleCollider))]
+[RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(MoveComponent))]
 public class PlayerControl : MonoBehaviour {
 
     [SerializeField]
@@ -14,27 +18,45 @@ public class PlayerControl : MonoBehaviour {
     private Transform m_cam;
 
     private MoveComponent m_moveComp;
-    private InputPacket[] m_inputPackets;
+    //private InputPacket[] m_inputPackets;
 
     [System.Serializable]
-    private class PCActions
+    public class PCActions
     {
         public float Horizontal;
         public float Vertical;
         public Vector3 Move;
         public Vector3 CamForward;
         public Vector3 CamRight;
+        public InputPacket[] InputPackets;
+        public bool Jump;
+        public bool Crouch;
 
     }
 
     private PCActions m_PCActions;
 
-	void Update()
+    void Start()
+    {
+        if (Camera.main)
+        {
+            m_cam = Camera.main.transform;
+        } else
+        {
+            Debug.Log("SCENE MSISING CAMERA");
+        }
+        m_moveComp = GetComponent<MoveComponent>();
+        m_PCActions = new PCActions();
+        m_PCActions.InputPackets = new InputPacket[18];
+        m_UserInput = FindObjectOfType<UserInput>();
+    }
+
+	void FixedUpdate()
     {
         
         if (m_UserInput)
         {
-            m_inputPackets = m_UserInput.InputPackets;
+            m_PCActions.InputPackets = m_UserInput.InputPackets;
             ProcessInput();
         }
     }
@@ -49,29 +71,21 @@ public class PlayerControl : MonoBehaviour {
 
     private void CheckCamera()
     {
-        throw new NotImplementedException();
+        
     }
 
     private void CheckCommands()
     {
-        throw new NotImplementedException();
+        
     }
 
     private void CheckActions()
     {
-        throw new NotImplementedException();
+        
     }
 
     private void CheckMovement()
     {
-        float h = m_inputPackets[(int)EnumService.InputType.LeftStickY].Value;
-        float v = m_inputPackets[(int)EnumService.InputType.LeftStickX].Value;
-
-        m_PCActions.CamForward = Vector3.Scale(m_cam.forward, new Vector3(1, 0, 1)).normalized;
-        m_PCActions.CamRight = m_cam.right;
-
-        m_PCActions.Move = v * m_PCActions.CamForward + h * m_PCActions.CamRight;
-
-
+        m_moveComp.ProcessMovement(m_PCActions);
     }
 }

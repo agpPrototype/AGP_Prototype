@@ -9,7 +9,7 @@ namespace Inputs
     public class UserInput : MonoBehaviour
     {
         private InputPacket[] m_inputArray;
-        private InputDevice m_device = InputManager.ActiveDevice;
+        private InputDevice m_device;
         private Queue<InputPacket> m_InputPacketQueue;
         
         public InputPacket[] InputPackets
@@ -22,7 +22,8 @@ namespace Inputs
 
         void Awake()
         {
-            m_inputArray = new InputPacket[16];
+            m_device = InputManager.ActiveDevice; 
+            m_inputArray = new InputPacket[18];
             m_InputPacketQueue = new Queue<InputPacket>();
         }
 
@@ -34,19 +35,22 @@ namespace Inputs
 
         void GetInputs()
         {
-            m_InputPacketQueue.Clear();
+            //m_InputPacketQueue.Clear();
+            m_device = InputManager.ActiveDevice;
             {
                 float amount = m_device.LeftStickX;
                 InputPacket packet = new InputPacket(EnumService.InputType.LeftStickX, amount);
+                //Debug.Log("LEFT X: " + amount);
                 m_inputArray[(int)EnumService.InputType.LeftStickX] = packet;
             }
 
             {
                 float amount = m_device.LeftStickY;
+                //Debug.Log("LEFT Y: " + amount);
                 InputPacket packet = new InputPacket(EnumService.InputType.LeftStickY, amount);
                 m_inputArray[(int)EnumService.InputType.LeftStickY] = packet;
             }
-          
+
             {
                 float amount = m_device.RightStickX;
                 InputPacket packet = new InputPacket(EnumService.InputType.RightStickX, amount);
@@ -130,6 +134,19 @@ namespace Inputs
                 InputPacket packet = new InputPacket(EnumService.InputType.Triangle, amount);
                 m_inputArray[(int)EnumService.InputType.Triangle] = packet;
             }
+
+            {
+                float amount = m_device.LeftStickButton;
+                InputPacket packet = new InputPacket(EnumService.InputType.LeftStickButton, amount);
+                m_inputArray[(int)EnumService.InputType.LeftStickButton] = packet;
+            }
+
+            {
+                float amount = m_device.RightStickButton;
+                InputPacket packet = new InputPacket(EnumService.InputType.RightStickButton, amount);
+                m_inputArray[(int)EnumService.InputType.RightStickButton] = packet;
+            }
+            
         }
     }
 }
