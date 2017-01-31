@@ -24,7 +24,7 @@ abstract public class StateMachineBase : AGPMonoBehavior {
 
         // Update is called once per frame
         public virtual void Update() {
-            UpdateStateMachine();
+            //UpdateStateMachine();
         }
 
 

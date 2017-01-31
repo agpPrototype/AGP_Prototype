@@ -30,6 +30,8 @@ namespace AI
 
         private bool m_ActionComplete;
 
+        private DecisionNode m_MyDecisionNode;
+
         public Action(VoidTypeDelegate voidFunc0)
         {
             m_VoidFunc0 = voidFunc0;
@@ -74,6 +76,12 @@ namespace AI
         public void SetComplete(bool isComplete)
         {
             m_ActionComplete = isComplete;
+        }
+
+        // Might not be needed
+        public void SetMyNode(DecisionNode myNode)
+        {
+            m_MyDecisionNode = myNode;
         }
 
 

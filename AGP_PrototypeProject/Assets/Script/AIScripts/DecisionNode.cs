@@ -82,6 +82,12 @@ namespace AI
         // Test that all Conditions of this node are met. If any are not, this node cannot be travelled to.
         public bool TestConditions()
         {
+            // If no conditions are set, you can always move to this node (probably used when parent type is "RepeateUntilActionComplete")
+            if(m_Conditions.Count == 0)
+            {
+                return true;
+            }
+
             for (int i = 0; i < m_Conditions.Count; ++i)
             {
                 if (!m_Conditions[i].IsMet())
@@ -103,14 +109,14 @@ namespace AI
         // This function is called when the statemachine decides to remain in the state that it is in
         public void ProcessDecision()
         {
-            Debug.Log("Current DecisionNode is " + m_nameTag.ToString());
+            //Debug.Log("Current DecisionNode is " + m_nameTag.ToString());
             if (m_MyType == DecisionType.RepeatUntilActionComplete)
             {
                 // test if action is complete and then see if it can move to next Node
                 if (m_Action.IsComplete())
                 {
                     m_DecisionComplete = true;
-                    m_Action.SetComplete(false);
+                    SetInternalActionComplete(false);
                     return;
                 }
                 else
@@ -174,6 +180,7 @@ namespace AI
         public void AddAction(Action action)
         {
             m_Action = action;
+            //m_Action.SetMyNode(this);
         }
 
         public Action GetNodeAction()
@@ -182,6 +189,14 @@ namespace AI
         }
 
         #endregion
+
+        public void SetInternalActionComplete(bool isComplete)
+        {
+            if(m_MyType == DecisionType.RepeatUntilActionComplete || m_MyType == DecisionType.SwitchStates)
+            {
+                m_Action.SetComplete(isComplete);
+            }
+        }
 
         // Use this for initialization
         void Start()

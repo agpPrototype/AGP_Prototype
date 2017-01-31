@@ -63,9 +63,7 @@ namespace AI
     public class CompanionAISM : AIStateMachine
     {
 
-        public delegate void TriggerActionComplete(bool isComplete);
-
-        public event TriggerActionComplete OnActionComplete;
+        
 
         #region Accalia Main States
 
@@ -101,6 +99,7 @@ namespace AI
 
         BehaviorTree m_FollowTree;
         BehaviorTree m_IdleTree;
+        BehaviorTree m_AttackTree;
 
         #endregion
 
@@ -108,6 +107,8 @@ namespace AI
         [SerializeField]
         public GameObject Player;
         private Vector3 playerLoc;
+
+        public GameObject Enemy;
 
         [SerializeField]
         private Float DistToPlayerSq;
@@ -128,8 +129,9 @@ namespace AI
         private Int testConditionValue;
 
         [SerializeField]
-        Condition cond2;
-        Action printMe;
+        bool switchToAttack;
+
+
 
         #endregion
 
@@ -149,22 +151,26 @@ namespace AI
 
             //printMe = new Action(new VoidTypeDelegate(TestActionPrintFunc));
 
-
             playerLoc = Player.transform.position;
             DistToPlayerSq = new Float((playerLoc - transform.position).sqrMagnitude);
 
             InitializeStateBehaviorTrees();
+
+
+            StartCoroutine(waitFiveSeconds());
         }
 
         private void InitializeStateBehaviorTrees()
         {
             CreateIdleBT();
             CreateFollowBT();
+            CreateAttackBT();
 
             // Start in Idle state
             m_CurrentBT = m_IdleTree;
         }
 
+        #region Create BehaviorTree Functions
         private void CreateFollowBT()
         {
             /// NODE ///
@@ -186,7 +192,26 @@ namespace AI
 
             // Add new Node to parent
             m_FollowTree.AddDecisionNodeTo(rootNode, stopFollowingNode);
+            
+            /*
+            /// NODE ///
+            // 
+            DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "RootFollow");
+            rootNode.AddAction(new Action(FollowBehind));
 
+            m_FollowTree = new BehaviorTree(WolfMainState.Follow, rootNode, this);
+
+            /// NODE ///
+            // Node to decide when to stop following the player (if close enough to player)
+            // if DistToPlayer < FollowDist, switch to Idle state
+            DecisionNode stopFollowingNode = new DecisionNode(DecisionType.SwitchStates, "StopFollow->Idle");
+            Action switchToIdleAction = new Action(SetMainState, WolfMainState.Idle);
+
+            stopFollowingNode.AddAction(switchToIdleAction);
+
+            // Add new Node to parent
+            m_FollowTree.AddDecisionNodeTo(rootNode, stopFollowingNode);
+            */
         }
 
         private void CreateIdleBT()
@@ -212,11 +237,50 @@ namespace AI
             m_IdleTree.AddDecisionNodeTo(rootNode, toFollowNode);
         }
 
+        private void CreateAttackBT()
+        {
+            /// NODE ///
+            // 
+            DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "RootAttack");
+            rootNode.AddAction(new Action(DetermineTarget));
+
+            m_AttackTree = new BehaviorTree(WolfMainState.Attack, rootNode, this);
+
+            /// NODE ///
+            // Node to decide when to stop following the player (if close enough to player)
+            DecisionNode moveToTargetNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "MoveToEnemy");
+            Action moveToEnemy = new Action(MoveToEnemy);
+            moveToTargetNode.AddAction(moveToEnemy);
+
+            m_AttackTree.AddDecisionNodeTo(rootNode, moveToTargetNode);
+
+            /// NODE ///
+            /// 
+            DecisionNode attackEnemyNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "AttackEnemy");
+            Action attackEnemy = new Action(AttackMyEnemy);
+            attackEnemyNode.AddAction(attackEnemy);
+
+            m_AttackTree.AddDecisionNodeTo(moveToTargetNode, attackEnemyNode);
+
+            /// NODE /// 
+            /// 
+            DecisionNode toFollowNode = new DecisionNode(DecisionType.SwitchStates, "StopAttack->Follow");
+            Action switchToFollow = new Action(SetMainState, WolfMainState.Follow);
+            toFollowNode.AddAction(switchToFollow);
+
+            m_AttackTree.AddDecisionNodeTo(attackEnemyNode, toFollowNode);
+
+
+        }
+
+        #endregion
+
+
         IEnumerator waitFiveSeconds()
         {
             yield return new WaitForSeconds(5);
 
-            testConditionValue.value = 1;
+            switchToAttack = true;
         }
 
         // Update is called once per frame
@@ -240,6 +304,12 @@ namespace AI
         private void UpdateFactors()
         {
             DistToPlayerSq.value = (Player.transform.position - transform.position).sqrMagnitude;
+
+            if (switchToAttack)
+            {
+                SetMainState(WolfMainState.Attack);
+                switchToAttack = false;
+            }
         }
 
 
@@ -290,6 +360,10 @@ namespace AI
                     m_CurrentBT = m_FollowTree;
                     break;
 
+                case WolfMainState.Attack:
+                    m_CurrentBT = m_AttackTree;
+                    break;
+
                 default:
                     Debug.Log("Error: CompanionAISM.cs : No Behavior Tree to switch to for desired new state.");
                     break;
@@ -312,6 +386,15 @@ namespace AI
         {
             WolfNavAgent.SetDestination(Location);
             WolfNavAgent.Resume();
+
+            // Have I reached my destination? If so, trigger action complete
+            float dstSq = (WolfNavAgent.destination - transform.position).sqrMagnitude;
+            if (WolfNavAgent.velocity == Vector3.zero && dstSq < 4.0f)
+            {
+                // Debug.Log("MoveTo: Reached target!");
+                //OnActionComplete(true);
+                CompleteCurrentActionExternal(true);
+            }
         }
 
         public void FollowBehind()
@@ -328,7 +411,30 @@ namespace AI
 
         public void DoNothing()
         {
-            OnActionComplete(true);
+            //OnActionComplete(true);
+        }
+
+        #endregion
+
+        #region Attack Functions
+
+        private void MoveToEnemy()
+        {
+            if(!ReferenceEquals(Enemy, null))
+            {
+                MoveTo(Enemy.transform.position);
+            }
+        }
+
+        private void DetermineTarget()
+        {
+            CompleteCurrentActionExternal(true);
+            //OnActionComplete(true);
+        }
+
+        private void AttackMyEnemy()
+        {
+            Debug.Log("Attacking enemy!");
         }
 
         #endregion

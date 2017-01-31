@@ -13,7 +13,7 @@ namespace AI
         DecisionNode m_RootDN;
         DecisionNode m_CurrentDN;
 
-        CompanionAISM m_OwningSM;
+        AIStateMachine m_OwningSM;
 
         // Use this for initialization
         void Start()
@@ -27,6 +27,19 @@ namespace AI
 
         }
 
+        public BehaviorTree(DecisionNode RootNode, CompanionAISM OwningSM)
+        {
+
+            m_RootDN = RootNode;
+            m_CurrentDN = RootNode; // Should start tree at root node
+
+            m_OwningSM = OwningSM;
+        }
+
+        /// <summary>
+        /// Use this constructor for wolf state trees. If enemy AI use the other constructor for now. StateOfTree has no impact on logic, 
+        /// simply there for debugging purposes to see what tree you are currently in.
+        /// </summary>
         public BehaviorTree(WolfMainState StateOfTree, DecisionNode RootNode, CompanionAISM OwningSM)
         {
             m_TreeState = StateOfTree;
@@ -46,7 +59,7 @@ namespace AI
 
         public void ContinueBehaviorTree()
         {
-            Debug.Log("Current BT is " + m_TreeState.ToString());
+            //Debug.Log("Current BT is " + m_TreeState.ToString());
             if (m_CurrentDN.IsDecisionComplete())
             {
                 DecisionNode nextNode = m_CurrentDN.FindNextNode();
@@ -54,14 +67,16 @@ namespace AI
                 if (ReferenceEquals(nextNode, null))
                 {
                     //Debug.Log("Warning: BehaviorTree.cs : Current Decision Complete but cannot move to children");
-                    m_OwningSM.OnActionComplete -= new CompanionAISM.TriggerActionComplete(m_CurrentDN.GetNodeAction().SetComplete);
+                    m_OwningSM.OnActionComplete -= new AIStateMachine.TriggerActionComplete(m_CurrentDN.SetInternalActionComplete);
                     m_CurrentDN.ProcessDecision();
                 }
                 else
                 {
+                    m_CurrentDN.SetInternalActionComplete(false);
                     m_CurrentDN = nextNode;
                     m_CurrentDN.ProcessDecision();
-                    m_OwningSM.OnActionComplete += new CompanionAISM.TriggerActionComplete(m_CurrentDN.GetNodeAction().SetComplete);
+                    m_OwningSM.OnActionComplete -= new AIStateMachine.TriggerActionComplete(m_CurrentDN.SetInternalActionComplete);
+                    m_OwningSM.OnActionComplete += new AIStateMachine.TriggerActionComplete(m_CurrentDN.SetInternalActionComplete);
                 }
             }
             else
@@ -74,8 +89,8 @@ namespace AI
         public void RestartTree()
         {
             m_CurrentDN = m_RootDN;
-            m_OwningSM.OnActionComplete -= new CompanionAISM.TriggerActionComplete(m_CurrentDN.GetNodeAction().SetComplete);
-            m_OwningSM.OnActionComplete += new CompanionAISM.TriggerActionComplete(m_CurrentDN.GetNodeAction().SetComplete);
+            m_OwningSM.OnActionComplete -= new AIStateMachine.TriggerActionComplete(m_CurrentDN.SetInternalActionComplete);
+            m_OwningSM.OnActionComplete += new AIStateMachine.TriggerActionComplete(m_CurrentDN.SetInternalActionComplete);
         }
 
     }

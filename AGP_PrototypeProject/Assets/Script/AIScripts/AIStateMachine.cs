@@ -4,8 +4,13 @@ using UnityEngine;
 
 abstract public class AIStateMachine : StateMachineBase {
 
-	// Use this for initialization
-	void Start ()
+
+    public delegate void TriggerActionComplete(bool isComplete);
+
+    public event TriggerActionComplete OnActionComplete;
+
+    // Use this for initialization
+    void Start ()
     {
 	}
 	
@@ -14,4 +19,9 @@ abstract public class AIStateMachine : StateMachineBase {
     {
         base.Update();
 	}
+
+    public void CompleteCurrentActionExternal(bool isComplete)
+    {
+        OnActionComplete(isComplete);
+    }
 }
