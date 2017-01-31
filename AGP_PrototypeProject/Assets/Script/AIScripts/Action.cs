@@ -9,6 +9,7 @@ namespace AI
     public delegate void VoidTypeDelegate();
     public delegate void VoidTypeDelegate1(WolfMainState State);
     public delegate bool BoolTypeDelegate();
+    public delegate float FloatTypeDelegate();
 
     /// <summary>
     /// 

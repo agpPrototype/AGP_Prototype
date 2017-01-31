@@ -55,6 +55,17 @@ namespace AI
 
         }
 
+        public void UpdateInternalData(T newData_lhs)
+        {
+            m_Left = newData_lhs;
+        }
+
+        public void UpdateInternalData(T newData_lhs, T newData_rhs)
+        {
+            m_Left = newData_lhs;
+            m_Right = newData_rhs;
+        }
+
         public bool IsMet()
         {
             switch (m_Comparator)
@@ -140,13 +151,17 @@ namespace AI
         ConditionInternal<Bool> m_BoolCond;
 
         BoolTypeDelegate m_BoolFunc0;
+        FloatTypeDelegate m_FloatFunc0_lhs;
+        FloatTypeDelegate m_FloatFunc0_rhs;
 
         public enum VariableType
         {
             Int,
             Float,
             Bool,
-            BoolFunc  // Call a bool-returning function to test for IsMet()
+            BoolFunc,  // Call a bool-returning function to test for IsMet()
+            FloatDelegateAndFloat,
+            TwoFloatDelegates
         }
 
         public bool IsMet()
@@ -164,6 +179,14 @@ namespace AI
 
                 case VariableType.BoolFunc:
                     return m_BoolFunc0.Invoke();
+
+                case VariableType.FloatDelegateAndFloat:
+                    m_FloatCond.UpdateInternalData(new Float(m_FloatFunc0_lhs.Invoke()));
+                    return m_FloatCond.IsMet();
+
+                case VariableType.TwoFloatDelegates:
+                    m_FloatCond.UpdateInternalData(new Float(m_FloatFunc0_lhs.Invoke()), new Float(m_FloatFunc0_rhs.Invoke()));
+                    return m_FloatCond.IsMet();
             }
 
             Debug.Assert(false, "Error: Condition.cs: ConditionWrapper:  No valid type of Condition<T> exists for the wrapper");
@@ -184,6 +207,23 @@ namespace AI
             m_MyType = VariableType.Float;
             m_FloatCond = new ConditionInternal<Float>();
             m_FloatCond.InitializeCondition(lhs, comparisonType, rhs);
+        }
+
+        public Condition(FloatTypeDelegate lhsDelegate, ConditionComparison comparisonType, Float rhs)
+        {
+            m_MyType = VariableType.FloatDelegateAndFloat;
+            m_FloatCond = new ConditionInternal<Float>();
+            m_FloatFunc0_lhs = lhsDelegate;
+            m_FloatCond.InitializeCondition(new Float(lhsDelegate.Invoke()), comparisonType, rhs);
+        }
+
+        public Condition(FloatTypeDelegate lhsDelegate, ConditionComparison comparisonType, FloatTypeDelegate rhsDelegate)
+        {
+            m_MyType = VariableType.FloatDelegateAndFloat;
+            m_FloatCond = new ConditionInternal<Float>();
+            m_FloatFunc0_lhs = lhsDelegate;
+            m_FloatFunc0_rhs = rhsDelegate;
+            m_FloatCond.InitializeCondition(new Float(lhsDelegate.Invoke()), comparisonType, new Float(rhsDelegate.Invoke()));
         }
 
         public Condition(Bool lhs, ConditionComparison comparisonType, Bool rhs)
