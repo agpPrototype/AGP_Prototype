@@ -4,88 +4,80 @@ using UnityEngine;
 using Inputs;
 using Utility;
 using System;
+using Player;
 
-[RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(CapsuleCollider))]
-[RequireComponent(typeof(Animator))]
-[RequireComponent(typeof(MoveComponent))]
-public class PlayerControl : MonoBehaviour {
-
-    [SerializeField]
-    private UserInput m_UserInput;
-
-    [SerializeField]
-    private Transform m_cam;
-
-    private MoveComponent m_moveComp;
-    //private InputPacket[] m_inputPackets;
-
-    [System.Serializable]
-    public class PCActions
+namespace Player
+{
+    [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(CapsuleCollider))]
+    [RequireComponent(typeof(Animator))]
+    [RequireComponent(typeof(MoveComponent))]
+    public class PlayerControl : MonoBehaviour
     {
-        public float Horizontal;
-        public float Vertical;
-        public Vector3 Move;
-        public Vector3 CamForward;
-        public Vector3 CamRight;
-        public InputPacket[] InputPackets;
-        public bool Jump;
-        public bool Crouch;
 
-    }
+        [SerializeField]
+        private UserInput m_UserInput;
 
-    private PCActions m_PCActions;
+        [SerializeField]
+        private Transform m_cam;
 
-    void Start()
-    {
-        if (Camera.main)
+        private MoveComponent m_moveComp;
+        //private InputPacket[] m_inputPackets;
+
+        private PCActions m_PCActions;
+
+        void Start()
         {
-            m_cam = Camera.main.transform;
-        } else
-        {
-            Debug.Log("SCENE MSISING CAMERA");
+            if (Camera.main)
+            {
+                m_cam = Camera.main.transform;
+            }
+            else
+            {
+                Debug.Log("SCENE MSISING CAMERA");
+            }
+            m_moveComp = GetComponent<MoveComponent>();
+            m_PCActions = new PCActions();
+            m_PCActions.InputPackets = new InputPacket[18];
+            m_UserInput = FindObjectOfType<UserInput>();
         }
-        m_moveComp = GetComponent<MoveComponent>();
-        m_PCActions = new PCActions();
-        m_PCActions.InputPackets = new InputPacket[18];
-        m_UserInput = FindObjectOfType<UserInput>();
-    }
 
-	void FixedUpdate()
-    {
-        
-        if (m_UserInput)
+        void FixedUpdate()
         {
-            m_PCActions.InputPackets = m_UserInput.InputPackets;
-            ProcessInput();
+
+            if (m_UserInput)
+            {
+                m_PCActions.InputPackets = m_UserInput.InputPackets;
+                ProcessInput();
+            }
         }
-    }
 
-    void ProcessInput()
-    {
-        CheckMovement();    
-        CheckActions();
-        CheckCommands();
-        CheckCamera();
-    }
+        void ProcessInput()
+        {
+            CheckMovement();
+            CheckActions();
+            CheckCommands();
+            CheckCamera();
+        }
 
-    private void CheckCamera()
-    {
-        
-    }
+        private void CheckCamera()
+        {
 
-    private void CheckCommands()
-    {
-        
-    }
+        }
 
-    private void CheckActions()
-    {
-        
-    }
+        private void CheckCommands()
+        {
 
-    private void CheckMovement()
-    {
-        m_moveComp.ProcessMovement(m_PCActions);
+        }
+
+        private void CheckActions()
+        {
+
+        }
+
+        private void CheckMovement()
+        {
+            m_moveComp.ProcessMovement(m_PCActions);
+        }
     }
 }

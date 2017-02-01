@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Utility;
+using Player;
 
 public class MoveComponent : MonoBehaviour {
 
@@ -64,7 +65,7 @@ public class MoveComponent : MonoBehaviour {
         m_OrigGroundCheckDistance = m_GroundCheckDistance;
     }
 
-    public void ProcessMovement(PlayerControl.PCActions pca)
+    public void ProcessMovement(PCActions pca)
     {
         #region GetInputsFromUserInput
         if (pca.InputPackets[(int)EnumService.InputType.LeftStickX] != null)
@@ -107,7 +108,7 @@ public class MoveComponent : MonoBehaviour {
         Move(pca);
     }
 
-    void Move(PlayerControl.PCActions pca)
+    void Move(PCActions pca)
     {
         #region Parse PCA to private members
 
