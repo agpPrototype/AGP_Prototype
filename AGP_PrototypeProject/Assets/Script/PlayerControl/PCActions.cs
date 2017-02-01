@@ -15,5 +15,6 @@ namespace Player
         public InputPacket[] InputPackets;
         public bool Jump;
         public bool Crouch;
+        public bool Running;
     }
 }

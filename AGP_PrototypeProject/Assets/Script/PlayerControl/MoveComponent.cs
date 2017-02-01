@@ -24,11 +24,15 @@ public class MoveComponent : MonoBehaviour {
     [SerializeField]
     float m_MoveSpeedMultiplier = 1f;
     [SerializeField]
+    float m_RunSpeedMultiplier = 1.4f;
+    [SerializeField]
     float m_AnimSpeedMultiplier = 1f;
     [SerializeField]
     float m_GroundCheckDistance = 0.1f;
     [SerializeField]
-    float m_ToggleDelayThreshold = 0.2f;
+    float m_CrouchingToggleDelayThreshold = 0.2f;
+    [SerializeField]
+    float m_RunningToggleDelayThreshold = 0.2f;
 
     Rigidbody m_Rigidbody;
     Animator m_Animator;
@@ -42,7 +46,9 @@ public class MoveComponent : MonoBehaviour {
     Vector3 m_CapsuleCenter;
     CapsuleCollider m_Capsule;
     bool m_Crouching;
-    float m_ToggleDelay;
+    float m_CrouchingToggleDelay;
+    bool m_Running;
+    float m_RunningToggleDelay;
 
     void Start()
     {
@@ -99,6 +105,11 @@ public class MoveComponent : MonoBehaviour {
             pca.Crouch = Convert.ToBoolean(pca.InputPackets[(int)EnumService.InputType.LeftStickButton].Value);       
         }
 
+        if (pca.InputPackets[(int)EnumService.InputType.RightStickButton] != null)
+        {
+            pca.Running = Convert.ToBoolean(pca.InputPackets[(int)EnumService.InputType.RightStickButton].Value);
+        }
+
 
         #endregion
 
@@ -119,20 +130,39 @@ public class MoveComponent : MonoBehaviour {
         move = Vector3.ProjectOnPlane(move, m_GroundNormal);
         m_TurnAmount = Mathf.Atan2(move.x, move.z);
         m_ForwardAmount = move.z;
-        if (pca.Crouch && m_ToggleDelay > m_ToggleDelayThreshold)
+        //crouching
+        if (pca.Crouch && m_CrouchingToggleDelay > m_CrouchingToggleDelayThreshold)
         {
             if (m_Crouching)
             {
                 m_Crouching = false;
-                m_ToggleDelay = 0.0f;
+                m_Running = false;
+                m_CrouchingToggleDelay = 0.0f;
             }
             else
             {
                 m_Crouching = true;
-                m_ToggleDelay = 0.0f;
+                m_Running = false;
+                m_CrouchingToggleDelay = 0.0f;
             }
         }
-        m_ToggleDelay += Time.fixedDeltaTime;
+        m_CrouchingToggleDelay += Time.fixedDeltaTime;
+
+        //running , same concept with crouching
+        if (pca.Running && m_RunningToggleDelay > m_RunningToggleDelayThreshold)
+        {
+            if (m_Running)
+            {
+                m_Running = false;
+                m_RunningToggleDelay = 0.0f;
+            }
+            else
+            {
+                m_Running = true;
+                m_RunningToggleDelay = 0.0f;
+            }
+        }
+        m_RunningToggleDelay += Time.fixedDeltaTime;
 
         #endregion
 
@@ -171,6 +201,16 @@ public class MoveComponent : MonoBehaviour {
             m_Animator.SetFloat("Jump", m_Rigidbody.velocity.y);
         }
 
+        //running
+        if (m_Running)
+        {
+            m_Animator.speed = m_RunSpeedMultiplier;
+        }
+        else
+        {
+            m_Animator.speed = m_MoveSpeedMultiplier;
+        }
+
         // calculate which leg is behind, so as to leave that leg trailing in the jump animation
         // (This code is reliant on the specific run cycle offset in our animations,
         // and assumes one leg passes the other at the normalized clip times of 0.0 and 0.5)
@@ -182,18 +222,18 @@ public class MoveComponent : MonoBehaviour {
         {
             m_Animator.SetFloat("JumpLeg", jumpLeg);
         }
-
+        /**************TODO: CHEC THIS **************/
         // the anim speed multiplier allows the overall speed of walking/running to be tweaked in the inspector,
         // which affects the movement speed because of the root motion.
-        if (m_IsGrounded && move.magnitude > 0)
-        {
-            m_Animator.speed = m_AnimSpeedMultiplier;
-        }
-        else
-        {
-            // don't use that while airborne
-            m_Animator.speed = 1;
-        }
+        //if (m_IsGrounded && move.magnitude > 0)
+        //{
+        //    m_Animator.speed = m_AnimSpeedMultiplier;
+        //}
+        //else
+        //{
+        //    // don't use that while airborne
+        //    m_Animator.speed = 1;
+        //}
     }
 
     private void PreventStandingInLowHeadroom()
