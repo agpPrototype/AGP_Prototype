@@ -27,7 +27,7 @@ namespace AI
 
         }
 
-        public BehaviorTree(DecisionNode RootNode, CompanionAISM OwningSM)
+        public BehaviorTree(DecisionNode RootNode, EnemyAISM OwningSM)
         {
 
             m_RootDN = RootNode;

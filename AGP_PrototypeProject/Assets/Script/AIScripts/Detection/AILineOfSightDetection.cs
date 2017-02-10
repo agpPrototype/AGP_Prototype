@@ -2,6 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace AI
+{
+namespace Detection
+{
 public class AILineOfSightDetection : MonoBehaviour
 {
     [SerializeField]
@@ -38,12 +42,12 @@ public class AILineOfSightDetection : MonoBehaviour
 
     [Tooltip("Radius of cone used when firing numerous raycasts.")]
     [SerializeField]
-    [Range(.001f,8f)]
+    [Range(.001f, 8f)]
     private float ConeRadius;
 
     [Tooltip("Number of raycasts used in cone raycasting, this will also determine the spacing between the raycasts in the cone.")]
     [SerializeField]
-    [Range(1,8)]
+    [Range(1, 8)]
     private uint NumberOfRaycasts = 1;
 
     [Tooltip("Number of rings in the raycast cone. (Number of raycasts * number of rings) is how many total raycasts there will be.")]
@@ -67,13 +71,17 @@ public class AILineOfSightDetection : MonoBehaviour
     [SerializeField]
     private Color PlaneNormalColor;
 
-    [Tooltip("Color of raycast toward player when in view of AI.")]
+    [Tooltip("Color of raycast toward target when in view of AI.")]
     [SerializeField]
     private Color RaycastNotSeenColor;
 
-    [Tooltip("Color of raycast toward player when seen by AI.")]
+    [Tooltip("Color of raycast toward target when seen by AI.")]
     [SerializeField]
     private Color RaycastSeenColor;
+
+    [Tooltip("Color of raycast toward last seen target position.")]
+    [SerializeField]
+    private Color RaycastLastSeenColor;
 
     [Tooltip("Should we draw forward of frustum.")]
     [SerializeField]
@@ -91,15 +99,28 @@ public class AILineOfSightDetection : MonoBehaviour
     [SerializeField]
     private bool IsDrawConeRaycast;
 
+    [Tooltip("Draws to last seen position of target from AI.")]
+    [SerializeField]
+    private bool IsDrawLastSeenPosition;
+
     private bool m_IsCanSeeTarget;
     public bool IsCanSeeTarget
     {
         get { return m_IsCanSeeTarget; }
     }
-    
+
+    private Vector3 m_TargetLastSeenPosition;
+    public Vector3 TargetLastSeenPosition
+    {
+        get
+        {
+            return m_TargetLastSeenPosition;
+        }
+    }
+
     void Awake()
     {
-        if(Target == null)
+        if (Target == null)
         {
             Debug.LogError("Target is null and must be set.");
         }
@@ -107,14 +128,14 @@ public class AILineOfSightDetection : MonoBehaviour
 
     void Start()
     {
-        m_FOVHalfed = FOV/2;
+        m_FOVHalfed = FOV / 2;
     }
 
     void Update()
     {
-        if(IsInPeripherals())
+        if (IsInPeripherals())
         {
-            if(IsInLineOfSight())
+            if (IsInLineOfSight())
             {
                 m_IsCanSeeTarget = true;
             }
@@ -139,13 +160,15 @@ public class AILineOfSightDetection : MonoBehaviour
         if (Physics.Raycast(Apex.position, singleRaycastDir, out raycastHit, RaycastMaxDistance, SightRaycastLayerMask))
         {
             Collider collider = raycastHit.collider;
-            if(collider != null && collider.tag == "Player")
+            if (collider != null && collider.tag == "Player")
             {
                 // Draw raycast with not seen color to indicate target seen by AI.
                 if (IsDrawConeRaycast)
                 {
                     Debug.DrawRay(Apex.position, RaycastMaxDistance * singleRaycastDir, RaycastSeenColor);
                 }
+                // Update target last seen position.
+                m_TargetLastSeenPosition = Target.transform.position;
                 return true;
             }
         }
@@ -186,6 +209,8 @@ public class AILineOfSightDetection : MonoBehaviour
                     Collider collider = raycastHit.collider;
                     if (collider != null && collider.tag == "Player")
                     {
+                        // Update target last seen position.
+                        m_TargetLastSeenPosition = Target.transform.position;
                         // THIS BLOCK OF CODE SHOULD JUST RETURN TRUE BUT IF WE WANT TO DRAW RAY CONE WE CAN'T HENCE THE CHECK!
                         if (IsDrawConeRaycast)
                         {
@@ -210,7 +235,7 @@ public class AILineOfSightDetection : MonoBehaviour
             }
         }
 
-        if(IsDrawConeRaycast)
+        if (IsDrawConeRaycast)
         {
             return aRaycastHitTarget;
         }
@@ -222,7 +247,7 @@ public class AILineOfSightDetection : MonoBehaviour
 
     // Check to see if within peripherals.
     private bool IsInPeripherals()
-    { 
+    {
         Vector3 nTarget = (Target.transform.position - Apex.position).normalized;
         Vector3 nForward = Apex.forward;
 
@@ -234,7 +259,7 @@ public class AILineOfSightDetection : MonoBehaviour
         {
             return true;
         }
-        else if(-dotCombinedWithForward == -nForward) // this is done because cosine(180) is 0 so we need this edge case check.
+        else if (-dotCombinedWithForward == -nForward) // this is done because cosine(180) is 0 so we need this edge case check.
         {
             return false;
         }
@@ -245,7 +270,7 @@ public class AILineOfSightDetection : MonoBehaviour
         {
             return false;
         }
-        
+
         // Passed all checks so it is within peripherals.
         return true;
     }
@@ -266,5 +291,12 @@ public class AILineOfSightDetection : MonoBehaviour
         {
             Debug.DrawRay(Apex.position, Apex.forward * ForwardDebugLineLength, ForwardDebugLineColor);
         }
+
+        if (IsDrawLastSeenPosition && !m_IsCanSeeTarget)
+        {
+            Debug.DrawRay(Apex.position, m_TargetLastSeenPosition - Apex.position, RaycastLastSeenColor);
+        }
     }
+}
+}
 }
