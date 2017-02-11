@@ -184,7 +184,9 @@ namespace AI
             // Node to decide when to stop following the player (if close enough to player)
             // if DistToPlayer < FollowDist, switch to Idle state
             DecisionNode stopFollowingNode = new DecisionNode(DecisionType.SwitchStates, "StopFollow->Idle");
-            Condition sfCond1 = new Condition(DistToPlayerSq, ConditionComparison.Less, new Float(FollowDistance * FollowDistance));
+            //Condition sfCond1 = new Condition(DistToPlayerSq, ConditionComparison.Less, new Float(FollowDistance * FollowDistance));
+            Condition sfCond1 = new Condition(GetDistToPlayerSq, ConditionComparison.Less, new Float(FollowDistance * FollowDistance));
+
             Action switchToIdleAction = new Action(SetMainState, WolfMainState.Idle);
 
             stopFollowingNode.AddCondition(sfCond1);
@@ -280,7 +282,7 @@ namespace AI
         {
             yield return new WaitForSeconds(5);
 
-            switchToAttack = true;
+            //switchToAttack = true;
         }
 
         // Update is called once per frame
@@ -388,11 +390,11 @@ namespace AI
             WolfNavAgent.Resume();
 
             // Have I reached my destination? If so, trigger action complete
-            float dstSq = (WolfNavAgent.destination - transform.position).sqrMagnitude;
-            if (WolfNavAgent.velocity == Vector3.zero && dstSq < 4.0f)
+            // float dstSq = (WolfNavAgent.destination - transform.position).sqrMagnitude;
+            //WolfNavAgent.
+            float dstSq = (Location - transform.position).sqrMagnitude;
+            if (/*WolfNavAgent.velocity == Vector3.zero &&*/ dstSq < 16.0f)
             {
-                // Debug.Log("MoveTo: Reached target!");
-                //OnActionComplete(true);
                 CompleteCurrentActionExternal(true);
             }
         }
@@ -424,6 +426,10 @@ namespace AI
             {
                 MoveTo(Enemy.transform.position);
             }
+            else
+            {
+                Debug.Log("Enemy is a null reference!");
+            }
         }
 
         private void DetermineTarget()
@@ -434,7 +440,16 @@ namespace AI
 
         private void AttackMyEnemy()
         {
-            Debug.Log("Attacking enemy!");
+            //Debug.Log("Attacking enemy!");
+        }
+
+        #endregion
+
+        #region Utillity Functions
+
+        float GetDistToPlayerSq()
+        {
+            return (Player.transform.position - transform.position).sqrMagnitude;
         }
 
         #endregion

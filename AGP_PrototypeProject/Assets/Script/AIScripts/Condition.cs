@@ -219,7 +219,7 @@ namespace AI
 
         public Condition(FloatTypeDelegate lhsDelegate, ConditionComparison comparisonType, FloatTypeDelegate rhsDelegate)
         {
-            m_MyType = VariableType.FloatDelegateAndFloat;
+            m_MyType = VariableType.TwoFloatDelegates;
             m_FloatCond = new ConditionInternal<Float>();
             m_FloatFunc0_lhs = lhsDelegate;
             m_FloatFunc0_rhs = rhsDelegate;

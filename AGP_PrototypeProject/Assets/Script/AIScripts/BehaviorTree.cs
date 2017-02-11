@@ -10,6 +10,8 @@ namespace AI
         [SerializeField]
         private WolfMainState m_TreeState;
 
+        private string m_StateTag;
+
         DecisionNode m_RootDN;
         DecisionNode m_CurrentDN;
 
@@ -27,8 +29,9 @@ namespace AI
 
         }
 
-        public BehaviorTree(DecisionNode RootNode, CompanionAISM OwningSM)
+        public BehaviorTree(DecisionNode RootNode, AIStateMachine OwningSM, string NameTag)
         {
+            m_StateTag = NameTag;
 
             m_RootDN = RootNode;
             m_CurrentDN = RootNode; // Should start tree at root node
