@@ -3,11 +3,12 @@
 using UnityEngine;
 using UnityEngine.AI;
 using MalbersAnimations;
+using Wolf;
 
 
 namespace AI
 {
-   
+    
 
     #region Wolf State Enums
     public enum WolfMainState
@@ -63,7 +64,10 @@ namespace AI
     public class CompanionAISM : AIStateMachine
     {
 
-        
+        #region Variables
+        private WolfMoveComponent m_WolfMoveComp;
+        private Vector3[] m_Corners;
+        #endregion
 
         #region Accalia Main States
 
@@ -156,8 +160,10 @@ namespace AI
 
             InitializeStateBehaviorTrees();
 
+            m_WolfMoveComp = GetComponent<WolfMoveComponent>();
+            m_Corners = new Vector3[1];
 
-            StartCoroutine(waitFiveSeconds());
+            //StartCoroutine(waitFiveSeconds());
         }
 
         private void InitializeStateBehaviorTrees()
@@ -405,7 +411,35 @@ namespace AI
             toPlayer.Normalize();
 
             TargetMoveToLocation = Player.transform.position - FollowDistance * toPlayer;
-            MoveTo(TargetMoveToLocation);
+
+            //MoveTo(TargetMoveToLocation);
+            //if (m_WolfMoveComp)
+            //{
+            //    m_WolfMoveComp.Move
+            //}
+
+            NavMeshPath path = new NavMeshPath();
+            WolfNavAgent.CalculatePath(TargetMoveToLocation, path);
+            if (path.corners.Length == 0)
+            {
+                Debug.Log("NO PATH FOUND!");
+            }
+            
+            if (path.corners.Length != 0)
+            {
+                if (m_Corners[0] != path.corners[0])
+                {
+                    m_Corners = path.corners;
+                    m_WolfMoveComp.Move(TargetMoveToLocation, m_Corners);
+                    //Debug.Log("CORNER SIZE:" + m_Corners.Length);
+                    //Debug.Log("START : " + transform.position);
+                    //for (int i = 0; i < m_Corners.Length; i++)
+                    //{
+                    //    Debug.Log("--" + i + "  - " + m_Corners[i]);
+                    //}
+                    //Debug.Log("END: " + TargetMoveToLocation);
+                }
+            }
         }
         #endregion
 
@@ -414,6 +448,7 @@ namespace AI
         public void DoNothing()
         {
             //OnActionComplete(true);
+            m_WolfMoveComp.Stop();
         }
 
         #endregion
@@ -500,7 +535,7 @@ namespace AI
 
                     //if(an != null)
                     //   an.Move(playerLocation, false);
-                    WolfNavAgent.SetDestination(TargetMoveToLocation);
+                    //WolfNavAgent.SetDestination(TargetMoveToLocation);
                     break;
 
                 case WolfFollowSubState.FollowAlongside:
