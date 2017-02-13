@@ -8,13 +8,38 @@ namespace AI
     {
         public class AILineOfSightDetection : MonoBehaviour
         {
+            #region Member Variables
             [SerializeField]
             private GameObject Target; // used just for testing calculations.
 
             [Tooltip("field of view of the AI, this is used for things like line of sight.")]
-            [SerializeField]
-            float FOV;
+            [SerializeField, HideInInspector]
+            private float FOV;
             private float m_FOVHalfed; // This just stores half the fov as a pre-calculated float since it won't change.
+            
+            [Tooltip("Direct field of view of the AI. Anything in this area is most likely to be seen.")]
+            [SerializeField, HideInInspector]
+            private float DirectFOVPercentage;
+            private float m_DirectFOVHalfed;
+            [Tooltip("Color of direct field of view")]
+            [SerializeField, HideInInspector]
+            private Color DirectFOVColor;
+
+            [Tooltip("Side field of view of the AI. Anything in this area is decently likely to be seen.")]
+            [SerializeField, HideInInspector]
+            private float SideFOVPercentage;
+            private float m_SideFOVHalfed;
+            [Tooltip("Color of side field of view")]
+            [SerializeField, HideInInspector]
+            private Color SideFOVColor;
+
+            [Tooltip("Peripheral field of view of the AI. Anything in this area is unlikely to be seen.")]
+            [SerializeField, HideInInspector]
+            private float PeripheralFOVPercentage;
+            private float m_PeripheralFOVHalfed;
+            [Tooltip("Color of peripheral field of view")]
+            [SerializeField, HideInInspector]
+            private Color PeripheralFOVColor;
 
             [Tooltip("Max range determines how far the far plane is defined.")]
             [SerializeField]
@@ -58,10 +83,6 @@ namespace AI
             [Tooltip("Length of frustum forward debug line.")]
             [SerializeField]
             private float ForwardDebugLineLength;
-
-            [Tooltip("Color of frustum drawn, why not? :)")]
-            [SerializeField]
-            private Color FrustumColor;
 
             [Tooltip("Color of frustum forward debug line, why not? :)")]
             [SerializeField]
@@ -117,6 +138,7 @@ namespace AI
                     return m_TargetLastSeenPosition;
                 }
             }
+            #endregion
 
             void Awake()
             {
@@ -129,6 +151,9 @@ namespace AI
             void Start()
             {
                 m_FOVHalfed = FOV / 2;
+                m_DirectFOVHalfed = DirectFOVPercentage * FOV / 2;
+                m_SideFOVHalfed = SideFOVPercentage * FOV / 2;
+                m_PeripheralFOVHalfed = PeripheralFOVPercentage * FOV / 2;
             }
 
             void Update()
@@ -278,11 +303,32 @@ namespace AI
             void OnDrawGizmos()
             {
                 // Set position of gizmo to be where the frustum Apex is defined.
-                Gizmos.matrix = Matrix4x4.TRS(Apex.position, Apex.rotation, Vector3.one);
+                /*Gizmos.matrix = Matrix4x4.TRS(Apex.position, Apex.rotation, Vector3.one);
                 Gizmos.color = FrustumColor;
                 if (IsDrawFrustum)
                 {
                     Gizmos.DrawFrustum(Vector3.zero, FOV, MaxRange, MinRange, Aspect);
+                }*/
+
+                if(IsDrawFrustum)
+                {
+                    float angleOfLines = m_DirectFOVHalfed;
+                    Vector3 vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
+                    Debug.DrawLine(Apex.position, Apex.position + vRightView, DirectFOVColor);
+                    Vector3 vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
+                    Debug.DrawLine(Apex.position, Apex.position + vLeftView, DirectFOVColor);
+
+                    angleOfLines = m_DirectFOVHalfed + m_SideFOVHalfed;
+                    vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
+                    Debug.DrawLine(Apex.position, Apex.position + vRightView, SideFOVColor);
+                    vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
+                    Debug.DrawLine(Apex.position, Apex.position + vLeftView, SideFOVColor);
+
+                    angleOfLines = m_DirectFOVHalfed + m_SideFOVHalfed + m_PeripheralFOVHalfed;
+                    vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
+                    Debug.DrawLine(Apex.position, Apex.position + vRightView, PeripheralFOVColor);
+                    vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
+                    Debug.DrawLine(Apex.position, Apex.position + vLeftView, PeripheralFOVColor);
                 }
 
                 // Draw forward of frustum.
