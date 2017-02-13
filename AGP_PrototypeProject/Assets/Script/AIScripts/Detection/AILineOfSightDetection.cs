@@ -312,23 +312,26 @@ namespace AI
 
                 if(IsDrawFrustum)
                 {
+                    Gizmos.color = DirectFOVColor;
                     float angleOfLines = m_DirectFOVHalfed;
                     Vector3 vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
-                    Debug.DrawLine(Apex.position, Apex.position + vRightView, DirectFOVColor);
+                    Gizmos.DrawLine(Apex.position, Apex.position + vRightView);
                     Vector3 vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
-                    Debug.DrawLine(Apex.position, Apex.position + vLeftView, DirectFOVColor);
+                    Gizmos.DrawLine(Apex.position, Apex.position + vLeftView);
 
+                    Gizmos.color = SideFOVColor;
                     angleOfLines = m_DirectFOVHalfed + m_SideFOVHalfed;
                     vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
-                    Debug.DrawLine(Apex.position, Apex.position + vRightView, SideFOVColor);
+                    Gizmos.DrawLine(Apex.position, Apex.position + vRightView);
                     vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
-                    Debug.DrawLine(Apex.position, Apex.position + vLeftView, SideFOVColor);
+                    Gizmos.DrawLine(Apex.position, Apex.position + vLeftView);
 
+                    Gizmos.color = PeripheralFOVColor;
                     angleOfLines = m_DirectFOVHalfed + m_SideFOVHalfed + m_PeripheralFOVHalfed;
                     vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
-                    Debug.DrawLine(Apex.position, Apex.position + vRightView, PeripheralFOVColor);
+                    Gizmos.DrawLine(Apex.position, Apex.position + vRightView);
                     vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
-                    Debug.DrawLine(Apex.position, Apex.position + vLeftView, PeripheralFOVColor);
+                    Gizmos.DrawLine(Apex.position, Apex.position + vLeftView);
                 }
 
                 // Draw forward of frustum.
