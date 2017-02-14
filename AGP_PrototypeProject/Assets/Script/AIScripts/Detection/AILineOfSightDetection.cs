@@ -41,21 +41,9 @@ namespace AI
             [SerializeField, HideInInspector]
             private Color PeripheralFOVColor;
 
-            [Tooltip("Max range determines how far the far plane is defined.")]
-            [SerializeField]
-            private float MaxRange;
-
-            [Tooltip("Min range determines how close the near plane is defined.")]
-            [SerializeField]
-            private float MinRange;
-
             [Tooltip("transform that will be used as apex/origin of camera frustum.")]
             [SerializeField]
             private Transform Apex;
-
-            [Tooltip("Aspect defines the relationship between width and height of the frustum.")]
-            [SerializeField]
-            private float Aspect = 16.0f / 9.0f;
 
             [Tooltip("Layer mask for raycast to see if target is visible in line of sight.")]
             [SerializeField]
@@ -187,22 +175,26 @@ namespace AI
                     Collider collider = raycastHit.collider;
                     if (collider != null && collider.tag == "Player")
                     {
-                        // Draw raycast with not seen color to indicate target seen by AI.
-                        if (IsDrawConeRaycast)
-                        {
-                            Debug.DrawRay(Apex.position, RaycastMaxDistance * singleRaycastDir, RaycastSeenColor);
-                        }
+                        #if UNITY_EDITOR
+                            // Draw raycast with not seen color to indicate target seen by AI.
+                            if (IsDrawConeRaycast)
+                            {
+                                Debug.DrawRay(Apex.position, RaycastMaxDistance * singleRaycastDir, RaycastSeenColor);
+                            }
+                        #endif
                         // Update target last seen position.
                         m_TargetLastSeenPosition = Target.transform.position;
                         return true;
                     }
                 }
 
-                // Draw raycast with not seen color to indicate nothing being seen by AI with single raycast.
-                if (IsDrawConeRaycast)
-                {
-                    Debug.DrawRay(Apex.position, RaycastMaxDistance * singleRaycastDir, RaycastNotSeenColor);
-                }
+                #if UNITY_EDITOR
+                    // Draw raycast with not seen color to indicate nothing being seen by AI with single raycast.
+                    if (IsDrawConeRaycast)
+                    {
+                        Debug.DrawRay(Apex.position, RaycastMaxDistance * singleRaycastDir, RaycastNotSeenColor);
+                    }
+                #endif
                 #endregion
 
                 // Shoot multiple raycasts more than 1 raycast was specified to shoot, in order ti see if we can see the target. 
@@ -236,34 +228,40 @@ namespace AI
                             {
                                 // Update target last seen position.
                                 m_TargetLastSeenPosition = Target.transform.position;
-                                // THIS BLOCK OF CODE SHOULD JUST RETURN TRUE BUT IF WE WANT TO DRAW RAY CONE WE CAN'T HENCE THE CHECK!
-                                if (IsDrawConeRaycast)
-                                {
-                                    Debug.DrawRay(Apex.position, targetPos - Apex.position, RaycastSeenColor);
-                                    aRaycastHitTarget = true;
-                                    continue;
-                                }
-                                else
-                                {
-                                    // If we don't want to draw the raycast cone we can 
-                                    // return right away to allow for faster runtime.
-                                    return true;
-                                }
+
+                                /* If in editor mode then draw this ray and continue so that it draws 
+                                 * all the others as well for debugging purposes. */
+                                #if UNITY_EDITOR
+                                    if (IsDrawConeRaycast)
+                                    {
+                                        Debug.DrawRay(Apex.position, targetPos - Apex.position, RaycastSeenColor);
+                                        aRaycastHitTarget = true;
+                                        continue;
+                                    }
+                                #endif
+                                    
+                                // If we don't want to draw the raycast cone we can 
+                                // return right away to allow for faster runtime.
+                                return true;
                             }
                         }
 
-                        // Draw failed raycast line for debug purposes.
-                        if (IsDrawConeRaycast)
-                        {
-                            Debug.DrawRay(Apex.position, targetPos - Apex.position, RaycastNotSeenColor);
-                        }
+                        #if UNITY_EDITOR
+                            // Draw failed raycast line for debug purposes.
+                            if (IsDrawConeRaycast)
+                            {
+                                Debug.DrawRay(Apex.position, targetPos - Apex.position, RaycastNotSeenColor);
+                            }
+                        #endif
                     }
                 }
 
-                if (IsDrawConeRaycast)
-                {
-                    return aRaycastHitTarget;
-                }
+                #if UNITY_EDITOR
+                    if (IsDrawConeRaycast)
+                    {
+                        return aRaycastHitTarget;
+                    }
+                #endif
                 #endregion
 
                 // If we got this far AI hasn't seen target.
@@ -300,6 +298,7 @@ namespace AI
                 return true;
             }
 
+#if UNITY_EDITOR
             void OnDrawGizmos()
             {
                 // Set position of gizmo to be where the frustum Apex is defined.
@@ -346,6 +345,7 @@ namespace AI
                     Debug.DrawRay(Apex.position, m_TargetLastSeenPosition - Apex.position, RaycastLastSeenColor);
                 }
             }
+#endif
         }
     }
 }

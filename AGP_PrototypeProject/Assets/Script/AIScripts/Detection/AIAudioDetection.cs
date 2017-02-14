@@ -99,6 +99,7 @@ namespace AI
                 }
             }
 
+#if UNITY_EDITOR
             void OnDrawGizmos()
             {
                 // Draw line to target that changes if target is heard.
@@ -111,6 +112,7 @@ namespace AI
                     }
                 }
             }
+#endif
         }
     }
 }

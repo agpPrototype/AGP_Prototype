@@ -17,42 +17,53 @@ public class AiLineOfSightDetectionEditor : Editor {
 
     public override void OnInspectorGUI()
     {
-        // BOX with field of view parameters.
-        GUILayout.BeginVertical("box");
+        ///////////////////////////////////////////////////////////////////// START BOX
+
+        GUILayout.BeginVertical("box"); 
 
         GUILayout.Label("Field of view settings:");
         instance.SetPrivateFieldValue<float>("FOV", EditorGUILayout.Slider(new GUIContent("FOV", "Field of view of AI."),
             instance.GetPrivateFieldValue<float>("FOV"), 0, 360.0f));
 
-        /////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////// START BOX
 
-        GUILayout.BeginVertical("box");
+        GUILayout.BeginVertical("box"); 
+
         GUILayout.Label("% breakup:");
         float directFOV = instance.GetPrivateFieldValue<float>("DirectFOVPercentage");
         float sideFOV = instance.GetPrivateFieldValue<float>("SideFOVPercentage");
         float peripheralFOV = instance.GetPrivateFieldValue<float>("PeripheralFOVPercentage");
 
-        instance.SetPrivateFieldValue<float>("DirectFOVPercentage", EditorGUILayout.Slider(new GUIContent("DirectFOVPercentage", "This is the field of view easiest for the AI to see enemies."),
+        string fovVarStr = "DirectFOVPercentage"; // Name of fov variables.
+        string colorStr = "DirectFOVColor"; // Name of color variable for debugging.
+        instance.SetPrivateFieldValue<float>(fovVarStr, EditorGUILayout.Slider(new GUIContent(fovVarStr, "Easy for the AI to see enemies within this view."),
             directFOV, 0, 1.0f));
-        instance.SetPrivateFieldValue<Color>("DirectFOVColor", EditorGUILayout.ColorField(new GUIContent("DirectFOVColor", "The color of the direct FOV debug lines."), 
-            instance.GetPrivateFieldValue<Color>("DirectFOVColor")));
+        instance.SetPrivateFieldValue<Color>(colorStr, EditorGUILayout.ColorField(new GUIContent(colorStr, "The color of the direct FOV debug lines."), 
+            instance.GetPrivateFieldValue<Color>(colorStr)));
 
-        instance.SetPrivateFieldValue<float>("SideFOVPercentage", EditorGUILayout.Slider(new GUIContent("SideFOVPercentage", "This is the field of view easiest for the AI to see enemies."),
+        fovVarStr = "SideFOVPercentage"; 
+        colorStr = "SideFOVColor"; 
+        instance.SetPrivateFieldValue<float>(fovVarStr, EditorGUILayout.Slider(new GUIContent(fovVarStr, "Medium difficulty for the AI to see enemies within this view."),
             sideFOV, 0, 1.0f - directFOV));
-        instance.SetPrivateFieldValue<Color>("SideFOVColor", EditorGUILayout.ColorField(new GUIContent("SideFOVColor", "The color of the side FOV debug lines."),
-            instance.GetPrivateFieldValue<Color>("SideFOVColor")));
+        instance.SetPrivateFieldValue<Color>(colorStr, EditorGUILayout.ColorField(new GUIContent(colorStr, "The color of the side FOV debug lines."),
+            instance.GetPrivateFieldValue<Color>(colorStr)));
 
-        instance.SetPrivateFieldValue<float>("PeripheralFOVPercentage", EditorGUILayout.Slider(new GUIContent("PeripheralFOVPercentage", "This is the field of view easiest for the AI to see enemies."),
-            peripheralFOV, 0, 1.0f - directFOV - sideFOV));
-        instance.SetPrivateFieldValue<Color>("PeripheralFOVColor", EditorGUILayout.ColorField(new GUIContent("PeripheralFOVColor", "The color of the peripheral FOV debug lines."), 
-            instance.GetPrivateFieldValue<Color>("PeripheralFOVColor")));
-        GUILayout.EndVertical();
+        fovVarStr = "PeripheralFOVPercentage";
+        colorStr = "PeripheralFOVColor";
+        instance.SetPrivateFieldValue<float>(fovVarStr, EditorGUILayout.Slider(new GUIContent(fovVarStr, "Hard for the AI to see enemies within this view."),
+            1.0f - directFOV - sideFOV, 0, 1.0f - directFOV - sideFOV));
+        instance.SetPrivateFieldValue<Color>(colorStr, EditorGUILayout.ColorField(new GUIContent(colorStr, "The color of the peripheral FOV debug lines."), 
+            instance.GetPrivateFieldValue<Color>(colorStr)));
 
-        /////////////////////////////////////////////////////////////////////
+        GUILayout.EndVertical(); 
 
-        GUILayout.EndVertical();
+        ///////////////////////////////////////////////////////////////////// END BOX
+
+        GUILayout.EndVertical(); 
+
+        ///////////////////////////////////////////////////////////////////// END BOX
+
         GUILayout.Space(20);
-
         base.OnInspectorGUI();
     }
 }

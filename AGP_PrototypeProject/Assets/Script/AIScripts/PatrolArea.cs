@@ -69,7 +69,7 @@ namespace AI
         {
             if(WaypointPrefab == null)
             {
-                Debug.Log("No waypoint prefab specified for patrol area script.");
+                Debug.LogError("No waypoint prefab specified for patrol area script.");
                 return;
             }
             Waypoint WaypointInstance = Instantiate(WaypointPrefab, this.transform, false);
