@@ -12,8 +12,11 @@ public class AiLineOfSightDetectionEditor : Editor {
 
     private float m_maxRaycastDistance = 300.0f;
     private float m_maxConeRadius = 6.0f;
+    private float m_minConeRadius = .01f;
     private int m_maxRaycasts = 8;
+    private int m_minRaycasts = 1;
     private int m_maxCones = 3;
+    private int m_minCones = 1;
 
     void OnEnable()
     {
@@ -36,13 +39,13 @@ public class AiLineOfSightDetectionEditor : Editor {
         string fovVarStr = fovVar + "FOVPercentage"; // Name of fov variables.
         string colorStr = fovVar + "FOVColor"; // Name of color variable for debugging.
         string raycastDistStr = fovVar + "RaycastMaxDistance"; // Raycast distance string.
-        string condRadiusStr = fovVar + "ConeRadius"; // Raycast distance string.
+        string coneRadiusStr = fovVar + "ConeRadius"; // Raycast distance string.
         string numRaycastsStr = fovVar + "NumbOfRaycasts"; // Raycast distance string.
         string numConesStr = fovVar + "NumbOfRings"; // Raycast distance string.
         // Values needed:
         float directFOV = instance.GetPrivateFieldValue<float>(fovVarStr);
         float raycastDist = instance.GetPrivateFieldValue<float>(raycastDistStr);
-        float condRadius = instance.GetPrivateFieldValue<float>(condRadiusStr);
+        float condRadius = instance.GetPrivateFieldValue<float>(coneRadiusStr);
         int numRaycasts = instance.GetPrivateFieldValue<int>(numRaycastsStr);
         int numCones = instance.GetPrivateFieldValue<int>(numConesStr);
         instance.SetPrivateFieldValue<float>(fovVarStr, EditorGUILayout.Slider(new GUIContent(fovVarStr, "Easy for the AI to see enemies within this view."),
@@ -51,14 +54,14 @@ public class AiLineOfSightDetectionEditor : Editor {
             instance.GetPrivateFieldValue<Color>(colorStr)));
         instance.SetPrivateFieldValue<float>(raycastDistStr, EditorGUILayout.Slider(new GUIContent(raycastDistStr, "Easy for the AI to see enemies within this view."),
             raycastDist, 0, m_maxRaycastDistance));
-        instance.SetPrivateFieldValue<float>(condRadiusStr, EditorGUILayout.Slider(new GUIContent(condRadiusStr, "Easy for the AI to see enemies within this view."),
-            condRadius, 0, m_maxConeRadius));
         instance.SetPrivateFieldValue<int>(numRaycastsStr, (int)EditorGUILayout.Slider(new GUIContent(numRaycastsStr, "Easy for the AI to see enemies within this view."),
-            numRaycasts, 1, m_maxRaycasts));
+            numRaycasts, m_minRaycasts, m_maxRaycasts));
         if(numRaycasts > 1)
         {
+            instance.SetPrivateFieldValue<float>(coneRadiusStr, EditorGUILayout.Slider(new GUIContent(coneRadiusStr, "Easy for the AI to see enemies within this view."),
+                condRadius, m_minConeRadius, m_maxConeRadius));
             instance.SetPrivateFieldValue<int>(numConesStr, (int)EditorGUILayout.Slider(new GUIContent(numConesStr, "Easy for the AI to see enemies within this view."),
-                numCones, 1, m_maxCones));
+                numCones, m_minCones, m_maxCones));
         }
         GUILayout.EndVertical();
         
@@ -71,13 +74,13 @@ public class AiLineOfSightDetectionEditor : Editor {
         fovVarStr = fovVar + "FOVPercentage"; // Name of fov variables.
         colorStr = fovVar + "FOVColor"; // Name of color variable for debugging.
         raycastDistStr = fovVar + "RaycastMaxDistance"; // Raycast distance string.
-        condRadiusStr = fovVar + "ConeRadius"; // Raycast distance string.
+        coneRadiusStr = fovVar + "ConeRadius"; // Raycast distance string.
         numRaycastsStr = fovVar + "NumbOfRaycasts"; // Raycast distance string.
         numConesStr = fovVar + "NumbOfRings"; // Raycast distance string.
         // Values needed:
         float sideFOV = instance.GetPrivateFieldValue<float>(fovVarStr);
         raycastDist = instance.GetPrivateFieldValue<float>(raycastDistStr);
-        condRadius = instance.GetPrivateFieldValue<float>(condRadiusStr);
+        condRadius = instance.GetPrivateFieldValue<float>(coneRadiusStr);
         numRaycasts = instance.GetPrivateFieldValue<int>(numRaycastsStr);
         numCones = instance.GetPrivateFieldValue<int>(numConesStr);
         instance.SetPrivateFieldValue<float>(fovVarStr, EditorGUILayout.Slider(new GUIContent(fovVarStr, "Easy for the AI to see enemies within this view."),
@@ -86,14 +89,14 @@ public class AiLineOfSightDetectionEditor : Editor {
             instance.GetPrivateFieldValue<Color>(colorStr)));
         instance.SetPrivateFieldValue<float>(raycastDistStr, EditorGUILayout.Slider(new GUIContent(raycastDistStr, "Easy for the AI to see enemies within this view."),
             raycastDist, 0, m_maxRaycastDistance));
-        instance.SetPrivateFieldValue<float>(condRadiusStr, EditorGUILayout.Slider(new GUIContent(condRadiusStr, "Easy for the AI to see enemies within this view."),
-            condRadius, 0, m_maxConeRadius));
         instance.SetPrivateFieldValue<int>(numRaycastsStr, (int)EditorGUILayout.Slider(new GUIContent(numRaycastsStr, "Easy for the AI to see enemies within this view."),
-            numRaycasts, 1, m_maxRaycasts));
+            numRaycasts, m_minRaycasts, m_maxRaycasts));
         if (numRaycasts > 1)
         {
+            instance.SetPrivateFieldValue<float>(coneRadiusStr, EditorGUILayout.Slider(new GUIContent(coneRadiusStr, "Easy for the AI to see enemies within this view."),
+                condRadius, m_minConeRadius, m_maxConeRadius));
             instance.SetPrivateFieldValue<int>(numConesStr, (int)EditorGUILayout.Slider(new GUIContent(numConesStr, "Easy for the AI to see enemies within this view."),
-            numCones, 1, m_maxCones));
+            numCones, m_minCones, m_maxCones));
         }
         GUILayout.EndVertical();
 
@@ -106,28 +109,28 @@ public class AiLineOfSightDetectionEditor : Editor {
         fovVarStr = fovVar + "FOVPercentage"; // Name of fov variables.
         colorStr = fovVar + "FOVColor"; // Name of color variable for debugging.
         raycastDistStr = fovVar + "RaycastMaxDistance"; // Raycast distance string.
-        condRadiusStr = fovVar + "ConeRadius"; // Raycast distance string.
+        coneRadiusStr = fovVar + "ConeRadius"; // Raycast distance string.
         numRaycastsStr = fovVar + "NumbOfRaycasts"; // Raycast distance string.
         numConesStr = fovVar + "NumbOfRings"; // Raycast distance string.
         // Values needed:
         raycastDist = instance.GetPrivateFieldValue<float>(raycastDistStr);
-        condRadius = instance.GetPrivateFieldValue<float>(condRadiusStr);
+        condRadius = instance.GetPrivateFieldValue<float>(coneRadiusStr);
         numRaycasts = instance.GetPrivateFieldValue<int>(numRaycastsStr);
         numCones = instance.GetPrivateFieldValue<int>(numConesStr);
         instance.SetPrivateFieldValue<float>(fovVarStr, EditorGUILayout.Slider(new GUIContent(fovVarStr, "Easy for the AI to see enemies within this view."),
-            1.0f - directFOV - sideFOV, 0, 1.0f));
+            Mathf.Clamp(1.0f - directFOV - sideFOV, 0.0f, 1.0f), 0, 1.0f));
         instance.SetPrivateFieldValue<Color>(colorStr, EditorGUILayout.ColorField(new GUIContent(colorStr, "The color of the direct FOV debug lines."),
             instance.GetPrivateFieldValue<Color>(colorStr)));
         instance.SetPrivateFieldValue<float>(raycastDistStr, EditorGUILayout.Slider(new GUIContent(raycastDistStr, "Easy for the AI to see enemies within this view."),
             raycastDist, 0, m_maxRaycastDistance));
-        instance.SetPrivateFieldValue<float>(condRadiusStr, EditorGUILayout.Slider(new GUIContent(condRadiusStr, "Easy for the AI to see enemies within this view."),
-            condRadius, 0, m_maxConeRadius));
         instance.SetPrivateFieldValue<int>(numRaycastsStr, (int)EditorGUILayout.Slider(new GUIContent(numRaycastsStr, "Easy for the AI to see enemies within this view."),
-            numRaycasts, 1, m_maxRaycasts));
+            numRaycasts, m_minRaycasts, m_maxRaycasts));
         if (numRaycasts > 1)
         {
+            instance.SetPrivateFieldValue<float>(coneRadiusStr, EditorGUILayout.Slider(new GUIContent(coneRadiusStr, "Easy for the AI to see enemies within this view."),
+                condRadius, m_minConeRadius, m_maxConeRadius));
             instance.SetPrivateFieldValue<int>(numConesStr, (int)EditorGUILayout.Slider(new GUIContent(numConesStr, "Easy for the AI to see enemies within this view."),
-            numCones, 1, m_maxCones));
+            numCones, m_minCones, m_maxCones));
         }
         GUILayout.EndVertical();
 

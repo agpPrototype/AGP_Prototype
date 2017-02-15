@@ -252,6 +252,10 @@ namespace AI
 
                     case FOV_REGION.PERIPHERAL:
                         isHitTarget = raycastOneRayTowardTarget(PeriphRaycastMaxDistance);
+                        if (!isHitTarget)
+                        {
+                            isHitTarget = raycastInConeTowardTarget(PeriphNumbOfRaycasts, PeriphNumbOfRings, PeriphConeRadius, PeriphRaycastMaxDistance);
+                        }
                         return isHitTarget;
                         break;
                 }
