@@ -8,6 +8,16 @@ namespace AI
     {
         public class AILineOfSightDetection : MonoBehaviour
         {
+            /* Field of view regions that AI have different difficulties seeing.
+             This can be set by designers.*/
+            public enum FOV_REGION
+            {
+                DIRECT,         
+                SIDE,           
+                PERIPHERAL,
+                NO_REGION
+            }
+
             #region Member Variables
             [SerializeField]
             private GameObject Target; // used just for testing calculations.
@@ -17,6 +27,9 @@ namespace AI
             private float FOV;
             private float m_FOVHalfed; // This just stores half the fov as a pre-calculated float since it won't change.
             
+            /// <summary>
+            /// Direct field of view variables.
+            /// </summary>
             [Tooltip("Direct field of view of the AI. Anything in this area is most likely to be seen.")]
             [SerializeField, HideInInspector]
             private float DirectFOVPercentage;
@@ -24,7 +37,23 @@ namespace AI
             [Tooltip("Color of direct field of view")]
             [SerializeField, HideInInspector]
             private Color DirectFOVColor;
+            [Tooltip("Maximum distance of raycast to attempt to find target in view.")]
+            [SerializeField, HideInInspector]
+            private float DirectRaycastMaxDistance;
+            [Tooltip("Radius of cone used when firing numerous raycasts.")]
+            [SerializeField, HideInInspector]
+            private float DirectConeRadius;
+            [Tooltip("Number of raycasts used in cone raycasting, this will also determine the spacing between the raycasts in the cone.")]
+            [SerializeField, HideInInspector]
+            private int DirectNumbOfRaycasts = 1;
+            [Tooltip("Number of rings in the raycast cone. (Number of raycasts * number of rings) is how many total raycasts there will be.")]
+            [SerializeField, HideInInspector]
+            private int DirectNumbOfRings = 1;
 
+
+            /// <summary>
+            /// Side field of view variables.
+            /// </summary>
             [Tooltip("Side field of view of the AI. Anything in this area is decently likely to be seen.")]
             [SerializeField, HideInInspector]
             private float SideFOVPercentage;
@@ -32,14 +61,41 @@ namespace AI
             [Tooltip("Color of side field of view")]
             [SerializeField, HideInInspector]
             private Color SideFOVColor;
+            [Tooltip("Maximum distance of raycast to attempt to find target in view.")]
+            [SerializeField, HideInInspector]
+            private float SideRaycastMaxDistance;
+            [Tooltip("Radius of cone used when firing numerous raycasts.")]
+            [SerializeField, HideInInspector]
+            private float SideConeRadius;
+            [Tooltip("Number of raycasts used in cone raycasting, this will also determine the spacing between the raycasts in the cone.")]
+            [SerializeField, HideInInspector]
+            private int SideNumbOfRaycasts = 1;
+            [Tooltip("Number of rings in the raycast cone. (Number of raycasts * number of rings) is how many total raycasts there will be.")]
+            [SerializeField, HideInInspector]
+            private int SideNumbOfRings = 1;
 
+            /// <summary>
+            /// Peripheral field of view variables.
+            /// </summary>
             [Tooltip("Peripheral field of view of the AI. Anything in this area is unlikely to be seen.")]
             [SerializeField, HideInInspector]
-            private float PeripheralFOVPercentage;
-            private float m_PeripheralFOVHalfed;
+            private float PeriphFOVPercentage;
+            private float m_PeriphFOVHalfed;
             [Tooltip("Color of peripheral field of view")]
             [SerializeField, HideInInspector]
-            private Color PeripheralFOVColor;
+            private Color PeriphFOVColor;
+            [Tooltip("Maximum distance of raycast to attempt to find target in view.")]
+            [SerializeField, HideInInspector]
+            private float PeriphRaycastMaxDistance;
+            [Tooltip("Radius of cone used when firing numerous raycasts.")]
+            [SerializeField, HideInInspector]
+            private float PeriphConeRadius;
+            [Tooltip("Number of raycasts used in cone raycasting, this will also determine the spacing between the raycasts in the cone.")]
+            [SerializeField, HideInInspector]
+            private int PeriphNumbOfRaycasts = 1;
+            [Tooltip("Number of rings in the raycast cone. (Number of raycasts * number of rings) is how many total raycasts there will be.")]
+            [SerializeField, HideInInspector]
+            private int PeriphNumbOfRings = 1;
 
             [Tooltip("transform that will be used as apex/origin of camera frustum.")]
             [SerializeField]
@@ -49,25 +105,6 @@ namespace AI
             [SerializeField]
             private LayerMask SightRaycastLayerMask;
 
-            [Tooltip("Maximum distance of raycast to attempt to find target in view.")]
-            [SerializeField]
-            private float RaycastMaxDistance;
-
-            [Tooltip("Radius of cone used when firing numerous raycasts.")]
-            [SerializeField]
-            [Range(.001f, 8f)]
-            private float ConeRadius;
-
-            [Tooltip("Number of raycasts used in cone raycasting, this will also determine the spacing between the raycasts in the cone.")]
-            [SerializeField]
-            [Range(1, 8)]
-            private uint NumberOfRaycasts = 1;
-
-            [Tooltip("Number of rings in the raycast cone. (Number of raycasts * number of rings) is how many total raycasts there will be.")]
-            [SerializeField]
-            [Range(1, 2)]
-            private uint NumberOfRings = 1;
-
             [Tooltip("Length of frustum forward debug line.")]
             [SerializeField]
             private float ForwardDebugLineLength;
@@ -75,10 +112,6 @@ namespace AI
             [Tooltip("Color of frustum forward debug line, why not? :)")]
             [SerializeField]
             private Color ForwardDebugLineColor;
-
-            [Tooltip("Color of plane normal debug lines, why not? :)")]
-            [SerializeField]
-            private Color PlaneNormalColor;
 
             [Tooltip("Color of raycast toward target when in view of AI.")]
             [SerializeField]
@@ -127,7 +160,7 @@ namespace AI
                 }
             }
             #endregion
-
+            
             void Awake()
             {
                 if (Target == null)
@@ -141,21 +174,14 @@ namespace AI
                 m_FOVHalfed = FOV / 2;
                 m_DirectFOVHalfed = DirectFOVPercentage * FOV / 2;
                 m_SideFOVHalfed = SideFOVPercentage * FOV / 2;
-                m_PeripheralFOVHalfed = PeripheralFOVPercentage * FOV / 2;
+                m_PeriphFOVHalfed = PeriphFOVPercentage * FOV / 2;
             }
 
             void Update()
             {
-                if (IsInPeripherals())
+                if (IsInLineOfSight(Target))
                 {
-                    if (IsInLineOfSight())
-                    {
-                        m_IsCanSeeTarget = true;
-                    }
-                    else
-                    {
-                        m_IsCanSeeTarget = false;
-                    }
+                    m_IsCanSeeTarget = true;
                 }
                 else
                 {
@@ -163,65 +189,104 @@ namespace AI
                 }
             }
 
-            // Shoot raycast at player to see if AI can see them.
-            private bool IsInLineOfSight()
+            /* This will get the angle from the forward vector of the AI to the
+             target fed into this function. */
+            private float getAngleToTarget(GameObject target)
             {
-                #region single raycast first
-                // Shoot single raycast to see if we can see the target.
-                RaycastHit raycastHit;
-                Vector3 singleRaycastDir = (Target.transform.position - Apex.position).normalized;
-                if (Physics.Raycast(Apex.position, singleRaycastDir, out raycastHit, RaycastMaxDistance, SightRaycastLayerMask))
+                Vector3 nTarget = (target.transform.position - Apex.position).normalized;
+                Vector3 nForward = Apex.forward;
+                float dotResult = Vector3.Dot(nTarget, nForward);
+                return Mathf.Acos(dotResult) * 180.0f / Mathf.PI;
+            }
+
+            /* Gets which FOV_REGION the target is in */
+            private FOV_REGION getFOVRegion(GameObject target)
+            {
+                float angleToTarget = getAngleToTarget(target);
+                if (angleToTarget <= m_DirectFOVHalfed)
                 {
-                    Collider collider = raycastHit.collider;
-                    if (collider != null && collider.tag == "Player")
-                    {
-                        #if UNITY_EDITOR
-                            // Draw raycast with not seen color to indicate target seen by AI.
-                            if (IsDrawConeRaycast)
-                            {
-                                Debug.DrawRay(Apex.position, RaycastMaxDistance * singleRaycastDir, RaycastSeenColor);
-                            }
-                        #endif
-                        // Update target last seen position.
-                        m_TargetLastSeenPosition = Target.transform.position;
-                        return true;
-                    }
+                    return FOV_REGION.DIRECT;
                 }
-
-                #if UNITY_EDITOR
-                    // Draw raycast with not seen color to indicate nothing being seen by AI with single raycast.
-                    if (IsDrawConeRaycast)
-                    {
-                        Debug.DrawRay(Apex.position, RaycastMaxDistance * singleRaycastDir, RaycastNotSeenColor);
-                    }
-                #endif
-                #endregion
-
-                // Shoot multiple raycasts more than 1 raycast was specified to shoot, in order ti see if we can see the target. 
-                if (NumberOfRaycasts <= 1)
+                else if(angleToTarget <= m_DirectFOVHalfed + m_SideFOVHalfed)
                 {
+                    return FOV_REGION.SIDE;
+                }
+                else if (angleToTarget <= m_DirectFOVHalfed + m_SideFOVHalfed + m_PeriphFOVHalfed)
+                {
+                    return FOV_REGION.PERIPHERAL;
+                }
+                else
+                {
+                    return FOV_REGION.NO_REGION;
+                }
+            }
+
+            // Shoot raycast at player to see if AI can see them.
+            private bool IsInLineOfSight(GameObject target)
+            {
+                FOV_REGION fovRegion = getFOVRegion(target);
+                bool isHitTarget = false;
+                switch (fovRegion)
+                {
+                    case FOV_REGION.NO_REGION:
+                        return false;
+                        break;
+
+                    case FOV_REGION.DIRECT:
+                        isHitTarget = raycastOneRayTowardTarget(DirectRaycastMaxDistance);
+                        if(!isHitTarget)
+                        {
+                            isHitTarget = raycastInConeTowardTarget(DirectNumbOfRaycasts, DirectNumbOfRings, DirectConeRadius, DirectRaycastMaxDistance);
+                        }
+                        return isHitTarget;
+                        break;
+
+                    case FOV_REGION.SIDE:
+                        isHitTarget = raycastOneRayTowardTarget(SideRaycastMaxDistance);
+                        if (!isHitTarget)
+                        {
+                            isHitTarget = raycastInConeTowardTarget(SideNumbOfRaycasts, SideNumbOfRings, SideConeRadius, SideRaycastMaxDistance);
+                        }
+                        return isHitTarget;
+                        break;
+
+                    case FOV_REGION.PERIPHERAL:
+                        isHitTarget = raycastOneRayTowardTarget(PeriphRaycastMaxDistance);
+                        return isHitTarget;
+                        break;
+                }
+                return isHitTarget;
+            }
+
+            private bool raycastInConeTowardTarget(int numRaycasts, int numRings, float coneRadius, float raycastMaxDistance)
+            {
+                // If we were fed 
+                if(numRaycasts <= 1)
+                {
+                    Debug.LogWarning("Tried to raycast in a cone with just one raycast.");
                     return false;
                 }
 
-                #region raycast in cone
                 // Raycast in cone.
-                float angleSpacing = 360.0f / NumberOfRaycasts;
+                float angleSpacing = 360.0f / numRaycasts;
+                Vector3 targetDir = (Target.transform.position - Apex.position).normalized;
                 bool aRaycastHitTarget = false;
-                for (int j = 0; j < NumberOfRings; j++)
+                RaycastHit raycastHit;
+                for (int j = 0; j < numRings; j++)
                 {
-                    float adjustedConeRadius = ConeRadius * (j + 1);
-                    for (int i = 0; i < NumberOfRaycasts; i++)
+                    float adjustedConeRadius = coneRadius * (j + 1);
+                    for (int i = 0; i < numRaycasts; i++)
                     {
                         float currAngle = (i * angleSpacing) * Mathf.PI / 180.0f;
-                        Vector3 rightOfMiddleRaycast = Vector3.Cross(Apex.up, singleRaycastDir); // Need right vector of previous single raycast shot.
+                        Vector3 rightOfMiddleRaycast = Vector3.Cross(Apex.up, targetDir); // Need right vector of previous single raycast shot.
                         Vector3 xOfTarget = Mathf.Cos(currAngle) * adjustedConeRadius * rightOfMiddleRaycast;
                         Vector3 yOfTarget = Mathf.Sin(currAngle) * adjustedConeRadius * Apex.up;
-                        Vector3 zOfTarget = RaycastMaxDistance * singleRaycastDir; // Mathf.Sqrt(Mathf.Pow(ConeRadius, 2) + Mathf.Pow(RaycastMaxDistance, 2));
+                        Vector3 zOfTarget = raycastMaxDistance * targetDir; // Mathf.Sqrt(Mathf.Pow(ConeRadius, 2) + Mathf.Pow(RaycastMaxDistance, 2));
                         Vector3 targetPos = xOfTarget + yOfTarget + zOfTarget + Apex.position;
                         // Shoot single raycast to see if we can see the target.
                         Vector3 dirVect = (targetPos - Apex.position).normalized;
                         // Do raycasts.
-                        if (Physics.Raycast(Apex.position, dirVect, out raycastHit, RaycastMaxDistance, SightRaycastLayerMask))
+                        if (Physics.Raycast(Apex.position, dirVect, out raycastHit, raycastMaxDistance, SightRaycastLayerMask))
                         {
                             Collider collider = raycastHit.collider;
                             if (collider != null && collider.tag == "Player")
@@ -232,14 +297,14 @@ namespace AI
                                 /* If in editor mode then draw this ray and continue so that it draws 
                                  * all the others as well for debugging purposes. */
                                 #if UNITY_EDITOR
-                                    if (IsDrawConeRaycast)
-                                    {
-                                        Debug.DrawRay(Apex.position, targetPos - Apex.position, RaycastSeenColor);
-                                        aRaycastHitTarget = true;
-                                        continue;
-                                    }
+                                if (IsDrawConeRaycast)
+                                {
+                                    Debug.DrawRay(Apex.position, targetPos - Apex.position, RaycastSeenColor);
+                                    aRaycastHitTarget = true;
+                                    continue;
+                                }
                                 #endif
-                                    
+
                                 // If we don't want to draw the raycast cone we can 
                                 // return right away to allow for faster runtime.
                                 return true;
@@ -247,58 +312,60 @@ namespace AI
                         }
 
                         #if UNITY_EDITOR
-                            // Draw failed raycast line for debug purposes.
-                            if (IsDrawConeRaycast)
-                            {
-                                Debug.DrawRay(Apex.position, targetPos - Apex.position, RaycastNotSeenColor);
-                            }
+                        // Draw failed raycast line for debug purposes.
+                        if (IsDrawConeRaycast)
+                        {
+                            Debug.DrawRay(Apex.position, targetPos - Apex.position, RaycastNotSeenColor);
+                        }
                         #endif
                     }
                 }
 
                 #if UNITY_EDITOR
-                    if (IsDrawConeRaycast)
-                    {
-                        return aRaycastHitTarget;
-                    }
+                if (IsDrawConeRaycast)
+                {
+                    return aRaycastHitTarget;
+                }
                 #endif
-                #endregion
 
-                // If we got this far AI hasn't seen target.
+                return false; // If we got this far no raycast hit.
+            }
+
+            private bool raycastOneRayTowardTarget(float raycastMaxDistance)
+            {
+                // Shoot single raycast to see if we can see the target.
+                RaycastHit raycastHit;
+                Vector3 singleRaycastDir = (Target.transform.position - Apex.position).normalized;
+                if (Physics.Raycast(Apex.position, singleRaycastDir, out raycastHit, raycastMaxDistance, SightRaycastLayerMask))
+                {
+                    Collider collider = raycastHit.collider;
+                    if (collider != null && collider.tag == "Player")
+                    {
+                        #if UNITY_EDITOR
+                        // Draw raycast with not seen color to indicate target seen by AI.
+                        if (IsDrawConeRaycast)
+                        {
+                            Debug.DrawRay(Apex.position, raycastMaxDistance * singleRaycastDir, RaycastSeenColor);
+                        }
+                        #endif
+                        // Update target last seen position.
+                        m_TargetLastSeenPosition = Target.transform.position;
+                        return true;
+                    }
+                }
+
+                #if UNITY_EDITOR
+                // Draw raycast with not seen color to indicate nothing being seen by AI with single raycast.
+                if (IsDrawConeRaycast)
+                {
+                    Debug.DrawRay(Apex.position, raycastMaxDistance * singleRaycastDir, RaycastNotSeenColor);
+                }
+                #endif
+
                 return false;
             }
 
-            // Check to see if within peripherals.
-            private bool IsInPeripherals()
-            {
-                Vector3 nTarget = (Target.transform.position - Apex.position).normalized;
-                Vector3 nForward = Apex.forward;
-
-                float dotResult = Vector3.Dot(nTarget, nForward);
-
-                // Check to see if the target is directly in front or directly behind the AI.
-                Vector3 dotCombinedWithForward = dotResult * nForward;
-                if (dotCombinedWithForward == nForward) // this is done because cosine(90) is 0 so we need this edge case check.
-                {
-                    return true;
-                }
-                else if (-dotCombinedWithForward == -nForward) // this is done because cosine(180) is 0 so we need this edge case check.
-                {
-                    return false;
-                }
-
-                // If passed edge cases then see if target is not within peripherals.
-                float angle = Mathf.Acos(dotResult) * 180.0f / Mathf.PI;
-                if (angle > m_FOVHalfed)
-                {
-                    return false;
-                }
-
-                // Passed all checks so it is within peripherals.
-                return true;
-            }
-
-#if UNITY_EDITOR
+            #if UNITY_EDITOR
             void OnDrawGizmos()
             {
                 // Set position of gizmo to be where the frustum Apex is defined.
@@ -313,23 +380,23 @@ namespace AI
                 {
                     Gizmos.color = DirectFOVColor;
                     float angleOfLines = m_DirectFOVHalfed;
-                    Vector3 vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
+                    Vector3 vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * DirectRaycastMaxDistance;
                     Gizmos.DrawLine(Apex.position, Apex.position + vRightView);
-                    Vector3 vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
+                    Vector3 vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * DirectRaycastMaxDistance;
                     Gizmos.DrawLine(Apex.position, Apex.position + vLeftView);
 
                     Gizmos.color = SideFOVColor;
                     angleOfLines = m_DirectFOVHalfed + m_SideFOVHalfed;
-                    vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
+                    vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * SideRaycastMaxDistance;
                     Gizmos.DrawLine(Apex.position, Apex.position + vRightView);
-                    vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
+                    vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * SideRaycastMaxDistance;
                     Gizmos.DrawLine(Apex.position, Apex.position + vLeftView);
 
-                    Gizmos.color = PeripheralFOVColor;
-                    angleOfLines = m_DirectFOVHalfed + m_SideFOVHalfed + m_PeripheralFOVHalfed;
-                    vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
+                    Gizmos.color = PeriphFOVColor;
+                    angleOfLines = m_DirectFOVHalfed + m_SideFOVHalfed + m_PeriphFOVHalfed;
+                    vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * PeriphRaycastMaxDistance;
                     Gizmos.DrawLine(Apex.position, Apex.position + vRightView);
-                    vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * RaycastMaxDistance;
+                    vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * PeriphRaycastMaxDistance;
                     Gizmos.DrawLine(Apex.position, Apex.position + vLeftView);
                 }
 
@@ -345,7 +412,7 @@ namespace AI
                     Debug.DrawRay(Apex.position, m_TargetLastSeenPosition - Apex.position, RaycastLastSeenColor);
                 }
             }
-#endif
+            #endif
         }
     }
 }
