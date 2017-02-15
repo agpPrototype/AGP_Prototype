@@ -267,7 +267,6 @@ namespace AI
                 // If we were fed 
                 if(numRaycasts <= 1)
                 {
-                    Debug.LogWarning("Tried to raycast in a cone with just one raycast.");
                     return false;
                 }
 
