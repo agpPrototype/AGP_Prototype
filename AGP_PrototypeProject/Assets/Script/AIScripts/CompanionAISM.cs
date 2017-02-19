@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using MalbersAnimations;
 using Wolf;
+using Player;
 
 
 namespace AI
@@ -135,6 +136,8 @@ namespace AI
         [SerializeField]
         bool switchToAttack;
 
+        
+        
 
 
         #endregion
@@ -143,6 +146,12 @@ namespace AI
         // Use this for initialization
         void Start()
         {
+            PlayerControl playerControl = FindObjectOfType<PlayerControl>();
+            if (playerControl)
+            {
+                Player = playerControl.gameObject;
+            }
+
 
             m_CurrentMainState =  WolfMainState.Idle;
             m_PreviousMainState = WolfMainState.Attack;
@@ -163,6 +172,7 @@ namespace AI
             m_WolfMoveComp = GetComponent<WolfMoveComponent>();
             m_Corners = new Vector3[1];
 
+            
             //StartCoroutine(waitFiveSeconds());
         }
 
@@ -412,17 +422,17 @@ namespace AI
 
             TargetMoveToLocation = Player.transform.position - FollowDistance * toPlayer;
 
-            //MoveTo(TargetMoveToLocation);
-            //if (m_WolfMoveComp)
-            //{
-            //    m_WolfMoveComp.Move
-            //}
 
+            /*
+             * idealy we'd move this whole calculation into move component,but lets just do this for now
+             * and wait to see how much we want the AI to calculate and how much the move comp should calculate
+             */
+             //Executing following in the move component
             NavMeshPath path = new NavMeshPath();
             WolfNavAgent.CalculatePath(TargetMoveToLocation, path);
             if (path.corners.Length == 0)
             {
-                Debug.Log("NO PATH FOUND!");
+                Debug.Log("NO PATH FOUND! THIS SHOULD NOT HAPPEN!!");
             }
             
             if (path.corners.Length != 0)
@@ -431,13 +441,6 @@ namespace AI
                 {
                     m_Corners = path.corners;
                     m_WolfMoveComp.Move(TargetMoveToLocation, m_Corners);
-                    //Debug.Log("CORNER SIZE:" + m_Corners.Length);
-                    //Debug.Log("START : " + transform.position);
-                    //for (int i = 0; i < m_Corners.Length; i++)
-                    //{
-                    //    Debug.Log("--" + i + "  - " + m_Corners[i]);
-                    //}
-                    //Debug.Log("END: " + TargetMoveToLocation);
                 }
             }
         }

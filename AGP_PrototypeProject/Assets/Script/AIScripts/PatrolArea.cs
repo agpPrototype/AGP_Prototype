@@ -14,6 +14,10 @@ namespace AI
         [Tooltip("Boundary color of debug lines drawn for patrol area")]
         private Color PatrolBoundaryColor;
 
+        [SerializeField]
+        [Tooltip("Waypoint prefab used when adding waypoints.")]
+        private Waypoint WaypointPrefab;
+
         private List<Waypoint> m_Waypoints; // List of waypoints that define patrol area.
 
         // Use this for initialization
@@ -59,32 +63,17 @@ namespace AI
             }
             return m_Waypoints[Random.Range(0, m_Waypoints.Count)];
         }
-
-        /* Gets a random location in the patrol area. */
-        private Waypoint GetRandomDestination()
+        
+        /* Called to spawn a new waypoint that is added to this patrol area. */
+        public void InstantiateWaypoint()
         {
-            return null;
-           /* return null;
-            if(m_Waypoints.Count == 0)
+            if(WaypointPrefab == null)
             {
-                return null;
+                Debug.LogError("No waypoint prefab specified for patrol area script.");
+                return;
             }
-            else if(m_Waypoints.Count == 1)
-            {
-                return m_Waypoints[0];
-            }
-
-            // Find location in area between all waypoints that is random.
-            Vector3 randomPos = new Vector3();
-            randomPos = Vector3.zero;
-            for(int i=0; i < m_Waypoints.Count-1; i++)
-            {
-                Waypoint currWaypoint = m_Waypoints[i];
-                Waypoint nextWaypoint = m_Waypoints[i + 1];
-                Vector3 vToNextWaypoint = nextWaypoint.transform.position - currWaypoint.transform.position;
-                Vector3 vRandomAmount = Random.Range(0, 1.0f) * vToNextWaypoint;
-                randomPos += vRandomAmount;
-            }*/
+            Waypoint WaypointInstance = Instantiate(WaypointPrefab, this.transform, false);
+            WaypointInstance.transform.localPosition = new Vector3(0, 0, -2);
         }
 
         // Update is called once per frame

@@ -29,6 +29,10 @@ namespace AI
         private float StopDistFromTarget = 5.0f;
 
         [SerializeField]
+        [Tooltip("When moving between waypoints the distance to stop when reaching a point.")]
+        private float StopDistFromWaypoints = 0.3f;
+
+        [SerializeField]
         [Tooltip("Patrol area for AI to patrol in or around.")]
         private PatrolArea PatrolArea;
 
@@ -44,6 +48,14 @@ namespace AI
                 m_State = value;
             }
         }
+
+        // For looking around state
+        [SerializeField]
+        [Tooltip("Amount of time the AI should look for player they lost until they continue patrolling.")]
+        private float m_LookTime;
+        private float m_LookEndTime;
+        private float m_LookStartTime;
+        private bool m_IsLookTimerSet;
 
         private Waypoint m_CurrentWaypoint;
         private NavMeshAgent m_NavAgent;
@@ -77,9 +89,30 @@ namespace AI
             Debug.Log("chasing target...");
         }
 
+        private void LookAroundUntilLookTimerDone()
+        {
+            if(!m_IsLookTimerSet)
+            {
+                m_LookStartTime = Time.time;
+                m_LookEndTime = Time.time + m_LookTime;
+                m_IsLookTimerSet = true;
+            }
+
+            if(Time.time < m_LookEndTime)
+            {
+                this.transform.Rotate(0, LookRotationSpeed * Time.deltaTime, 0);
+                return;
+            }
+
+            m_IsLookTimerSet = false;
+
+            // Switch states from looking around to something else.
+            state = State.PATROLLING;
+        }
+
         public override void UpdateStateMachine()
         {
-            // Use AI senses to sense things suspicious.
+            // AI things that happen no matter what state AI is in.
             {
                 // Look for things.
                 if (m_AILineOfSightDetection != null)
@@ -97,7 +130,6 @@ namespace AI
                         Debug.Log("AI hears something suspicious!");
                     }
                 }
-                // Choose state based on senses.
             }
 
             if (state == State.CHASING)
@@ -117,12 +149,13 @@ namespace AI
                     if (m_NavAgent.remainingDistance <= m_NavAgent.stoppingDistance)
                     {
                         // Done pathfinding.
-                        state = State.ATTACKING;
+                        state = State.LOOKING_AROUND;
                     }
                 }
             }
             else if(state == State.PATROLLING)
             {
+                Debug.Log("Patrolling");
                 // Get next waypoint from patrol area if we have one
                 if(PatrolArea != null)
                 {
@@ -134,19 +167,27 @@ namespace AI
                             return;
                         }
 
+                        // Move to the waypoint
+                        //m_NavAgent.Resume();// SetDestination(m_CurrentWaypoint.transform.position);
+                        m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
+
                         // If we made it to the waypoint.
-                        if(m_NavAgent.remainingDistance <= Mathf.Epsilon)
+                        if (m_NavAgent.remainingDistance <= StopDistFromWaypoints)
                         {
-                            m_CurrentWaypoint = PatrolArea.GetRandomWaypoint(); //PatrolArea.GetNextWaypoint(m_CurrentWaypoint);
-                            if (m_CurrentWaypoint != null)
+                            m_CurrentWaypoint = PatrolArea.GetRandomWaypoint();
+                            if(m_CurrentWaypoint != null)
                             {
                                 m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
+                            }
+                            else
+                            {
+                                Debug.Log("Randomly generated AI waypoint destination is null.");
                             }
                         }
                     }
                     else
                     {
-                        m_CurrentWaypoint = PatrolArea.GetNextWaypoint(null);
+                        m_CurrentWaypoint = PatrolArea.GetRandomWaypoint();
                         if(m_CurrentWaypoint != null)
                         {
                             m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
@@ -156,8 +197,7 @@ namespace AI
             }
             else if (state == State.LOOKING_AROUND)
             {
-                // rotate to try and find the target.
-                this.transform.Rotate(0, LookRotationSpeed * Time.deltaTime, 0);
+                LookAroundUntilLookTimerDone();
             }
             else if (state == State.ATTACKING)
             {

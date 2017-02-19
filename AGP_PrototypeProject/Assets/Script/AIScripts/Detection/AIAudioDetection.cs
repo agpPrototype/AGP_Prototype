@@ -31,6 +31,16 @@ namespace AI
                 get { return m_IsCanHearSomething; }
             }
 
+            private Vector3 m_TargetLastHeardPosition;
+            public Vector3 TargetHeardPosition
+            {
+                get
+                {
+                    return m_TargetLastHeardPosition;
+                }
+            }
+
+
             private List<AudioSourceDetectable> m_AudioSourcesDetected; // Running list of audio sources currently detected.
 
             void Awake()
@@ -48,6 +58,7 @@ namespace AI
                 }
                 // Test to see if the loudness of newly detected is louder than current.
                 m_AudioSourcesDetected.Add(audioSourceDetected);
+                m_TargetLastHeardPosition = audioSourceDetected.transform.position;
                 m_IsCanHearSomething = true;
             }
 
@@ -88,6 +99,7 @@ namespace AI
                 }
             }
 
+#if UNITY_EDITOR
             void OnDrawGizmos()
             {
                 // Draw line to target that changes if target is heard.
@@ -100,6 +112,7 @@ namespace AI
                     }
                 }
             }
+#endif
         }
     }
 }
