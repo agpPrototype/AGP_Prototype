@@ -193,10 +193,18 @@ namespace AI
              target fed into this function. */
             private float getAngleToTarget(GameObject target)
             {
-                Vector3 nTarget = (target.transform.position - Apex.position).normalized;
+                // Take out any Y values of target location because we don't care about height of target for this calculation.
+                Vector3 targetPosNoYComponent = new Vector3(target.transform.position.x, 0, target.transform.position.z);
+                Vector3 apexPosNoYComponent = new Vector3(Apex.transform.position.x, 0, Apex.transform.position.z);
+                Vector3 nTargetPosNoYComponent = (targetPosNoYComponent - apexPosNoYComponent).normalized;
+
                 Vector3 nForward = Apex.forward;
-                float dotResult = Vector3.Dot(nTarget, nForward);
-                return Mathf.Acos(dotResult) * 180.0f / Mathf.PI;
+                Vector3 forwardNoYComponent = new Vector3(nForward.x, 0, nForward.z).normalized;
+
+                float dotResult = Vector3.Dot(nTargetPosNoYComponent, forwardNoYComponent);
+                float angle = Mathf.Acos(dotResult) * 180.0f / Mathf.PI;
+                Debug.Log("Angle to target: " + angle);
+                return angle;
             }
 
             /* Gets which FOV_REGION the target is in */
@@ -383,23 +391,23 @@ namespace AI
                 {
                     Gizmos.color = DirectFOVColor;
                     float angleOfLines = m_DirectFOVHalfed;
-                    Vector3 vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * DirectRaycastMaxDistance;
+                    Vector3 vRightView = Quaternion.AngleAxis(angleOfLines, Apex.transform.up) * Apex.transform.forward * DirectRaycastMaxDistance;
                     Gizmos.DrawLine(Apex.position, Apex.position + vRightView);
-                    Vector3 vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * DirectRaycastMaxDistance;
+                    Vector3 vLeftView = Quaternion.AngleAxis(-angleOfLines, Apex.transform.up) * Apex.transform.forward * DirectRaycastMaxDistance;
                     Gizmos.DrawLine(Apex.position, Apex.position + vLeftView);
 
                     Gizmos.color = SideFOVColor;
                     angleOfLines = m_DirectFOVHalfed + m_SideFOVHalfed;
-                    vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * SideRaycastMaxDistance;
+                    vRightView = Quaternion.AngleAxis(angleOfLines, Apex.transform.up) * Apex.transform.forward * SideRaycastMaxDistance;
                     Gizmos.DrawLine(Apex.position, Apex.position + vRightView);
-                    vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * SideRaycastMaxDistance;
+                    vLeftView = Quaternion.AngleAxis(-angleOfLines, Apex.transform.up) * Apex.transform.forward * SideRaycastMaxDistance;
                     Gizmos.DrawLine(Apex.position, Apex.position + vLeftView);
 
                     Gizmos.color = PeriphFOVColor;
                     angleOfLines = m_DirectFOVHalfed + m_SideFOVHalfed + m_PeriphFOVHalfed;
-                    vRightView = Quaternion.AngleAxis(angleOfLines, this.transform.up) * this.transform.forward * PeriphRaycastMaxDistance;
+                    vRightView = Quaternion.AngleAxis(angleOfLines, Apex.transform.up) * Apex.transform.forward * PeriphRaycastMaxDistance;
                     Gizmos.DrawLine(Apex.position, Apex.position + vRightView);
-                    vLeftView = Quaternion.AngleAxis(-angleOfLines, this.transform.up) * this.transform.forward * PeriphRaycastMaxDistance;
+                    vLeftView = Quaternion.AngleAxis(-angleOfLines, Apex.transform.up) * Apex.transform.forward * PeriphRaycastMaxDistance;
                     Gizmos.DrawLine(Apex.position, Apex.position + vLeftView);
                 }
 
