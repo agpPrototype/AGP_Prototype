@@ -151,6 +151,14 @@ namespace AI
                 get { return m_IsCanSeeTarget; }
             }
 
+            private Vector3 m_TargetLastSeenVelocity;
+            public Vector3 TargetLastSeenVelocity
+            {
+                get
+                {
+                    return m_TargetLastSeenVelocity;
+                }
+            }
             private Vector3 m_TargetLastSeenPosition;
             public Vector3 TargetLastSeenPosition
             {
@@ -270,6 +278,16 @@ namespace AI
                 return isHitTarget;
             }
 
+            private void UpdateLastSeenVariables(GameObject target)
+            {
+                m_TargetLastSeenPosition = target.transform.position;
+                Rigidbody rigidBody = target.GetComponent<Rigidbody>();
+                if(rigidBody != null)
+                {
+                    m_TargetLastSeenVelocity = rigidBody.velocity;
+                }
+            }
+
             private bool raycastInConeTowardTarget(int numRaycasts, int numRings, float coneRadius, float raycastMaxDistance)
             {
                 // If we were fed 
@@ -302,8 +320,7 @@ namespace AI
                             Collider collider = raycastHit.collider;
                             if (collider != null && collider.tag == "Player")
                             {
-                                // Update target last seen position.
-                                m_TargetLastSeenPosition = Target.transform.position;
+                                UpdateLastSeenVariables(Target);
 
                                 /* If in editor mode then draw this ray and continue so that it draws 
                                  * all the others as well for debugging purposes. */
@@ -359,8 +376,7 @@ namespace AI
                             Debug.DrawRay(Apex.position, raycastMaxDistance * singleRaycastDir, RaycastSeenColor);
                         }
                         #endif
-                        // Update target last seen position.
-                        m_TargetLastSeenPosition = Target.transform.position;
+                        UpdateLastSeenVariables(Target);
                         return true;
                     }
                 }

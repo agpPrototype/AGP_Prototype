@@ -100,8 +100,15 @@ namespace AI
 
             if(Time.time < m_LookEndTime)
             {
-                this.transform.Rotate(0, LookRotationSpeed * Time.deltaTime, 0);
-                return;
+                Vector3 lastSeenVelocity = m_AILineOfSightDetection.TargetLastSeenVelocity;
+                if(lastSeenVelocity != null)
+                {
+                    float step = LookRotationSpeed * Time.deltaTime;
+                    Vector3 newDir = Vector3.RotateTowards(transform.forward, lastSeenVelocity, step, 0.0f);
+                    transform.rotation = Quaternion.LookRotation(newDir);
+                    this.transform.Rotate(0, LookRotationSpeed * Time.deltaTime, 0);
+                    return;
+                }
             }
 
             m_IsLookTimerSet = false;
