@@ -1,8 +1,9 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using AI;
 using AI.Detection;
+using AI;
 
 namespace AI
 {
@@ -19,6 +20,19 @@ namespace AI
             ATTACKING,
             LOOKING_AROUND
         }
+        private State m_State;
+        public State state
+        {
+            get
+            {
+                return m_State;
+            }
+            set
+            {
+                m_State = value;
+            }
+        }
+        private ThreatLevel m_ThreatLevel; 
 
         [SerializeField]
         [Tooltip("Speed AI turns to find target.")]
@@ -36,20 +50,11 @@ namespace AI
         [Tooltip("Patrol area for AI to patrol in or around.")]
         private PatrolArea PatrolArea;
 
-        private State m_State;
-        public State state
-        {
-            get
-            {
-                return m_State;
-            }
-            set
-            {
-                m_State = value;
-            }
-        }
+        [SerializeField]
+        [Tooltip("Intervals between each update for AI intelligence: Line of sight, Audio detection, etc.")]
+        private float m_UpdateInterval = 0.6f;
+        private float m_UpdateIntervalTimer = 0.0f;
 
-        // For looking around state
         [SerializeField]
         [Tooltip("Amount of time the AI should look for player they lost until they continue patrolling.")]
         private float m_LookTime;
@@ -62,10 +67,13 @@ namespace AI
         private AILineOfSightDetection m_AILineOfSightDetection;
         private AIAudioDetection m_AIAudioDetection;
 
+        private AIDetectable m_Target; // current prioritized target.
+
         // Use this for initialization
         void Start()
         {
             m_State = State.PATROLLING;
+            m_UpdateIntervalTimer = m_UpdateInterval;
             m_AILineOfSightDetection = GetComponent<AILineOfSightDetection>();
             m_AIAudioDetection = GetComponent<AIAudioDetection>();
             m_NavAgent = GetComponent<NavMeshAgent>();
@@ -75,7 +83,6 @@ namespace AI
         public override void Update()
         { 
             // Calling base update ends up calling UpdateStateMachine() in parent's parent.
-            base.Update();
             UpdateStateMachine();
         }
 
@@ -89,6 +96,16 @@ namespace AI
             Debug.Log("chasing target...");
         }
 
+        /*private void updateLastSeenVariables(GameObject target)
+        {
+            m_TargetLastSeenPosition = target.transform.position;
+            Rigidbody rigidBody = target.GetComponentInParent<Rigidbody>();
+            if(rigidBody != null)
+            {
+                m_TargetLastSeenVelocity = rigidBody.velocity;
+            }
+        }*/
+
         private void LookAroundUntilLookTimerDone()
         {
             if(!m_IsLookTimerSet)
@@ -100,15 +117,16 @@ namespace AI
 
             if(Time.time < m_LookEndTime)
             {
-                Vector3 lastSeenVelocity = m_AILineOfSightDetection.TargetLastSeenVelocity;
-                if(lastSeenVelocity != null)
+                this.transform.Rotate(0, LookRotationSpeed * Time.deltaTime, 0);
+                /*if(m_TargetLastSeenVelocity != null)
                 {
+                    Vector3 lastSeenVelocity = m_TargetLastSeenVelocity;
                     float step = LookRotationSpeed * Time.deltaTime;
                     Vector3 newDir = Vector3.RotateTowards(transform.forward, lastSeenVelocity, step, 0.0f);
                     transform.rotation = Quaternion.LookRotation(newDir);
                     this.transform.Rotate(0, LookRotationSpeed * Time.deltaTime, 0);
                     return;
-                }
+                }*/
             }
 
             m_IsLookTimerSet = false;
@@ -119,26 +137,24 @@ namespace AI
 
         public override void UpdateStateMachine()
         {
-            // AI things that happen no matter what state AI is in.
+            m_UpdateIntervalTimer -= Time.deltaTime;
+            if(m_UpdateIntervalTimer <= 0.0f)
             {
-                // Look for things.
-                if (m_AILineOfSightDetection != null)
-                {
-                    if (m_AILineOfSightDetection.IsCanSeeTarget)
-                    {
-                        state = State.CHASING;
-                    }
-                }
-                // Listen for things.
-                if(m_AIAudioDetection != null)
-                {
-                    if(m_AIAudioDetection.IsCanHearSomething)
-                    {
-                        Debug.Log("AI hears something suspicious!");
-                    }
-                }
+                // reset the timer
+                m_UpdateIntervalTimer = m_UpdateInterval;
+                m_Target = DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection);
             }
+        }
 
+        private void OnDrawGizmos()
+        {
+            if (m_Target)
+            {
+                Debug.DrawLine(m_AILineOfSightDetection.Apex.position, m_Target.transform.position, Color.red);
+            }
+        }
+
+#if false
             if (state == State.CHASING)
             {
                 if (!m_NavAgent.isOnNavMesh)
@@ -147,7 +163,7 @@ namespace AI
                     return;
                 }
                 // Keep updating target position if we can see the target.
-                m_NavAgent.SetDestination(m_AILineOfSightDetection.TargetLastSeenPosition);
+                m_NavAgent.SetDestination(m_TargetLastSeenPosition);
                 // Check to see if we have gotten close enough to target.
                 m_NavAgent.stoppingDistance = StopDistFromTarget;
                 // Check if we've reached the destination
@@ -162,7 +178,6 @@ namespace AI
             }
             else if(state == State.PATROLLING)
             {
-                Debug.Log("Patrolling");
                 // Get next waypoint from patrol area if we have one
                 if(PatrolArea != null)
                 {
@@ -210,6 +225,6 @@ namespace AI
             {
                 Debug.Log("In attacking state.");
             }
-        }
+#endif
     }
 }

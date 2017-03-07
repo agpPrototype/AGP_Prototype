@@ -11,108 +11,56 @@ namespace AI
         {
             [Tooltip("transform that will be used for AI ear source.")]
             [SerializeField]
-            private Transform Ears;
+            private Transform m_Ears;
+            public Transform Ears { get { return m_Ears; } }
 
-            [Tooltip("Color of raycast toward target when target not audible to AI.")]
-            [SerializeField]
-            private Color RaycastNotAudibleColor;
-
-            [Tooltip("Color of raycast toward target when audible to AI.")]
-            [SerializeField]
-            private Color RaycastAudibleColor;
-
-            [Tooltip("Should we draw raycast to target.")]
-            [SerializeField]
-            private bool IsDrawRaycastToTarget;
-
-            private bool m_IsCanHearSomething;
-            public bool IsCanHearSomething
+            /* gets a list of AIAudibles that can be heard. */
+            public List<AIAudible> GetAudibles()
             {
-                get { return m_IsCanHearSomething; }
-            }
-
-            private Vector3 m_TargetLastHeardPosition;
-            public Vector3 TargetHeardPosition
-            {
-                get
+                List<AIAudible> possibleAudibles = DetectionManager.Instance.Audibles;
+                List<AIAudible> actualAudibles = new List<AIAudible>();
+                for (int i = 0; i < possibleAudibles.Count; i++)
                 {
-                    return m_TargetLastHeardPosition;
-                }
-            }
-
-
-            private List<AudioSourceDetectable> m_AudioSourcesDetected; // Running list of audio sources currently detected.
-
-            void Awake()
-            {
-                m_AudioSourcesDetected = new List<AudioSourceDetectable>();
-            }
-
-            // will tell the AI that it has detected audio.
-            private void NotifyAudioDetected(AudioSourceDetectable audioSourceDetected)
-            {
-                // Make sure we are not already pursuing this audio source.
-                if (m_AudioSourcesDetected.Contains(audioSourceDetected))
-                {
-                    return;
-                }
-                // Test to see if the loudness of newly detected is louder than current.
-                m_AudioSourcesDetected.Add(audioSourceDetected);
-                m_TargetLastHeardPosition = audioSourceDetected.transform.position;
-                m_IsCanHearSomething = true;
-            }
-
-            // Will tell the AI it can no longer here a suspect sound.
-            private void NotifyAudioLost(AudioSourceDetectable audioSourceLost)
-            {
-                m_AudioSourcesDetected.Remove(audioSourceLost);
-                m_IsCanHearSomething = false;
-            }
-
-            /* returns the highest priority audio that has been detected.
-             * in order to actually get a sound from this function it is necessary
-             * that this m_IsCanHearSomething = true. Else the AI has not heard 
-             * anything.
-             */
-            public AudioSourceDetectable GetHighestPriorityAudioDetected()
-            {
-                return m_AudioSourcesDetected[m_AudioSourcesDetected.Count - 1];
-            }
-
-            void OnTriggerEnter(Collider col)
-            {
-                // Check to see if we heard something.
-                AudioSourceDetectable audioDetectable = col.GetComponent<AudioSourceDetectable>();
-                if (audioDetectable != null)
-                {
-                    NotifyAudioDetected(audioDetectable);
-                }
-            }
-
-            void OnTriggerExit(Collider col)
-            {
-                // Check to see if AI lost hearing of something.
-                AudioSourceDetectable audioDetectable = col.GetComponent<AudioSourceDetectable>();
-                if (audioDetectable != null)
-                {
-                    NotifyAudioLost(audioDetectable);
-                }
-            }
-
-#if UNITY_EDITOR
-            void OnDrawGizmos()
-            {
-                // Draw line to target that changes if target is heard.
-                if (IsDrawRaycastToTarget)
-                {
-                    if (m_IsCanHearSomething)
-                    {
-                        AudioSourceDetectable audioDetectable = GetHighestPriorityAudioDetected();
-                        Debug.DrawRay(Ears.position, audioDetectable.transform.position - Ears.position, RaycastAudibleColor);
+                    AIAudible audible = possibleAudibles[i];
+                    // Check to see if we can see the target.
+                    if (IsAudible(audible))
+                    { 
+                        actualAudibles.Add(audible);
                     }
                 }
+                return actualAudibles;
             }
-#endif
-        }
-    }
-}
+
+            /* gets highest priority audible sound based on AIAudioDetection settings */
+            public AIAudible GetHighestThreat()
+            {
+                List<AIAudible> actualAudibles = GetAudibles();
+                if (actualAudibles.Count > 0)
+                {
+                    return actualAudibles[0];
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            /* will return true if AIAudible is audible. function to determin if an AIAudible is audible
+             is within the AIAudible class.*/
+            public bool IsAudible(AIAudible audible)
+            {
+                // check to see if audio is within range.
+                float range = audible.Range;
+                Vector3 thisPos = transform.position;
+                Vector3 audioPos = audible.transform.position;
+                float distSquared = (Mathf.Pow(thisPos.x - audioPos.x, 2) + Mathf.Pow(thisPos.y - audioPos.y, 2) + Mathf.Pow(thisPos.z - audioPos.z, 2));
+                if (distSquared <= range * range)
+                {
+                    return audible.RangeCheckToGameObject(gameObject, audible.gameObject, m_Ears.position, audible.transform.position, audible.Range);
+                }
+                return false;
+            }
+        }; // AIDetection class
+    }; // Detection namespace
+}; // AI namespace
+ 
