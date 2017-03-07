@@ -3,16 +3,29 @@ using System.Collections.Generic;
 using UnityEngine;
 using Audio;
 
+/// <summary>
+/// 
+/// AUTHOR: rob neir
+/// 
+/// DESCRIPTION: This component gives the game object it is attached to access
+/// to functions that enable the detection of "AIAudibles" spawned in the game.
+/// Essentially audio detection.
+/// 
+/// </summary>
 namespace AI
 {
     namespace Detection
     {
         public class AIAudioDetection : MonoBehaviour
         {
+            #region Member Variables
+
             [Tooltip("transform that will be used for AI ear source.")]
             [SerializeField]
             private Transform m_Ears;
             public Transform Ears { get { return m_Ears; } }
+
+            #endregion
 
             /* gets a list of AIAudibles that can be heard. */
             public List<AIAudible> GetAudibles()

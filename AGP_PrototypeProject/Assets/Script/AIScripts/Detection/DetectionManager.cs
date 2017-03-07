@@ -3,6 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
+/// <summary>
+/// 
+/// AUTHOR: rob neir
+/// 
+/// DESCRIPTION: Detection manager is very important for any kind of AI detection.
+/// It stores all possible things that any AI in the game can detect. This has a list
+/// of visible and audible things. It is stored here so that each AI is not required
+/// to store the data themselves and can come to one centralized hub to get necessary
+/// detection data.
+/// 
+/// </summary>
 namespace AI
 {
     namespace Detection
@@ -19,6 +30,8 @@ namespace AI
 
         public class DetectionManager : MonoBehaviour
         {
+            #region Member Variables
+
             public static DetectionManager Instance = null;
 
             private List<AIAudible> m_Audibles;
@@ -47,6 +60,8 @@ namespace AI
             /* event to be sent to all AILineOfSightDetection components */
             public delegate void Visibles_Updated_EventHandler();
             public static event Visibles_Updated_EventHandler VisibleUpdatedForwarderEvt;
+
+            #endregion
 
             private void Awake()
             {

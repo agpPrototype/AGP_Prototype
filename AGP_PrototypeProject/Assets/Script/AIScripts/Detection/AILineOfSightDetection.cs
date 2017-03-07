@@ -2,6 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// 
+/// AUTHOR: rob neir
+/// 
+/// DESCRIPTION: When attached to game object gives it access to functions that
+/// allow it to have a line of sight that picks up "AIVisibles".
+/// 
+/// </summary>
 namespace AI
 {
     namespace Detection
@@ -374,6 +382,6 @@ namespace AI
                 }
             }
             #endif
-        };
-    };
-};
+        }; // AILineOfSightDetection class
+    }; // Detection namespace
+}; // AI namespace

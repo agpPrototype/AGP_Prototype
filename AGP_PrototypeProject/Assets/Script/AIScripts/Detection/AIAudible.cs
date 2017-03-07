@@ -2,6 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// 
+/// AUTHOR: rob neir
+/// 
+/// DESCRIPTION: when this component is attached to a game object then that game object
+/// has the ability to be heard by AI. 
+/// 
+/// </summary>
 namespace AI
 {
     namespace Detection
@@ -9,6 +17,8 @@ namespace AI
         [RequireComponent(typeof(AudioSource))]
         public class AIAudible : AIDetectable
         {
+            #region Member Variables
+
             [SerializeField]
             [Tooltip("How loud this AIAudible source is which determines area of effect.")]
             private float m_Range = 10.0f;
@@ -35,6 +45,8 @@ namespace AI
             /* event for when audible is destroyed to notify DetectionManager */
             public delegate void Audible_Destroy_EventHandler(AIAudible audible);
             public static event Audible_Destroy_EventHandler AudibleDestroyEvt;
+
+            #endregion
 
             protected override void Start()
             {
