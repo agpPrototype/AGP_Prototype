@@ -19,6 +19,11 @@ namespace AI
         {
             #region Member Variables
 
+            [SerializeField]
+            [Tooltip("Target point AI will raycast to to try and find this visible.")]
+            private Transform m_TargetPoint;
+            public Transform TargetPoint { get { return m_TargetPoint; } }
+
             /* event for when visible is destroyed to notify DetectionManager */
             public delegate void Visible_Spawn_EventHandler(AIVisible visible);
             public static event Visible_Spawn_EventHandler VisibleSpawnEvt;
@@ -32,6 +37,10 @@ namespace AI
             protected override void Start()
             {
                 base.Start();
+                if(m_TargetPoint == null)
+                {
+                    Debug.LogError("AIVisible has no target point for detection.");
+                }
             }
 
             public override void RegisterToDetectionManager()

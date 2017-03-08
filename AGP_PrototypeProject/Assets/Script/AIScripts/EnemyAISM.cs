@@ -12,27 +12,23 @@ namespace AI
     [RequireComponent(typeof(NavMeshAgent))]
     public class EnemyAISM : AIStateMachine
     {
-        // Define possible states for AI. Subject to change.
-        public enum State
+        #region AI State Members
+        public enum EnemyAIState
         {
+            IDLE,
             CHASING,
             PATROLLING,
             ATTACKING,
             LOOKING_AROUND
         }
-        private State m_State;
-        public State state
-        {
-            get
-            {
-                return m_State;
-            }
-            set
-            {
-                m_State = value;
-            }
-        }
-        private ThreatLevel m_ThreatLevel; 
+        private EnemyAIState m_State;
+        private ThreatLevel m_ThreatLevel;
+
+        private BehaviorTree m_CurrentBT;
+        private BehaviorTree m_IdleBT;
+        private BehaviorTree m_ChaseBT;
+        private BehaviorTree m_PatrolBT;
+        #endregion
 
         [SerializeField]
         [Tooltip("Speed AI turns to find target.")]
@@ -70,41 +66,122 @@ namespace AI
         private AIDetectable m_Target; // current prioritized target.
 
         // Use this for initialization
-        void Start()
+        private void Start()
         {
-            m_State = State.PATROLLING;
+            m_State = EnemyAIState.PATROLLING;
             m_UpdateIntervalTimer = m_UpdateInterval;
             m_AILineOfSightDetection = GetComponent<AILineOfSightDetection>();
             m_AIAudioDetection = GetComponent<AIAudioDetection>();
             m_NavAgent = GetComponent<NavMeshAgent>();
+            initBehaviorTrees();
         }
+
+        private void initBehaviorTrees()
+        {
+            createChaseBT();
+
+            m_CurrentBT = m_IdleBT;
+        }
+
+        private void createChaseBT()
+        {
+            /// Node
+            /* node to perform anything AI does while idling */
+            DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Root_Idle_Node");
+            rootNode.AddAction(new Action(idle));
+
+            m_IdleBT = new BehaviorTree(rootNode, this, "Idle State BT");
+
+            /// Node
+            /* node to switch from idle to chasing state */
+            DecisionNode chaseNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Chase_Node");
+            chaseNode.AddAction(new Action(chase));
+            /* add condition to chase node for when AI detects an enemy */
+            Condition threatCond = new Condition(new BoolTypeDelegate(isHasThreat));
+            chaseNode.AddCondition(threatCond);
+            /* add the chase node to the tree */
+            m_IdleBT.AddDecisionNodeTo(rootNode, chaseNode);
+
+            /// Node
+            DecisionNode resetNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "Chase->Idle");
+            resetNode.AddAction(new Action(new VoidTypeDelegate(m_IdleBT.RestartTree)));
+            Condition noThreatCond = new Condition(new BoolTypeDelegate(isNotHasThreat));
+            resetNode.AddCondition(noThreatCond);
+
+            m_IdleBT.AddDecisionNodeTo(chaseNode, resetNode);
+        }
+
+        #region Chase BT Methods
+        private bool isHasThreat()
+        {
+            return (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection) != null);
+        }
+        private bool isNotHasThreat()
+        {
+            return (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection) == null);
+        }
+        private void idle()
+        {
+            Debug.Log("AI is idling");
+        }
+        private void chase()
+        {
+            Debug.Log("AI is chasing");
+        }
+        #endregion
 
         // Update is called once per frame
         public override void Update()
-        { 
+        {
             // Calling base update ends up calling UpdateStateMachine() in parent's parent.
             UpdateStateMachine();
+
+            /* traverse current behavior tree */
+            m_CurrentBT.ContinueBehaviorTree();
         }
 
-        private void LookForTarget()
+        public override void UpdateStateMachine()
         {
-            Debug.Log("Looking for target...");
-        }
-
-        private void ChaseTarget()
-        {
-            Debug.Log("chasing target...");
-        }
-
-        /*private void updateLastSeenVariables(GameObject target)
-        {
-            m_TargetLastSeenPosition = target.transform.position;
-            Rigidbody rigidBody = target.GetComponentInParent<Rigidbody>();
-            if(rigidBody != null)
+            /*
+            m_UpdateIntervalTimer -= Time.deltaTime;
+            if (m_UpdateIntervalTimer <= 0.0f)
             {
-                m_TargetLastSeenVelocity = rigidBody.velocity;
+                // reset the timer
+                m_UpdateIntervalTimer = m_UpdateInterval;
+                m_Target = DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection);
+            }*/
+        }
+
+        private void SetMainState(EnemyAIState newState)
+        {
+            m_State = newState;
+
+            //m_CurrentBT.RestartTree();
+
+            // Switch the current behavior tree to the new state's tree
+            switch (m_State)
+            {
+                case EnemyAIState.IDLE:
+                    m_CurrentBT = m_IdleBT;
+                    break;
+
+                case EnemyAIState.CHASING:
+                    m_CurrentBT = m_ChaseBT;
+                    break;
+
+                case EnemyAIState.PATROLLING:
+                    m_CurrentBT = m_PatrolBT;
+                    break;
+
+                default:
+                    Debug.Log("Error: EnemyAISM.cs : No Behavior Tree to switch to for desired new state.");
+                    break;
+
+
             }
-        }*/
+
+            m_CurrentBT.RestartTree();
+        }
 
         private void LookAroundUntilLookTimerDone()
         {
@@ -132,18 +209,7 @@ namespace AI
             m_IsLookTimerSet = false;
 
             // Switch states from looking around to something else.
-            state = State.PATROLLING;
-        }
-
-        public override void UpdateStateMachine()
-        {
-            m_UpdateIntervalTimer -= Time.deltaTime;
-            if(m_UpdateIntervalTimer <= 0.0f)
-            {
-                // reset the timer
-                m_UpdateIntervalTimer = m_UpdateInterval;
-                m_Target = DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection);
-            }
+            m_State = EnemyAIState.PATROLLING;
         }
 
         private void OnDrawGizmos()
@@ -228,3 +294,13 @@ namespace AI
 #endif
     }
 }
+
+/*private void updateLastSeenVariables(GameObject target)
+{
+    m_TargetLastSeenPosition = target.transform.position;
+    Rigidbody rigidBody = target.GetComponentInParent<Rigidbody>();
+    if(rigidBody != null)
+    {
+        m_TargetLastSeenVelocity = rigidBody.velocity;
+    }
+}*/

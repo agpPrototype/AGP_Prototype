@@ -161,7 +161,7 @@ namespace AI
                 {
                     AIVisible visible = possibleVisibles[i];
                     // Check to see if we can see the target.
-                    if (IsInLineOfSight(visible.gameObject))
+                    if (IsInLineOfSight(visible))
                     {
                         actualVisibles.Add(visible);
                     }
@@ -171,7 +171,7 @@ namespace AI
 
             /* This will get the angle from the forward vector of the AI to the
              target fed into this function. */
-            private float getAngleToTarget(GameObject target)
+            private float getAngleToTarget(AIVisible target)
             {
                 // Take out any Y values of target location because we don't care about height of target for this calculation.
                 Vector3 targetPosNoYComponent = new Vector3(target.transform.position.x, 0, target.transform.position.z);
@@ -188,7 +188,7 @@ namespace AI
             }
 
             /* Gets which FOV_REGION the target is in */
-            private FOV_REGION getFOVRegion(GameObject target)
+            private FOV_REGION getFOVRegion(AIVisible target)
             {
                 float angleToTarget = getAngleToTarget(target);
                 if (angleToTarget <= m_DirectFOVHalfed)
@@ -210,7 +210,7 @@ namespace AI
             }
 
             // Shoot raycast at player to see if AI can see them.
-            private bool IsInLineOfSight(GameObject target)
+            private bool IsInLineOfSight(AIVisible target)
             {
                 FOV_REGION fovRegion = getFOVRegion(target);
                 bool isHitTarget = false;
@@ -253,7 +253,7 @@ namespace AI
                 return isHitTarget;
             }
 
-            private bool raycastInConeTowardTarget(GameObject target, int numRaycasts, int numRings, float coneRadius, float raycastMaxDistance)
+            private bool raycastInConeTowardTarget(AIVisible target, int numRaycasts, int numRings, float coneRadius, float raycastMaxDistance)
             {
                 // If we were fed 
                 if(numRaycasts <= 1)
@@ -263,7 +263,7 @@ namespace AI
 
                 // Raycast in cone.
                 float angleSpacing = 360.0f / numRaycasts;
-                Vector3 targetDir = (target.transform.position - m_Apex.position).normalized;
+                Vector3 targetDir = (target.TargetPoint.position - m_Apex.position).normalized;
                 bool aRaycastHitTarget = false;
                 RaycastHit raycastHit;
                 for (int j = 0; j < numRings; j++)
@@ -322,11 +322,11 @@ namespace AI
                 return false; // If we got this far no raycast hit.
             }
 
-            private bool raycastOneRayTowardTarget(GameObject target, float raycastMaxDistance)
+            private bool raycastOneRayTowardTarget(AIVisible target, float raycastMaxDistance)
             {
                 // Shoot single raycast to see if we can see the target.
                 RaycastHit raycastHit;
-                Vector3 singleRaycastDir = (target.transform.position - m_Apex.position).normalized;
+                Vector3 singleRaycastDir = (target.TargetPoint.position - m_Apex.position).normalized;
                 if (Physics.Raycast(m_Apex.position, singleRaycastDir, out raycastHit, raycastMaxDistance, SightRaycastLayerMask))
                 {
                     Collider collider = raycastHit.collider;

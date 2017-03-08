@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
 /// <summary>
 /// 
 /// AUTHOR: rob neir
@@ -28,7 +27,7 @@ namespace AI
             SEVERE,     // severe threat 
         };
 
-        public class DetectionManager : MonoBehaviour
+        public class DetectionManager : AGPMonoBehavior
         {
             #region Member Variables
 
