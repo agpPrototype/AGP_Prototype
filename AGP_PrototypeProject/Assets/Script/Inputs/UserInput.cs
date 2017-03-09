@@ -4,6 +4,7 @@ using UnityEngine;
 using InControl;
 using Utility;
 using System;
+using Player;
 
 namespace Inputs
 {
@@ -12,6 +13,7 @@ namespace Inputs
         private InputPacket[] m_inputArray;
         private InputDevice m_device;
         private Queue<InputPacket> m_InputPacketQueue;
+        private PCActions m_PCActions;
         
         public InputPacket[] InputPackets
         {
@@ -41,13 +43,11 @@ namespace Inputs
             {
                 float amount = m_device.LeftStickX;
                 InputPacket packet = new InputPacket(EnumService.InputType.LeftStickX, amount);
-                //Debug.Log("LEFT X: " + amount);
                 m_inputArray[(int)EnumService.InputType.LeftStickX] = packet;
             }
 
             {
                 float amount = m_device.LeftStickY;
-                //Debug.Log("LEFT Y: " + amount);
                 InputPacket packet = new InputPacket(EnumService.InputType.LeftStickY, amount);
                 m_inputArray[(int)EnumService.InputType.LeftStickY] = packet;
             }
