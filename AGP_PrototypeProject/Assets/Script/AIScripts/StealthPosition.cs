@@ -13,6 +13,9 @@ namespace AI
         [SerializeField]
         private StealthPosition[] m_NextPositions;
 
+        [SerializeField]
+        private string m_name;
+
         // Use this for initialization
         void Start()
         {

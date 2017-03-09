@@ -122,11 +122,11 @@ namespace AI
         }
         private void idle()
         {
-            Debug.Log("AI is idling");
+            //Debug.Log("AI is idling");
         }
         private void chase()
         {
-            Debug.Log("AI is chasing");
+            //Debug.Log("AI is chasing");
         }
         #endregion
 

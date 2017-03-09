@@ -6,7 +6,6 @@ using MalbersAnimations;
 using Wolf;
 using Player;
 
-
 namespace AI
 {
     
@@ -171,12 +170,19 @@ namespace AI
             playerLoc = Player.transform.position;
             DistToPlayerSq = new Float((playerLoc - transform.position).sqrMagnitude);
 
-            InitializeStateBehaviorTrees();
+            // TEMP
+            //SetMainState(WolfMainState.Stealth);
 
+
+            // Get References to key components
             m_WolfMoveComp = GetComponent<WolfMoveComponent>();
             m_Corners = new Vector3[1];
 
             m_StealthNav = GetComponent<StealthNavigation>();
+
+            InitializeStateBehaviorTrees();
+
+
             //StartCoroutine(waitFiveSeconds());
         }
 
@@ -299,14 +305,27 @@ namespace AI
         private void CreateStealthBT()
         {
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Root Stealth");
-            rootNode.AddAction(new Action(DoNothing));
+            Condition isAtStealthPt = new Condition(new BoolTypeDelegate(m_StealthNav.IsAtNextNode));
+            Action beginStealth = new Action(DoNothing);
+
+            rootNode.AddCondition(isAtStealthPt);
+            rootNode.AddAction(beginStealth);
 
             m_StealthTree = new BehaviorTree(WolfMainState.Stealth, rootNode, this);
 
             /// NODE ///
             /// 
-            DecisionNode navigateToNextStealthPt = new DecisionNode(DecisionType.RepeatUntilActionComplete, "NavigateToStealthPt");
-            Action 
+            DecisionNode navigateToNextStealthPt = new DecisionNode(DecisionType.RepeatUntilCanProgress, "NavigateToStealthPt");
+            Condition isPlayerAway = new Condition(new FloatTypeDelegate(GetDistToPlayerSq), ConditionComparison.Greater, new Float(StartToFollowDistance * StartToFollowDistance));
+            Action navToNext = new Action(m_StealthNav.NavigateToNextNode);
+
+            navigateToNextStealthPt.AddCondition(isPlayerAway);
+            navigateToNextStealthPt.AddAction(navToNext);
+
+            m_StealthTree.AddDecisionNodeTo(rootNode, navigateToNextStealthPt);
+
+            // Loop back to top
+            m_StealthTree.AddDecisionNodeTo(navigateToNextStealthPt, rootNode);
         }
 
         #endregion
@@ -314,9 +333,9 @@ namespace AI
 
         IEnumerator waitFiveSeconds()
         {
-            yield return new WaitForSeconds(5);
+            yield return new WaitForSeconds(3);
 
-            //switchToAttack = true;
+            SetMainState(WolfMainState.Stealth);
         }
 
         // Update is called once per frame
@@ -328,7 +347,10 @@ namespace AI
             // Check for events or player suggestions to switch State
 
             // Traverse current Behavior Tree
-            m_CurrentBT.ContinueBehaviorTree();
+            if (!ReferenceEquals(m_CurrentBT, null))
+                m_CurrentBT.ContinueBehaviorTree();
+            else
+                Debug.Log("CompanionAISM: current BT not initialized yet");
 
 
             // Determine what the current state should be
@@ -341,7 +363,7 @@ namespace AI
         {
             DistToPlayerSq.value = (Player.transform.position - transform.position).sqrMagnitude;
 
-            if (switchToAttack)
+            if (false && switchToAttack)
             {
                 SetMainState(WolfMainState.Attack);
                 switchToAttack = false;
@@ -354,28 +376,28 @@ namespace AI
             // Update Factors?
 
             // Execute current state
-            switch (CurrentMainState)
-            {
-                case WolfMainState.Idle:
-                    ExecuteIdle();
-                    break;
+            //switch (CurrentMainState)
+            //{
+            //    case WolfMainState.Idle:
+            //        ExecuteIdle();
+            //        break;
 
-                case WolfMainState.Follow:
-                    ExecuteFollow();
-                    break;
+            //    case WolfMainState.Follow:
+            //        ExecuteFollow();
+            //        break;
 
-                case WolfMainState.Stealth:
-                    ExecuteStealth();
-                    break;
+            //    case WolfMainState.Stealth:
+            //        ExecuteStealth();
+            //        break;
 
-                case WolfMainState.Alert:
-                    ExecuteAlert();
-                    break;
+            //    case WolfMainState.Alert:
+            //        ExecuteAlert();
+            //        break;
 
-                case WolfMainState.Attack:
-                    ExecuteAttack();
-                    break;
-            }
+            //    case WolfMainState.Attack:
+            //        ExecuteAttack();
+            //        break;
+            //}
         }
 
         void SetMainState(WolfMainState newState)
@@ -515,7 +537,7 @@ namespace AI
 
         #endregion
 
-        #region State Execution Functions
+        #region State Execution Functions Temp
 
         void ExecuteIdle()
         {
@@ -573,47 +595,7 @@ namespace AI
             }
 
         }
-
-
-
-        void ExecuteAlert()
-        {
-
-        }
-
-        void ExecuteStealth()
-        {
-
-        }
-
-        void ExecuteAttack()
-        {
-
-        }
-
-        #endregion
-
-        void TempPlayerMovement()
-        {
-            float walkSpeed = 10.0f;
-
-            if (Input.GetKeyDown(KeyCode.W))
-            {
-                //Player.transform.Translate()   
-            }
-            if (Input.GetKeyDown(KeyCode.A))
-            {
-
-            }
-            if (Input.GetKeyDown(KeyCode.S))
-            {
-
-            }
-            if (Input.GetKeyDown(KeyCode.D))
-            {
-
-            }
-        }
+        #endregion 
 
 
         public void TestActionPrintFunc()

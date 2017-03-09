@@ -45,6 +45,8 @@ namespace AI
     public class DecisionNode : AGPMonoBehavior
     {
 
+        static bool DEBUG = true;
+
         [SerializeField]
         private string m_nameTag;
 
@@ -109,12 +111,16 @@ namespace AI
         // This function is called when the statemachine decides to remain in the state that it is in
         public void ProcessDecision()
         {
+            if (DEBUG) Debug.Log("Processing Decision: " + m_nameTag);
+
             //Debug.Log("Current DecisionNode is " + m_nameTag.ToString());
             if (m_MyType == DecisionType.RepeatUntilActionComplete)
             {
                 // test if action is complete and then see if it can move to next Node
                 if (m_Action.IsComplete())
                 {
+                    if (DEBUG) Debug.Log("Decision <" + m_nameTag + "> Complete");
+
                     m_DecisionComplete = true;
                     SetInternalActionComplete(false);
                     return;
@@ -130,8 +136,10 @@ namespace AI
                 {
                     if (m_Links[i].TestConditions())
                     {
+                        if (DEBUG) Debug.Log("Decision <" + m_nameTag + "> Complete");
+
                         m_DecisionComplete = true;
-                        return;
+                        //return;
                     }
                 }
 
