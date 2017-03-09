@@ -68,6 +68,8 @@ namespace AI
         #region Variables
         private WolfMoveComponent m_WolfMoveComp;
         private Vector3[] m_Corners;
+
+        private StealthNavigation m_StealthNav;
         #endregion
 
         #region Accalia Main States
@@ -105,12 +107,14 @@ namespace AI
         BehaviorTree m_FollowTree;
         BehaviorTree m_IdleTree;
         BehaviorTree m_AttackTree;
+        BehaviorTree m_StealthTree;
 
         #endregion
 
 
         [SerializeField]
         public GameObject Player;
+
         private Vector3 playerLoc;
 
         public GameObject Enemy;
@@ -172,7 +176,7 @@ namespace AI
             m_WolfMoveComp = GetComponent<WolfMoveComponent>();
             m_Corners = new Vector3[1];
 
-            
+            m_StealthNav = GetComponent<StealthNavigation>();
             //StartCoroutine(waitFiveSeconds());
         }
 
@@ -181,6 +185,7 @@ namespace AI
             CreateIdleBT();
             CreateFollowBT();
             CreateAttackBT();
+            CreateStealthBT();
 
             // Start in Idle state
             m_CurrentBT = m_IdleTree;
@@ -291,6 +296,19 @@ namespace AI
 
         }
 
+        private void CreateStealthBT()
+        {
+            DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Root Stealth");
+            rootNode.AddAction(new Action(DoNothing));
+
+            m_StealthTree = new BehaviorTree(WolfMainState.Stealth, rootNode, this);
+
+            /// NODE ///
+            /// 
+            DecisionNode navigateToNextStealthPt = new DecisionNode(DecisionType.RepeatUntilActionComplete, "NavigateToStealthPt");
+            Action 
+        }
+
         #endregion
 
 
@@ -380,6 +398,11 @@ namespace AI
 
                 case WolfMainState.Attack:
                     m_CurrentBT = m_AttackTree;
+                    break;
+
+                case WolfMainState.Stealth:
+                    m_CurrentBT = m_StealthTree;
+                    m_StealthNav.ActivateStealthNavigation();
                     break;
 
                 default:
