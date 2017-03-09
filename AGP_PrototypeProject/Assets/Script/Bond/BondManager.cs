@@ -40,16 +40,11 @@ namespace Bond
             }
         }
 
-		void Update()
-		{
-			//UpdateGUI();
-		}
-
         // Use this for initialization
         void Awake () 
         {
             //initialize to be middle value
-            m_BondStatus = 25;
+            //m_BondStatus = 50;
 
 			//initialize the instance to this one
 			if (Instance == null)
@@ -63,6 +58,7 @@ namespace Bond
 					Destroy(this.gameObject);
 				}
 			}
+			UpdateGUI();
 		}   
 
         public void SetBondStatus(int b)
@@ -80,7 +76,7 @@ namespace Bond
                 Debug.LogError("BondBar missing from scene");
                 return;
             }
-            BondBar.GetComponent<Slider>().normalizedValue = m_BondStatus;
+            BondBar.GetComponent<Slider>().value = m_BondStatus;
         }
     }
 
