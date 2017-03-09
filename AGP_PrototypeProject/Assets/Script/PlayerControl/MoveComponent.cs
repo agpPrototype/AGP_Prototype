@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Utility;
 using Player;
+using CameraController;
 
 public class MoveComponent : MonoBehaviour {
 
@@ -54,6 +55,7 @@ public class MoveComponent : MonoBehaviour {
     float m_StrafeForward;
     float m_StrafeRight;
     bool m_Aim;
+    CameraRig m_CamRig;
 
     void Start()
     {
@@ -74,6 +76,7 @@ public class MoveComponent : MonoBehaviour {
 
         m_Rigidbody.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
         m_OrigGroundCheckDistance = m_GroundCheckDistance;
+        m_CamRig = FindObjectOfType<CameraRig>();
     }
 
     public void ProcessMovement(PCActions pca)
@@ -252,11 +255,20 @@ public class MoveComponent : MonoBehaviour {
             {
                 m_Animator.SetFloat("JumpLeg", jumpLeg);
             }
+
+            if (m_CamRig)
+            {
+                m_CamRig.Zoom(false);
+            }
         }
         else
         {
             m_Animator.SetFloat("StrafeForward", m_StrafeForward);
             m_Animator.SetFloat("StrafeRight", m_StrafeRight);
+            if (m_CamRig)
+            {
+                m_CamRig.Zoom(true);
+            }
         }
         /**************TODO: CHEC THIS **************/
         // the anim speed multiplier allows the overall speed of walking/running to be tweaked in the inspector,
