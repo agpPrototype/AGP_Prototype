@@ -7,9 +7,13 @@ namespace Bond
 {
     public class BondManager : MonoBehaviour 
     {
+		public static BondManager Instance = null;
+
         [SerializeField]
         private Slider BondBar;
 
+		[SerializeField]
+		[Range(0, 100)]
         private int m_BondStatus;
 
         public int BondStatus
@@ -31,16 +35,35 @@ namespace Bond
                 {
                     m_BondStatus = value;    
                 }
+				UpdateGUI();
 
             }
         }
+
+		void Update()
+		{
+			//UpdateGUI();
+		}
 
         // Use this for initialization
         void Awake () 
         {
             //initialize to be middle value
-            m_BondStatus = 50;
-        }   
+            m_BondStatus = 25;
+
+			//initialize the instance to this one
+			if (Instance == null)
+			{
+				Instance = this;
+			}
+			else
+			{
+				if (Instance != this)
+				{
+					Destroy(this.gameObject);
+				}
+			}
+		}   
 
         public void SetBondStatus(int b)
         {
@@ -50,14 +73,14 @@ namespace Bond
             UpdateGUI();
         }
 
-        private void UpdateGUI()
+        public void UpdateGUI()
         {
             if(!BondBar)
             {
                 Debug.LogError("BondBar missing from scene");
                 return;
             }
-            BondBar.GetComponent<Slider>().value = m_BondStatus;
+            BondBar.GetComponent<Slider>().normalizedValue = m_BondStatus;
         }
     }
 
