@@ -36,5 +36,11 @@ namespace Utility {
             Cooperation,
             Size //must be last
         }
+
+        public enum ItemName
+        {
+            NONE = -1,
+            Bow,
+        }
     }
 }

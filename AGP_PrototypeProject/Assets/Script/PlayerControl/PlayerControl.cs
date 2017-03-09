@@ -5,6 +5,7 @@ using Inputs;
 using Utility;
 using System;
 using Player;
+using Items;
 
 namespace Player
 {
@@ -23,6 +24,7 @@ namespace Player
 
         private MoveComponent m_moveComp;
         //private InputPacket[] m_inputPackets;
+        private EquipmentHandler m_EquipmentHandler;
 
         private PCActions m_PCActions;
 
@@ -37,6 +39,7 @@ namespace Player
                 Debug.Log("SCENE MSISING CAMERA");
             }
             m_moveComp = GetComponent<MoveComponent>();
+            m_EquipmentHandler = GetComponent<EquipmentHandler>();
             m_PCActions = new PCActions();
             m_PCActions.InputPackets = new InputPacket[18];
             m_UserInput = FindObjectOfType<UserInput>();
@@ -57,12 +60,6 @@ namespace Player
             CheckMovement();
             CheckActions();
             CheckCommands();
-            CheckCamera();
-        }
-
-        private void CheckCamera()
-        {
-
         }
 
         private void CheckCommands()
@@ -72,7 +69,7 @@ namespace Player
 
         private void CheckActions()
         {
-
+            m_EquipmentHandler.ProcessActions(m_PCActions);
         }
 
         private void CheckMovement()
