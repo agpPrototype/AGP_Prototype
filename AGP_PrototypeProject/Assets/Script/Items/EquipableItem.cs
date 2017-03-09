@@ -1,10 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Utility;
 
 namespace Items
 {
     public abstract class EquipableItem : MonoBehaviour {
+
+        [SerializeField]
+        public EnumService.ItemName Name;
 
         private Mesh m_mesh;
 

@@ -16,5 +16,9 @@ namespace Player
         public bool Jump;
         public bool Crouch;
         public bool Running;
+        public float StrafeForward;
+        public float StrafeRight;
+        public bool Aim;
+        public bool Fire;
     }
 }

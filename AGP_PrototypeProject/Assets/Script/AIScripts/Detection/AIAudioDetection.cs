@@ -48,14 +48,27 @@ namespace AI
             public AIAudible GetHighestThreat()
             {
                 List<AIAudible> actualAudibles = GetAudibles();
+                AIAudible highestThreat = null;
                 if (actualAudibles.Count > 0)
                 {
-                    return actualAudibles[0];
+                    for (int i = 0; i < actualAudibles.Count; i++)
+                    {
+                        AIAudible currAudible = actualAudibles[i];
+                        if (highestThreat)
+                        {
+                            if (currAudible.ThreatLevel > highestThreat.ThreatLevel)
+                            {
+                                highestThreat = currAudible;
+                            }
+                        }
+                        else
+                        {
+                            highestThreat = currAudible;
+                        }
+                    }
                 }
-                else
-                {
-                    return null;
-                }
+
+                return highestThreat;
             }
 
             /* will return true if AIAudible is audible. function to determin if an AIAudible is audible

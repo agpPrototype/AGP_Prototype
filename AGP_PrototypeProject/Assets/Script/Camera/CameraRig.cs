@@ -304,7 +304,7 @@ namespace CameraController
         }
 
         //zooms the camera in and out
-        void Zoom(bool isZooming)
+        public void Zoom(bool isZooming)
         {
             if (!m_mainCam)
             {

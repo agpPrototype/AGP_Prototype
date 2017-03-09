@@ -7,9 +7,13 @@ namespace Bond
 {
     public class BondManager : MonoBehaviour 
     {
+		public static BondManager Instance = null;
+
         [SerializeField]
         private Slider BondBar;
 
+		[SerializeField]
+		[Range(0, 100)]
         private int m_BondStatus;
 
         public int BondStatus
@@ -31,6 +35,7 @@ namespace Bond
                 {
                     m_BondStatus = value;    
                 }
+				UpdateGUI();
 
             }
         }
@@ -39,8 +44,22 @@ namespace Bond
         void Awake () 
         {
             //initialize to be middle value
-            m_BondStatus = 50;
-        }   
+            //m_BondStatus = 50;
+
+			//initialize the instance to this one
+			if (Instance == null)
+			{
+				Instance = this;
+			}
+			else
+			{
+				if (Instance != this)
+				{
+					Destroy(this.gameObject);
+				}
+			}
+			UpdateGUI();
+		}   
 
         public void SetBondStatus(int b)
         {
@@ -50,7 +69,7 @@ namespace Bond
             UpdateGUI();
         }
 
-        private void UpdateGUI()
+        public void UpdateGUI()
         {
             if(!BondBar)
             {

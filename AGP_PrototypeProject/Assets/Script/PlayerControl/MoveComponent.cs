@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Utility;
 using Player;
+using CameraController;
 
 public class MoveComponent : MonoBehaviour {
 
@@ -33,6 +34,8 @@ public class MoveComponent : MonoBehaviour {
     float m_CrouchingToggleDelayThreshold = 0.2f;
     [SerializeField]
     float m_RunningToggleDelayThreshold = 0.2f;
+    [SerializeField]
+    Transform Spine;
 
     Rigidbody m_Rigidbody;
     Animator m_Animator;
@@ -49,6 +52,10 @@ public class MoveComponent : MonoBehaviour {
     float m_CrouchingToggleDelay;
     bool m_Running;
     float m_RunningToggleDelay;
+    float m_StrafeForward;
+    float m_StrafeRight;
+    bool m_Aim;
+    CameraRig m_CamRig;
 
     void Start()
     {
@@ -69,6 +76,7 @@ public class MoveComponent : MonoBehaviour {
 
         m_Rigidbody.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
         m_OrigGroundCheckDistance = m_GroundCheckDistance;
+        m_CamRig = FindObjectOfType<CameraRig>();
     }
 
     public void ProcessMovement(PCActions pca)
@@ -77,10 +85,12 @@ public class MoveComponent : MonoBehaviour {
         if (pca.InputPackets[(int)EnumService.InputType.LeftStickX] != null)
         {
             pca.Horizontal = pca.InputPackets[(int)EnumService.InputType.LeftStickX].Value;
+            pca.StrafeRight = pca.InputPackets[(int)EnumService.InputType.LeftStickX].Value;
         }
         if (pca.InputPackets[(int)EnumService.InputType.LeftStickY] != null)
         {
             pca.Vertical = pca.InputPackets[(int)EnumService.InputType.LeftStickY].Value;
+            pca.StrafeForward = pca.InputPackets[(int)EnumService.InputType.LeftStickY].Value;
         }
 
         if (m_cam != null)
@@ -110,6 +120,10 @@ public class MoveComponent : MonoBehaviour {
             pca.Running = Convert.ToBoolean(pca.InputPackets[(int)EnumService.InputType.RightStickButton].Value);
         }
 
+        if (pca.InputPackets[(int)EnumService.InputType.LT] != null)
+        {
+            pca.Aim = Convert.ToBoolean(pca.InputPackets[(int)EnumService.InputType.LT].Value);
+        }
 
         #endregion
 
@@ -122,52 +136,66 @@ public class MoveComponent : MonoBehaviour {
     void Move(PCActions pca)
     {
         #region Parse PCA to private members
-
         Vector3 move = pca.Move;
-        if (move.magnitude > 1f) move.Normalize();
-        move = transform.InverseTransformDirection(move);
-        CheckGroundStatus();
-        move = Vector3.ProjectOnPlane(move, m_GroundNormal);
-        m_TurnAmount = Mathf.Atan2(move.x, move.z);
-        m_ForwardAmount = move.z;
-        //crouching
-        if (pca.Crouch && m_CrouchingToggleDelay > m_CrouchingToggleDelayThreshold)
+        m_Aim = pca.Aim;
+        if (!pca.Aim)
         {
-            if (m_Crouching)
+            //Vector3 move = pca.Move;
+            if (move.magnitude > 1f) move.Normalize();
+            move = transform.InverseTransformDirection(move);
+            CheckGroundStatus();
+            move = Vector3.ProjectOnPlane(move, m_GroundNormal);
+            m_TurnAmount = Mathf.Atan2(move.x, move.z);
+            m_ForwardAmount = move.z;
+            //crouching
+            if (pca.Crouch && m_CrouchingToggleDelay > m_CrouchingToggleDelayThreshold)
             {
-                m_Crouching = false;
-                m_Running = false;
-                m_CrouchingToggleDelay = 0.0f;
+                if (m_Crouching)
+                {
+                    m_Crouching = false;
+                    m_Running = false;
+                    m_CrouchingToggleDelay = 0.0f;
+                }
+                else
+                {
+                    m_Crouching = true;
+                    m_Running = false;
+                    m_CrouchingToggleDelay = 0.0f;
+                }
             }
-            else
-            {
-                m_Crouching = true;
-                m_Running = false;
-                m_CrouchingToggleDelay = 0.0f;
-            }
-        }
-        m_CrouchingToggleDelay += Time.fixedDeltaTime;
+            m_CrouchingToggleDelay += Time.fixedDeltaTime;
 
-        //running , same concept with crouching
-        if (pca.Running && m_RunningToggleDelay > m_RunningToggleDelayThreshold)
-        {
-            if (m_Running)
+            //running , same concept with crouching
+            if (pca.Running && m_RunningToggleDelay > m_RunningToggleDelayThreshold)
             {
-                m_Running = false;
-                m_RunningToggleDelay = 0.0f;
+                if (m_Running)
+                {
+                    m_Running = false;
+                    m_RunningToggleDelay = 0.0f;
+                }
+                else
+                {
+                    m_Running = true;
+                    m_RunningToggleDelay = 0.0f;
+                }
             }
-            else
-            {
-                m_Running = true;
-                m_RunningToggleDelay = 0.0f;
-            }
+
+            ApplyExtraTurnRotation();
         }
-        m_RunningToggleDelay += Time.fixedDeltaTime;
+        else //this is where we go into aim mode
+        {
+            //m_RunningToggleDelay += Time.fixedDeltaTime;            
+            m_StrafeForward = pca.StrafeForward;
+            m_StrafeRight = pca.StrafeRight;
+            Vector3 forward = m_cam.TransformDirection(Vector3.forward);
+            forward.y = 0.0f;
+            Quaternion targetRotation = Quaternion.LookRotation(forward);
+
+            Quaternion newRotation = Quaternion.Slerp(GetComponent<Rigidbody>().rotation, targetRotation, 15.0f * Time.deltaTime);
+            GetComponent<Rigidbody>().MoveRotation(newRotation);
+        }
 
         #endregion
-
-
-        ApplyExtraTurnRotation();
 
         //control and velocity handling is different when grounded and airborne:
         if (m_IsGrounded)
@@ -192,35 +220,55 @@ public class MoveComponent : MonoBehaviour {
     {
         // update the animator parameters
         //Debug.Log("FORW: " + m_ForwardAmount);
-        m_Animator.SetFloat("Forward", m_ForwardAmount, 0.1f, Time.deltaTime);
-        m_Animator.SetFloat("Turn", m_TurnAmount, 0.1f, Time.deltaTime);
-        m_Animator.SetBool("Crouch", m_Crouching);
-        m_Animator.SetBool("OnGround", m_IsGrounded);
-        if (!m_IsGrounded)
-        {
-            m_Animator.SetFloat("Jump", m_Rigidbody.velocity.y);
-        }
+        m_Animator.SetBool("Aim", m_Aim);
+        if (!m_Aim)
+        {           
+            m_Animator.SetFloat("Forward", m_ForwardAmount, 0.1f, Time.deltaTime);
+            m_Animator.SetFloat("Turn", m_TurnAmount, 0.1f, Time.deltaTime);
+            //m_Animator.SetFloat("StrafeForward", m_StrafeForward);
+            //m_Animator.SetFloat("StrafeRight", m_StrafeRight);
+            m_Animator.SetBool("Crouch", m_Crouching);
+            m_Animator.SetBool("OnGround", m_IsGrounded);
+            if (!m_IsGrounded)
+            {
+                m_Animator.SetFloat("Jump", m_Rigidbody.velocity.y);
+            }
 
-        //running
-        if (m_Running)
-        {
-            m_Animator.speed = m_RunSpeedMultiplier;
+            //running
+            if (m_Running)
+            {
+                m_Animator.speed = m_RunSpeedMultiplier;
+            }
+            else
+            {
+                m_Animator.speed = m_MoveSpeedMultiplier;
+            }
+
+            // calculate which leg is behind, so as to leave that leg trailing in the jump animation
+            // (This code is reliant on the specific run cycle offset in our animations,
+            // and assumes one leg passes the other at the normalized clip times of 0.0 and 0.5)
+            float runCycle =
+                Mathf.Repeat(
+                    m_Animator.GetCurrentAnimatorStateInfo(0).normalizedTime + m_RunCycleLegOffset, 1);
+            float jumpLeg = (runCycle < k_Half ? 1 : -1) * m_ForwardAmount;
+            if (m_IsGrounded)
+            {
+                m_Animator.SetFloat("JumpLeg", jumpLeg);
+            }
+
+            if (m_CamRig)
+            {
+                m_CamRig.Zoom(false);
+            }
         }
         else
         {
-            m_Animator.speed = m_MoveSpeedMultiplier;
-        }
-
-        // calculate which leg is behind, so as to leave that leg trailing in the jump animation
-        // (This code is reliant on the specific run cycle offset in our animations,
-        // and assumes one leg passes the other at the normalized clip times of 0.0 and 0.5)
-        float runCycle =
-            Mathf.Repeat(
-                m_Animator.GetCurrentAnimatorStateInfo(0).normalizedTime + m_RunCycleLegOffset, 1);
-        float jumpLeg = (runCycle < k_Half ? 1 : -1) * m_ForwardAmount;
-        if (m_IsGrounded)
-        {
-            m_Animator.SetFloat("JumpLeg", jumpLeg);
+            m_Animator.SetFloat("StrafeForward", m_StrafeForward);
+            m_Animator.SetFloat("StrafeRight", m_StrafeRight);
+            if (m_CamRig)
+            {
+                m_CamRig.Zoom(true);
+            }
         }
         /**************TODO: CHEC THIS **************/
         // the anim speed multiplier allows the overall speed of walking/running to be tweaked in the inspector,

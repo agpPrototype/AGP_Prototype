@@ -63,6 +63,7 @@ namespace AI
         private AILineOfSightDetection m_AILineOfSightDetection;
         private AIAudioDetection m_AIAudioDetection;
 
+        private Vector3 m_TargetLastPosition;
         private AIDetectable m_Target; // current prioritized target.
 
         // Use this for initialization
@@ -85,12 +86,23 @@ namespace AI
 
         private void createChaseBT()
         {
+            /// Root_Idle_Node
+            ///     Patrol_Node
+            ///         Chase_Node
+            ///             Chase->Idle
+
             /// Node
             /* node to perform anything AI does while idling */
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Root_Idle_Node");
             rootNode.AddAction(new Action(idle));
 
             m_IdleBT = new BehaviorTree(rootNode, this, "Idle State BT");
+
+            /// Node
+            DecisionNode patrolNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Patrol_Node");
+            patrolNode.AddAction(new Action(patrol));
+            m_IdleBT.AddDecisionNodeTo(rootNode, patrolNode);
+            
 
             /// Node
             /* node to switch from idle to chasing state */
@@ -100,33 +112,113 @@ namespace AI
             Condition threatCond = new Condition(new BoolTypeDelegate(isHasThreat));
             chaseNode.AddCondition(threatCond);
             /* add the chase node to the tree */
-            m_IdleBT.AddDecisionNodeTo(rootNode, chaseNode);
+            m_IdleBT.AddDecisionNodeTo(patrolNode, chaseNode);
 
             /// Node
             DecisionNode resetNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "Chase->Idle");
             resetNode.AddAction(new Action(new VoidTypeDelegate(m_IdleBT.RestartTree)));
             Condition noThreatCond = new Condition(new BoolTypeDelegate(isNotHasThreat));
             resetNode.AddCondition(noThreatCond);
-
             m_IdleBT.AddDecisionNodeTo(chaseNode, resetNode);
         }
 
-        #region Chase BT Methods
+        #region Chase Node Methods
         private bool isHasThreat()
         {
-            return (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection) != null);
-        }
-        private bool isNotHasThreat()
-        {
-            return (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection) == null);
-        }
-        private void idle()
-        {
-            //Debug.Log("AI is idling");
+            m_Target = (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection));
+            return m_Target != null;
         }
         private void chase()
         {
-            //Debug.Log("AI is chasing");
+            Debug.Log("AI is chasing");
+            if (!m_NavAgent.isOnNavMesh)
+            {
+                Debug.Log("AI nav agent not on a nav mesh.");
+                return;
+            }
+
+            if (m_AIAudioDetection != null && m_AILineOfSightDetection != null)
+            {
+                m_Target = (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection));
+            }
+            else
+            {
+                Debug.LogError("No AIAudioDetection or AILineOfSightDetectin on AI.");
+            }
+
+            // Keep updating target position if we can see the target.
+            m_NavAgent.SetDestination(m_TargetLastPosition);
+            // Check to see if we have gotten close enough to target.
+            m_NavAgent.stoppingDistance = StopDistFromTarget;
+            // Check if we've reached the destination
+            if (!m_NavAgent.pathPending)
+            {
+                if (m_NavAgent.remainingDistance <= m_NavAgent.stoppingDistance)
+                {
+                    // Done pathfinding.
+                    Debug.Log("AI got to target.");
+                }
+            }
+        }
+        #endregion
+
+        #region Reset Node Methods
+        private bool isNotHasThreat()
+        {
+            m_Target = (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection));
+            if(m_Target != null)
+            {
+                m_TargetLastPosition = m_Target.transform.position;
+            }
+            return m_Target == null;
+        }
+        private void idle()
+        {
+            Debug.Log("AI is idling");
+        }
+        #endregion
+
+        #region Patrol Node Methods
+        private void patrol()
+        {
+            // Get next waypoint from patrol area if we have one
+            if (PatrolArea != null)
+            {
+                if (m_CurrentWaypoint != null)
+                {
+                    if (!m_NavAgent.isOnNavMesh)
+                    {
+                        Debug.Log("AI nav agent not on a nav mesh.");
+                        return;
+                    }
+
+                    // Move to the waypoint
+                    //m_NavAgent.Resume();// SetDestination(m_CurrentWaypoint.transform.position);
+                    m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
+
+                    // If we made it to the waypoint.
+                    if (m_NavAgent.remainingDistance <= StopDistFromWaypoints)
+                    {
+                        m_CurrentWaypoint = PatrolArea.GetRandomWaypoint();
+                        if (m_CurrentWaypoint != null)
+                        {
+                            m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
+                        }
+                        else
+                        {
+                            Debug.Log("Randomly generated AI waypoint destination is null.");
+                        }
+                    }
+                }
+                else
+                {
+                    m_CurrentWaypoint = PatrolArea.GetRandomWaypoint();
+                    if (m_CurrentWaypoint != null)
+                    {
+                        m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
+                    }
+                }
+            }
         }
         #endregion
 
@@ -155,8 +247,6 @@ namespace AI
         private void SetMainState(EnemyAIState newState)
         {
             m_State = newState;
-
-            //m_CurrentBT.RestartTree();
 
             // Switch the current behavior tree to the new state's tree
             switch (m_State)

@@ -142,14 +142,27 @@ namespace AI
             public AIVisible GetHighestThreat()
             {
                 List<AIVisible> actualVisibles = GetVisibles();
+                AIVisible highestThreat = null;
                 if (actualVisibles.Count > 0)
                 {
-                    return actualVisibles[0];
+                    for (int i = 0; i < actualVisibles.Count; i++)
+                    {
+                        AIVisible currVisible = actualVisibles[i];
+                        if (highestThreat)
+                        {
+                            if (currVisible.ThreatLevel > highestThreat.ThreatLevel)
+                            {
+                                highestThreat = currVisible;
+                            }
+                        }
+                        else
+                        {
+                            highestThreat = currVisible;
+                        }
+                    }
                 }
-                else
-                {
-                    return null;
-                }
+
+                return highestThreat;
             }
 
             /* gets a list of visibles that the AI can see. */
