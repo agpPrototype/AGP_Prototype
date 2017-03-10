@@ -36,7 +36,7 @@ namespace Items
             Destroy(gameObject, LifeSpan);
         }
 
-        void OnCollisionEnter(Collision col)
+        void OnTriggerEnter(Collider col)
         {
             if (col.gameObject.GetComponent<Health>())
             {
