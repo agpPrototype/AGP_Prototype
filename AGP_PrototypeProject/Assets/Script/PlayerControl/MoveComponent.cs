@@ -48,7 +48,7 @@ public class MoveComponent : MonoBehaviour {
     float m_CapsuleHeight;
     Vector3 m_CapsuleCenter;
     CapsuleCollider m_Capsule;
-    bool m_Crouching;
+    public bool m_Crouching;
     float m_CrouchingToggleDelay;
     bool m_Running;
     float m_RunningToggleDelay;

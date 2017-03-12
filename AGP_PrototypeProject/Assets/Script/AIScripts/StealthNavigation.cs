@@ -19,8 +19,14 @@ namespace AI
 
         private GameObject m_PlayerRef;
 
+        private Vector3 m_FinalDestination;
+
         [SerializeField]
         private bool m_isNavigating = false;
+
+        [SerializeField]
+        [Tooltip("Boundary color of debug lines drawn for stealth path")]
+        private Color StealthPathColor;
 
 
         // Use this for initialization
@@ -28,15 +34,7 @@ namespace AI
             
             m_PlayerRef = GetComponentInParent<CompanionAISM>().Player;
             Debug.Assert(!ReferenceEquals(m_PlayerRef, null), "ERROR: Need Reference to Player!");
-        }
 
-        // Update is called once per frame
-        void Update() {
-
-        }
-
-        public void ActivateStealthNavigation()
-        {
             // Get all child game objects
             int numChild = m_StealthPosGraphObject.transform.childCount;
             m_StealthPointList = new GameObject[numChild];
@@ -47,6 +45,25 @@ namespace AI
             }
 
             Debug.Assert(m_StealthPointList.Length > 1, "ERROR: Need stealth points on map in order to have AI Navigate!");
+        }
+
+        // Update is called once per frame
+        void Update() {
+
+        }
+
+        public void ActivateStealthNavigation()
+        {
+            //// Get all child game objects
+            //int numChild = m_StealthPosGraphObject.transform.childCount;
+            //m_StealthPointList = new GameObject[numChild];
+
+            //for (int i = 0; i < numChild; ++i)
+            //{
+            //    m_StealthPointList[i] = m_StealthPosGraphObject.transform.GetChild(i).gameObject;
+            //}
+
+            //Debug.Assert(m_StealthPointList.Length > 1, "ERROR: Need stealth points on map in order to have AI Navigate!");
 
 
             m_NextStealthPos = FindClosestPointToPlayer();//.GetComponentInParent<StealthPosition>();
@@ -76,18 +93,15 @@ namespace AI
 
             if (path.corners.Length != 0 && !IsAtNextNode())
             {
-                //if (m_Corners[0] != path.corners[0])
-               // {
-               //     m_Corners = path.corners;
                     wolfMoveComp.Move(TargetMoveToLocation, path.corners);
                     m_isNavigating = true;
-                //  }
             }
 
             
         }
 
-        static float MinDistToPointSq = 4.0f;
+        [SerializeField]
+        float MinDistToPointSq = 1.0f;
 
         public bool IsAtNextNode()
         {
@@ -159,6 +173,51 @@ namespace AI
             if(!ReferenceEquals(closestPoint, null))
                 m_NextStealthPos = closestPoint.gameObject;
         }
+
+        public bool IsPathSafeToNext() // Ignore enemy FOV for now
+        {
+            // Find Intersection of EnemyDir and my desired direction
+            Vector3 EnemyPos = GetComponent<CompanionAISM>().Enemy.transform.position;
+            Vector3 EnemyFaceDir = GetComponent<CompanionAISM>().Enemy.transform.forward;
+            EnemyFaceDir.Normalize();
+
+            Vector3 WolfPos = transform.position;
+            Vector3 nextDir = m_NextStealthPos.transform.position - WolfPos;
+            nextDir.Normalize();
+
+            Vector3 crossDir = Vector3.Cross(EnemyFaceDir, nextDir);
+            Vector3 leftOfDot = Vector3.Cross((WolfPos - EnemyPos), nextDir);
+
+            float timeDirsIntersect = Vector3.Dot(leftOfDot, crossDir) / crossDir.sqrMagnitude;
+
+            if (timeDirsIntersect < 0)
+                return true;
+
+            return false;
+
+            //Vector3 intersectPt = WolfPos + nextDir * timeDirsIntersect;
+
+
+        }
+
+        //void OnDrawGizmos()
+        //{
+        //    // Draw stealth path
+        //    // Gizmos.DrawIcon(this.transform.position + Vector3.up * PatrolIconHeight, "patrollingIcon.png");
+        //    if (m_StealthPointList != null)
+        //   {
+        //        for (int i = 0; i < m_StealthPointList.Length; ++i)
+        //        {
+        //            GameObject currWaypoint = m_StealthPointList[i];
+        //            for (int k = 0; k < currWaypoint.GetComponent<StealthPosition>().GetNextPositions().Length; ++k)
+        //            {
+        //                StealthPosition nextWaypoint = currWaypoint.GetComponent<StealthPosition>().GetNextPositions()[k];
+        //                Gizmos.color = StealthPathColor;
+        //                Gizmos.DrawLine(currWaypoint.transform.position, nextWaypoint.gameObject.transform.position);
+        //            }
+        //        }
+        //    }
+        //}
 
     }
 }

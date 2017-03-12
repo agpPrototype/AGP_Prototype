@@ -5,6 +5,7 @@ using UnityEngine.AI;
 using MalbersAnimations;
 using Wolf;
 using Player;
+using Bond;
 
 namespace AI
 {
@@ -116,7 +117,7 @@ namespace AI
 
         private Vector3 playerLoc;
 
-        public GameObject Enemy;
+        
 
         [SerializeField]
         private Float DistToPlayerSq;
@@ -139,8 +140,9 @@ namespace AI
         [SerializeField]
         bool switchToAttack;
 
-        
-        
+        [SerializeField]
+        public GameObject Enemy;
+
 
 
         #endregion
@@ -317,8 +319,12 @@ namespace AI
             /// 
             DecisionNode navigateToNextStealthPt = new DecisionNode(DecisionType.RepeatUntilCanProgress, "NavigateToStealthPt");
             Condition isPlayerAway = new Condition(new FloatTypeDelegate(GetDistToPlayerSq), ConditionComparison.Greater, new Float(StartToFollowDistance * StartToFollowDistance));
+            // Condition isBondHigh = new Condition(new FloatTypeDelegate(BondManager.Instance.GetBondStatus), ConditionComparison.Greater, new Float(50.0f));
+            Condition isPathSafe = new Condition(new BoolTypeDelegate(m_StealthNav.IsPathSafeToNext));
             Action navToNext = new Action(m_StealthNav.NavigateToNextNode);
 
+            // navigateToNextStealthPt.AddCondition(isBondHigh);
+            navigateToNextStealthPt.AddCondition(isPathSafe);
             navigateToNextStealthPt.AddCondition(isPlayerAway);
             navigateToNextStealthPt.AddAction(navToNext);
 
@@ -326,6 +332,10 @@ namespace AI
 
             // Loop back to top
             m_StealthTree.AddDecisionNodeTo(navigateToNextStealthPt, rootNode);
+
+            /// NODE ///
+            /// 
+           // DecisionNode 
         }
 
         #endregion
@@ -350,7 +360,7 @@ namespace AI
             if (!ReferenceEquals(m_CurrentBT, null))
                 m_CurrentBT.ContinueBehaviorTree();
             else
-                Debug.Log("CompanionAISM: current BT not initialized yet");
+                Debug.Assert(false, "CompanionAISM: current BT not initialized yet");
 
 
             // Determine what the current state should be
@@ -363,11 +373,20 @@ namespace AI
         {
             DistToPlayerSq.value = (Player.transform.position - transform.position).sqrMagnitude;
 
-            if (false && switchToAttack)
+
+            // Determine if Stealth is correct state to be in
+            bool isPlayerStealthed = Player.GetComponent<MoveComponent>().m_Crouching;
+            if (isPlayerStealthed && m_CurrentMainState != WolfMainState.Stealth)
             {
-                SetMainState(WolfMainState.Attack);
-                switchToAttack = false;
+                SetMainState(WolfMainState.Stealth);
+                Debug.Log("Accalia Switched to Stealth state");
             }
+
+            //if (false && switchToAttack)
+            //{
+            //    SetMainState(WolfMainState.Attack);
+            //    switchToAttack = false;
+            //}
         }
 
 
@@ -489,6 +508,7 @@ namespace AI
                 }
             }
         }
+
         #endregion
 
         #region Idle Functions
@@ -526,6 +546,15 @@ namespace AI
             //Debug.Log("Attacking enemy!");
         }
 
+        #endregion
+
+        #region StealthFunctions
+
+        public void RotateTowardsEnemyPath()
+        {
+            Vector3 EnemyMovementDir = Enemy.GetComponent<NavMeshAgent>().velocity;
+            //Vector3 EnemyPos = 
+        }
         #endregion
 
         #region Utillity Functions
