@@ -138,6 +138,28 @@ namespace AI
                 m_PeriphFOVHalfed = PeriphFOVPercentage * FOV / 2;
             }
 
+            public Vector3 GetFOVVector(Vector3 forward, Vector3 up, FOV_REGION fovRegion, bool wantRightVector)
+            {
+                float angle = 0.0f;
+                if (fovRegion == FOV_REGION.DIRECT)
+                {
+                    angle = m_DirectFOVHalfed;
+                }
+                else if (fovRegion == FOV_REGION.PERIPHERAL)
+                {
+                    angle = m_DirectFOVHalfed + m_SideFOVHalfed + m_PeriphFOVHalfed;
+                }
+                else if (fovRegion == FOV_REGION.SIDE)
+                {
+                    angle = m_DirectFOVHalfed + m_SideFOVHalfed;
+                }
+
+                if (wantRightVector)
+                    return (Quaternion.AngleAxis(angle, up) * forward).normalized;
+                else
+                    return (Quaternion.AngleAxis(-angle, up) * forward).normalized;
+            }
+
             /* gets highest priority visible based on AILineOfSightDetection settings */
             public AIVisible GetHighestThreat()
             {
