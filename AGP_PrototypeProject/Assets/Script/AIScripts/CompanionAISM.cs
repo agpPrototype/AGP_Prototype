@@ -122,6 +122,8 @@ namespace AI
         [SerializeField]
         private Float DistToPlayerSq;
 
+        private Vector3 m_RotateToDirection;
+
 
         #region Temp Variables For Testing (To go in another file later)
 
@@ -135,7 +137,8 @@ namespace AI
         private float StartToFollowDistance;
 
         [SerializeField]
-        private Int testConditionValue;
+        private float m_MaxTimeToWaitAtStealthPoint;
+        private bool m_WaitStealthTimerSet = false;
 
         [SerializeField]
         bool switchToAttack;
@@ -143,7 +146,8 @@ namespace AI
         [SerializeField]
         public GameObject Enemy;
 
-
+        [SerializeField]
+        public StealthPosition StealthDestination;
 
         #endregion
 
@@ -172,6 +176,7 @@ namespace AI
             playerLoc = Player.transform.position;
             DistToPlayerSq = new Float((playerLoc - transform.position).sqrMagnitude);
 
+            m_RotateToDirection = Vector3.zero;
             // TEMP
             //SetMainState(WolfMainState.Stealth);
 
@@ -301,20 +306,40 @@ namespace AI
 
             m_AttackTree.AddDecisionNodeTo(attackEnemyNode, toFollowNode);
 
-
+            //GetComponent<Animator>().SetBool("Attack1", true);
         }
 
         private void CreateStealthBT()
         {
+            ///                              root
+            /// (FollowStealth)                            (FindOwnPath)
+            /// FindNextStealthPt                           FindPathToEnd
+            /// GoToNextStealthPt                           GoToNextStealthPt
+            /// RotateTowardsNext (once arrived)            RotateTowardsNext (once arrived)
+            /// LoopToRoot                                  Wait
+            ///                                             LoopTo"GoToNextStealthPt"
+            ///                                             
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Root Stealth");
-            Condition isAtStealthPt = new Condition(new BoolTypeDelegate(m_StealthNav.IsAtNextNode));
+            //Condition isAtStealthPt = new Condition(new BoolTypeDelegate(m_StealthNav.IsAtNextNode));
             Action beginStealth = new Action(DoNothing);
 
-            rootNode.AddCondition(isAtStealthPt);
+            // Test Go To stealth navigation
             rootNode.AddAction(beginStealth);
 
             m_StealthTree = new BehaviorTree(WolfMainState.Stealth, rootNode, this);
 
+            #region StealthLeftTree_Follow
+
+            /// NODE ///
+            /// 
+            DecisionNode findNextStealthPt = new DecisionNode(DecisionType.RepeatUntilCanProgress, "FindNextStealthPt");
+            Condition isBondLow1 = new Condition(new FloatTypeDelegate(BondManager.Instance.GetBondStatus), ConditionComparison.Greater, new Float(50.0f));
+            Action getNextPt = new Action(m_StealthNav.DetermineNextStealthPointToPlayer);
+            findNextStealthPt.AddCondition(isBondLow1);
+            findNextStealthPt.AddAction(getNextPt);
+
+            m_StealthTree.AddDecisionNodeTo(rootNode, findNextStealthPt);
+            
             /// NODE ///
             /// 
             DecisionNode navigateToNextStealthPt = new DecisionNode(DecisionType.RepeatUntilCanProgress, "NavigateToStealthPt");
@@ -328,25 +353,82 @@ namespace AI
             navigateToNextStealthPt.AddCondition(isPlayerAway);
             navigateToNextStealthPt.AddAction(navToNext);
 
-            m_StealthTree.AddDecisionNodeTo(rootNode, navigateToNextStealthPt);
-
-            // Loop back to top
-            m_StealthTree.AddDecisionNodeTo(navigateToNextStealthPt, rootNode);
+            m_StealthTree.AddDecisionNodeTo(findNextStealthPt, navigateToNextStealthPt);
 
             /// NODE ///
             /// 
-           // DecisionNode 
+            DecisionNode rotateTowardsNext = new DecisionNode(DecisionType.RepeatUntilActionComplete, "RotateToNext");
+            Condition isAtStealthPt = new Condition(new BoolTypeDelegate(m_StealthNav.IsAtNextNode));
+            Action rotateWolf = new Action(RotateTowardsEnemyPath);
+
+            rotateTowardsNext.AddCondition(isAtStealthPt);
+            rotateTowardsNext.AddAction(rotateWolf);
+            m_StealthTree.AddDecisionNodeTo(navigateToNextStealthPt, rotateTowardsNext);
+
+            // Loop back to top
+            m_StealthTree.AddDecisionNodeTo(rotateTowardsNext, rootNode);
+
+
+            #endregion
+
+            #region StealthRightTree_GoOffOnOwn
+            /// NODE ///
+            /// 
+            DecisionNode navToNextStealthPt_path = new DecisionNode(DecisionType.RepeatUntilCanProgress, "NavigateToStealthPt");
+            Condition isPathSafe_path = new Condition(new BoolTypeDelegate(m_StealthNav.IsPathSafeToNext));
+            Action navToNext_path = new Action(m_StealthNav.NavigateToNextNode);
+            navToNextStealthPt_path.AddCondition(isPathSafe_path);
+            navToNextStealthPt_path.AddAction(navToNext_path);
+
+            m_StealthTree.AddDecisionNodeTo(rootNode, navToNextStealthPt_path);
+
+
+            /// NODE ///
+            /// 
+            DecisionNode rotateTowardsNextSP = new DecisionNode(DecisionType.RepeatUntilActionComplete, "RotateToNext");
+            Condition isAtStealthPt2 = new Condition(new BoolTypeDelegate(m_StealthNav.IsAtNextNode));
+            Action rotateWolf2 = new Action(RotateTowardsNextStealthPos);
+            rotateTowardsNextSP.AddCondition(isAtStealthPt2);
+            rotateTowardsNextSP.AddAction(rotateWolf2);
+
+            m_StealthTree.AddDecisionNodeTo(navToNextStealthPt_path, rotateTowardsNextSP);
+
+            /// NODE ///
+            /// 
+            DecisionNode waitHere = new DecisionNode(DecisionType.RepeatUntilActionComplete, "WaitAtStealthPoint");
+            Action waitForTimer = new Action(WaitAtStealthPoint);
+            waitHere.AddAction(waitForTimer);
+
+            m_StealthTree.AddDecisionNodeTo(rotateTowardsNextSP, waitHere);
+
+            /// NODE ///
+            /// 
+            DecisionNode doNothingNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "DoNothing");
+            Condition isPathComplete = new Condition(new BoolTypeDelegate(m_StealthNav.IsStealthPathComplete));
+            Action doNothing = new Action(DoNothing);
+            doNothingNode.AddCondition(isPathComplete);
+            doNothingNode.AddAction(doNothing);
+
+            m_StealthTree.AddDecisionNodeTo(waitHere, doNothingNode);
+
+            // Loop back to "nav to next" if not at end of path
+            m_StealthTree.AddDecisionNodeTo(waitHere, navToNextStealthPt_path);
+
+            #endregion
         }
 
         #endregion
 
 
-        IEnumerator waitFiveSeconds()
+        IEnumerator waitForTime(float waitTime)
         {
-            yield return new WaitForSeconds(3);
+            yield return new WaitForSeconds(waitTime);
 
-            SetMainState(WolfMainState.Stealth);
+            m_WaitStealthTimerSet = false;
+            CompleteCurrentActionExternal(true);
         }
+
+        
 
         // Update is called once per frame
         void Update()
@@ -550,11 +632,49 @@ namespace AI
 
         #region StealthFunctions
 
+        public void RotateTowardsNextStealthPos()
+        {
+            Vector3 nextStealthPos = m_StealthNav.NextStealthPos.transform.position;
+
+            if (m_WolfMoveComp.RotateTowards(nextStealthPos))
+            {
+                CompleteCurrentActionExternal(true);
+            }
+
+        }
+
         public void RotateTowardsEnemyPath()
         {
-            Vector3 EnemyMovementDir = Enemy.GetComponent<NavMeshAgent>().velocity;
-            //Vector3 EnemyPos = 
+            if (m_RotateToDirection == Vector3.zero)
+            {
+                Vector3 EnemyPos = Enemy.transform.position;
+                Vector3 EnemyDir = Enemy.GetComponent<NavMeshAgent>().destination - EnemyPos;
+                EnemyDir.Normalize();
+
+                Vector3 toWolfFromEnemy = transform.position - EnemyPos;
+                toWolfFromEnemy.Normalize();
+
+                float lengthUntilPathsIntersect = Vector3.Dot(toWolfFromEnemy, EnemyDir);
+                m_RotateToDirection = EnemyPos + EnemyDir * lengthUntilPathsIntersect;
+            }
+
+            if (m_WolfMoveComp.RotateTowards(m_RotateToDirection))
+            {
+                m_RotateToDirection = Vector3.zero;
+                CompleteCurrentActionExternal(true);
+            }
         }
+
+
+        public void WaitAtStealthPoint()
+        {
+            if (!m_WaitStealthTimerSet)
+            {
+                m_WaitStealthTimerSet = true;
+                StartCoroutine(waitForTime(m_MaxTimeToWaitAtStealthPoint));
+            }
+        }
+
         #endregion
 
         #region Utillity Functions
