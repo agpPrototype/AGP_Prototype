@@ -103,23 +103,24 @@ namespace AI
             patrolNode.AddAction(new Action(patrol));
             m_IdleBT.AddDecisionNodeTo(rootNode, patrolNode);
             
+            
+            ///// Node
+            ///* node to switch from idle to chasing state */
+            //DecisionNode chaseNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Chase_Node");
+            //chaseNode.AddAction(new Action(chase));
+            ///* add condition to chase node for when AI detects an enemy */
+            //Condition threatCond = new Condition(new BoolTypeDelegate(isHasThreat));
+            //chaseNode.AddCondition(threatCond);
+            ///* add the chase node to the tree */
+            //m_IdleBT.AddDecisionNodeTo(patrolNode, chaseNode);
 
-            /// Node
-            /* node to switch from idle to chasing state */
-            DecisionNode chaseNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Chase_Node");
-            chaseNode.AddAction(new Action(chase));
-            /* add condition to chase node for when AI detects an enemy */
-            Condition threatCond = new Condition(new BoolTypeDelegate(isHasThreat));
-            chaseNode.AddCondition(threatCond);
-            /* add the chase node to the tree */
-            m_IdleBT.AddDecisionNodeTo(patrolNode, chaseNode);
-
-            /// Node
-            DecisionNode resetNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "Chase->Idle");
-            resetNode.AddAction(new Action(new VoidTypeDelegate(m_IdleBT.RestartTree)));
-            Condition noThreatCond = new Condition(new BoolTypeDelegate(isNotHasThreat));
-            resetNode.AddCondition(noThreatCond);
-            m_IdleBT.AddDecisionNodeTo(chaseNode, resetNode);
+            ///// Node
+            //DecisionNode resetNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "Chase->Idle");
+            //resetNode.AddAction(new Action(new VoidTypeDelegate(m_IdleBT.RestartTree)));
+            //Condition noThreatCond = new Condition(new BoolTypeDelegate(isNotHasThreat));
+            //resetNode.AddCondition(noThreatCond);
+            //m_IdleBT.AddDecisionNodeTo(chaseNode, resetNode);
+            
         }
 
         #region Chase Node Methods
@@ -199,7 +200,7 @@ namespace AI
                     // If we made it to the waypoint.
                     if (m_NavAgent.remainingDistance <= StopDistFromWaypoints)
                     {
-                        m_CurrentWaypoint = PatrolArea.GetRandomWaypoint();
+                        m_CurrentWaypoint = PatrolArea.GetNextWaypoint(m_CurrentWaypoint);
                         if (m_CurrentWaypoint != null)
                         {
                             m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
