@@ -139,6 +139,7 @@ namespace AI
         [SerializeField]
         private float m_MaxTimeToWaitAtStealthPoint;
         private bool m_WaitStealthTimerSet = false;
+        private float m_WaitStealthEndTime;
 
         [SerializeField]
         bool switchToAttack;
@@ -372,6 +373,15 @@ namespace AI
             #endregion
 
             #region StealthRightTree_GoOffOnOwn
+
+            /// NODE ///
+            /// 
+            DecisionNode findNextStealthPt_path = new DecisionNode(DecisionType.RepeatUntilCanProgress, "FindNextStealthPt");
+            Action getNextPt2 = new Action(m_StealthNav.DetermineNextStealthPointInPath);
+            findNextStealthPt_path.AddAction(getNextPt2);
+
+            m_StealthTree.AddDecisionNodeTo(rootNode, findNextStealthPt_path);
+
             /// NODE ///
             /// 
             DecisionNode navToNextStealthPt_path = new DecisionNode(DecisionType.RepeatUntilCanProgress, "NavigateToStealthPt");
@@ -380,8 +390,7 @@ namespace AI
             navToNextStealthPt_path.AddCondition(isPathSafe_path);
             navToNextStealthPt_path.AddAction(navToNext_path);
 
-            m_StealthTree.AddDecisionNodeTo(rootNode, navToNextStealthPt_path);
-
+            m_StealthTree.AddDecisionNodeTo(findNextStealthPt_path, navToNextStealthPt_path);
 
             /// NODE ///
             /// 
@@ -393,26 +402,36 @@ namespace AI
 
             m_StealthTree.AddDecisionNodeTo(navToNextStealthPt_path, rotateTowardsNextSP);
 
+
             /// NODE ///
             /// 
-            DecisionNode waitHere = new DecisionNode(DecisionType.RepeatUntilActionComplete, "WaitAtStealthPoint");
-            Action waitForTimer = new Action(WaitAtStealthPoint);
-            waitHere.AddAction(waitForTimer);
+            DecisionNode doNothingNode0  = new DecisionNode(DecisionType.RepeatUntilCanProgress, "WaitAtStealthPoint");
+            Action doNothing = new Action(DoNothing);
+            doNothingNode0.AddAction(doNothing);
 
-            m_StealthTree.AddDecisionNodeTo(rotateTowardsNextSP, waitHere);
+            m_StealthTree.AddDecisionNodeTo(rotateTowardsNextSP, doNothingNode0);
+
+            /// NODE ///
+            /// 
+            DecisionNode waitHere = new DecisionNode(DecisionType.RepeatUntilCanProgress, "WaitForSafePath");
+            Condition isWaitDone = new Condition(IsDoneWaitAtStealthPoint);
+            waitHere.AddAction(doNothing);
+            waitHere.AddCondition(isWaitDone);
+
+            m_StealthTree.AddDecisionNodeTo(doNothingNode0, waitHere);
 
             /// NODE ///
             /// 
             DecisionNode doNothingNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "DoNothing");
             Condition isPathComplete = new Condition(new BoolTypeDelegate(m_StealthNav.IsStealthPathComplete));
-            Action doNothing = new Action(DoNothing);
+           // Action doNothing = new Action(DoNothing);
             doNothingNode.AddCondition(isPathComplete);
             doNothingNode.AddAction(doNothing);
 
             m_StealthTree.AddDecisionNodeTo(waitHere, doNothingNode);
 
             // Loop back to "nav to next" if not at end of path
-            m_StealthTree.AddDecisionNodeTo(waitHere, navToNextStealthPt_path);
+            m_StealthTree.AddDecisionNodeTo(waitHere, findNextStealthPt_path);
 
             #endregion
         }
@@ -634,10 +653,24 @@ namespace AI
 
         public void RotateTowardsNextStealthPos()
         {
-            Vector3 nextStealthPos = m_StealthNav.NextStealthPos.transform.position;
+            //if (m_StealthNav.IsStealthPathComplete())
+            //{
+            //    m_WolfMoveComp.Stop();
+            //    CompleteCurrentActionExternal(true);
+            //}
 
-            if (m_WolfMoveComp.RotateTowards(nextStealthPos))
+            if (m_StealthNav.NextStealthPos)
             {
+                Vector3 nextStealthPos = m_StealthNav.NextStealthPos.transform.position;
+
+                if (m_WolfMoveComp.RotateTowards(nextStealthPos))
+                {
+                    m_WolfMoveComp.Stop();
+                    CompleteCurrentActionExternal(true);
+                }
+            }
+            else {
+                m_WolfMoveComp.Stop();
                 CompleteCurrentActionExternal(true);
             }
 
@@ -666,13 +699,21 @@ namespace AI
         }
 
 
-        public void WaitAtStealthPoint()
+        public bool IsDoneWaitAtStealthPoint()
         {
             if (!m_WaitStealthTimerSet)
             {
                 m_WaitStealthTimerSet = true;
-                StartCoroutine(waitForTime(m_MaxTimeToWaitAtStealthPoint));
+                m_WaitStealthEndTime = Time.time + m_MaxTimeToWaitAtStealthPoint;
             }
+
+            if(Time.time < m_WaitStealthEndTime)
+            {
+                return false;
+            }
+
+            m_WaitStealthTimerSet = false;
+            return true;
         }
 
         #endregion

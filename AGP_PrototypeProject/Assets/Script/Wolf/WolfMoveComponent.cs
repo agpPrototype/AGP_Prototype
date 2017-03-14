@@ -85,7 +85,9 @@ namespace Wolf {
 
             Vector3 cross = Vector3.zero; //will be the cross product between the wolf's forward and the move direction
 
-            if (transform.forward != dir) //only rotate if wolf's forward and dir are different
+            float DotDirs = Vector3.Dot(transform.forward, dir);
+
+            if (DotDirs < 0.8f) //only rotate if wolf's forward and dir are different
             {
                 cross = Vector3.Cross(transform.forward, dir);
                 float angle = Vector3.Angle(transform.forward, dir);

@@ -31,9 +31,12 @@ namespace AI
         private GameObject m_NextStealthPos;
         public GameObject NextStealthPos {
             get {
-                if(!tempSelfNav)
+                if (!tempSelfNav)
                     return m_NextStealthPos;
-                return m_PathToDestination.Peek();
+                else if (m_PathToDestination.Count > 0)
+                    return m_PathToDestination.Peek();
+                else
+                    return null;
             }
         }
 
@@ -88,8 +91,6 @@ namespace AI
             // Test "Go To" for stealth - default to go to last node in the path in test level
             SetStealthToDestination(Vector3.zero);
             CalculateBestPathToFinalDestination();
-            // Set Decision Node's action to be complete
-            //GetComponentInParent<AIStateMachine>().CompleteCurrentActionExternal(true);
         }
 
 
@@ -98,7 +99,7 @@ namespace AI
             // if (m_isNavigating)
             //   return;
 
-            DetermineNextStealthPointToPlayer();
+            //DetermineNextStealthPointToPlayer();
             //DetermineNextStealthPointInPath();
 
             NavMeshPath path = new NavMeshPath();
@@ -196,7 +197,7 @@ namespace AI
                 m_NextStealthPos = closestPoint.gameObject;
         }
 
-        private void DetermineNextStealthPointInPath() // Just find the closest points for now
+        public void DetermineNextStealthPointInPath() // Just find the closest points for now
         {
             if(m_PathToDestination.Count != 0 && IsAtNextNode())
                 m_NextStealthPos = m_PathToDestination.Pop();
