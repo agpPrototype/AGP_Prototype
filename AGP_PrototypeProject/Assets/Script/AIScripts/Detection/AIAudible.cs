@@ -32,6 +32,10 @@ namespace AI
             [SerializeField]
             private bool m_IsDrawSphereOfEffect;
 
+            [Tooltip("Should we draw the line that represents the effect of this sound.")]
+            [SerializeField]
+            private bool m_IsDrawLineOfEffect;
+
             [Tooltip("Destroy the audio source if it is not playing. This means if it does not play on awake it will be destroyed.")]
             [SerializeField]
             private bool m_IsDestroyIfNotPlaying = false;
@@ -89,15 +93,6 @@ namespace AI
             
             public bool RangeCheckToGameObject(GameObject targetGO, GameObject startGO, Vector3 targetPos,  Vector3 startPos, float range)
             {
-                // if the audio source is not playing then return false;
-                if(m_AudioSource)
-                {
-                    if(!m_AudioSource.isPlaying)
-                    {
-                        return false;
-                    }
-                }
-
                 // disable starting collider so raycast doesn't hit object it starts in.
                 Collider startingGOCollider = startGO.GetComponent<Collider>();
                 if(startingGOCollider != null)
@@ -122,21 +117,24 @@ namespace AI
                     if(gObject == null)
                     {
 #if UNITY_EDITOR
-                        Debug.DrawLine(startPos, targetPos, Color.white, 2.0f);
+                        if(m_IsDrawLineOfEffect)
+                            Debug.DrawLine(startPos, targetPos, Color.white, 2.0f);
 #endif
                         return false;
                     }
                     else if(gObject == targetGO)
                     {
 #if UNITY_EDITOR
-                        Debug.DrawLine(startPos, rayHit.point, Color.magenta / 2.0f, 2.0f);
+                        if (m_IsDrawLineOfEffect)
+                            Debug.DrawLine(startPos, rayHit.point, Color.magenta / 2.0f, 2.0f);
 #endif
                         return true;
                     }
                     else
                     {
 #if UNITY_EDITOR
-                        Debug.DrawLine(startPos, rayHit.point, Color.magenta, 2.0f);
+                        if (m_IsDrawLineOfEffect)
+                            Debug.DrawLine(startPos, rayHit.point, Color.blue, 2.0f);
 #endif
                         Vector3 newStartPos = rayHit.point;
                         float newRange = range * m_Dampen;
@@ -144,9 +142,6 @@ namespace AI
                     }
                 }
 
-#if UNITY_EDITOR
-                Debug.DrawLine(startPos, targetPos, Color.white, 2.0f);
-#endif
                 // if we got this far we did not hit the target.
                 return false;
             }
