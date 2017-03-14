@@ -14,18 +14,34 @@ namespace AI
         private StealthPosition[] m_NextPositions;
 
         [SerializeField]
-        private string m_name;
+        public string m_name;
+
+        // Used for Path navigation only
+        private bool m_Visited;
+        public bool Visited
+        {
+            get { return m_Visited; }
+            set { m_Visited = value; }
+        }
+
+        // Used for Path navigation only
+        private StealthPosition m_ParentForPath;
+        public StealthPosition ParentForPath
+        {
+            get { return m_ParentForPath; }
+            set { m_ParentForPath = value; }
+        }
 
         // Use this for initialization
         void Start()
         {
             m_Location = gameObject.transform.position;
+            m_Visited = false;
         }
 
         // Update is called once per frame
         void Update()
         {
-
         }
 
         public StealthPosition[] GetNextPositions()
@@ -33,6 +49,8 @@ namespace AI
 
             return m_NextPositions;
         }
+
+
     }
 
 }

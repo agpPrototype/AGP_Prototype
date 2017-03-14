@@ -18,6 +18,7 @@ namespace AI
         [Tooltip("Waypoint prefab used when adding waypoints.")]
         private Waypoint WaypointPrefab;
 
+        [SerializeField]
         private List<Waypoint> m_Waypoints; // List of waypoints that define patrol area.
 
         // Use this for initialization

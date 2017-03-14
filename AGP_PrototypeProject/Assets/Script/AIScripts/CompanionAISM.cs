@@ -5,6 +5,7 @@ using UnityEngine.AI;
 using MalbersAnimations;
 using Wolf;
 using Player;
+using Bond;
 
 namespace AI
 {
@@ -116,10 +117,12 @@ namespace AI
 
         private Vector3 playerLoc;
 
-        public GameObject Enemy;
+        
 
         [SerializeField]
         private Float DistToPlayerSq;
+
+        private Vector3 m_RotateToDirection;
 
 
         #region Temp Variables For Testing (To go in another file later)
@@ -134,14 +137,18 @@ namespace AI
         private float StartToFollowDistance;
 
         [SerializeField]
-        private Int testConditionValue;
+        private float m_MaxTimeToWaitAtStealthPoint;
+        private bool m_WaitStealthTimerSet = false;
+        private float m_WaitStealthEndTime;
 
         [SerializeField]
         bool switchToAttack;
 
-        
-        
+        [SerializeField]
+        public GameObject Enemy;
 
+        [SerializeField]
+        public StealthPosition StealthDestination;
 
         #endregion
 
@@ -170,6 +177,7 @@ namespace AI
             playerLoc = Player.transform.position;
             DistToPlayerSq = new Float((playerLoc - transform.position).sqrMagnitude);
 
+            m_RotateToDirection = Vector3.zero;
             // TEMP
             //SetMainState(WolfMainState.Stealth);
 
@@ -299,44 +307,147 @@ namespace AI
 
             m_AttackTree.AddDecisionNodeTo(attackEnemyNode, toFollowNode);
 
-
+            //GetComponent<Animator>().SetBool("Attack1", true);
         }
 
         private void CreateStealthBT()
         {
+            ///                              root
+            /// (FollowStealth)                            (FindOwnPath)
+            /// FindNextStealthPt                           FindPathToEnd
+            /// GoToNextStealthPt                           GoToNextStealthPt
+            /// RotateTowardsNext (once arrived)            RotateTowardsNext (once arrived)
+            /// LoopToRoot                                  Wait
+            ///                                             LoopTo"GoToNextStealthPt"
+            ///                                             
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Root Stealth");
-            Condition isAtStealthPt = new Condition(new BoolTypeDelegate(m_StealthNav.IsAtNextNode));
+            //Condition isAtStealthPt = new Condition(new BoolTypeDelegate(m_StealthNav.IsAtNextNode));
             Action beginStealth = new Action(DoNothing);
 
-            rootNode.AddCondition(isAtStealthPt);
+            // Test Go To stealth navigation
             rootNode.AddAction(beginStealth);
 
             m_StealthTree = new BehaviorTree(WolfMainState.Stealth, rootNode, this);
 
+            #region StealthLeftTree_Follow
+
+            /// NODE ///
+            /// 
+            DecisionNode findNextStealthPt = new DecisionNode(DecisionType.RepeatUntilCanProgress, "FindNextStealthPt");
+            Condition isBondLow1 = new Condition(new FloatTypeDelegate(BondManager.Instance.GetBondStatus), ConditionComparison.Greater, new Float(50.0f));
+            Action getNextPt = new Action(m_StealthNav.DetermineNextStealthPointToPlayer);
+            findNextStealthPt.AddCondition(isBondLow1);
+            findNextStealthPt.AddAction(getNextPt);
+
+            m_StealthTree.AddDecisionNodeTo(rootNode, findNextStealthPt);
+            
             /// NODE ///
             /// 
             DecisionNode navigateToNextStealthPt = new DecisionNode(DecisionType.RepeatUntilCanProgress, "NavigateToStealthPt");
             Condition isPlayerAway = new Condition(new FloatTypeDelegate(GetDistToPlayerSq), ConditionComparison.Greater, new Float(StartToFollowDistance * StartToFollowDistance));
+            // Condition isBondHigh = new Condition(new FloatTypeDelegate(BondManager.Instance.GetBondStatus), ConditionComparison.Greater, new Float(50.0f));
+            Condition isPathSafe = new Condition(new BoolTypeDelegate(m_StealthNav.IsPathSafeToNext));
             Action navToNext = new Action(m_StealthNav.NavigateToNextNode);
 
+            // navigateToNextStealthPt.AddCondition(isBondHigh);
+            navigateToNextStealthPt.AddCondition(isPathSafe);
             navigateToNextStealthPt.AddCondition(isPlayerAway);
             navigateToNextStealthPt.AddAction(navToNext);
 
-            m_StealthTree.AddDecisionNodeTo(rootNode, navigateToNextStealthPt);
+            m_StealthTree.AddDecisionNodeTo(findNextStealthPt, navigateToNextStealthPt);
+
+            /// NODE ///
+            /// 
+            DecisionNode rotateTowardsNext = new DecisionNode(DecisionType.RepeatUntilActionComplete, "RotateToNext");
+            Condition isAtStealthPt = new Condition(new BoolTypeDelegate(m_StealthNav.IsAtNextNode));
+            Action rotateWolf = new Action(RotateTowardsEnemyPath);
+
+            rotateTowardsNext.AddCondition(isAtStealthPt);
+            rotateTowardsNext.AddAction(rotateWolf);
+            m_StealthTree.AddDecisionNodeTo(navigateToNextStealthPt, rotateTowardsNext);
 
             // Loop back to top
-            m_StealthTree.AddDecisionNodeTo(navigateToNextStealthPt, rootNode);
+            m_StealthTree.AddDecisionNodeTo(rotateTowardsNext, rootNode);
+
+
+            #endregion
+
+            #region StealthRightTree_GoOffOnOwn
+
+            /// NODE ///
+            /// 
+            DecisionNode findNextStealthPt_path = new DecisionNode(DecisionType.RepeatUntilCanProgress, "FindNextStealthPt");
+            Action getNextPt2 = new Action(m_StealthNav.DetermineNextStealthPointInPath);
+            findNextStealthPt_path.AddAction(getNextPt2);
+
+            m_StealthTree.AddDecisionNodeTo(rootNode, findNextStealthPt_path);
+
+            /// NODE ///
+            /// 
+            DecisionNode navToNextStealthPt_path = new DecisionNode(DecisionType.RepeatUntilCanProgress, "NavigateToStealthPt");
+            Condition isPathSafe_path = new Condition(new BoolTypeDelegate(m_StealthNav.IsPathSafeToNext));
+            Action navToNext_path = new Action(m_StealthNav.NavigateToNextNode);
+            navToNextStealthPt_path.AddCondition(isPathSafe_path);
+            navToNextStealthPt_path.AddAction(navToNext_path);
+
+            m_StealthTree.AddDecisionNodeTo(findNextStealthPt_path, navToNextStealthPt_path);
+
+            /// NODE ///
+            /// 
+            DecisionNode rotateTowardsNextSP = new DecisionNode(DecisionType.RepeatUntilActionComplete, "RotateToNext");
+            Condition isAtStealthPt2 = new Condition(new BoolTypeDelegate(m_StealthNav.IsAtNextNode));
+            Action rotateWolf2 = new Action(RotateTowardsNextStealthPos);
+            rotateTowardsNextSP.AddCondition(isAtStealthPt2);
+            rotateTowardsNextSP.AddAction(rotateWolf2);
+
+            m_StealthTree.AddDecisionNodeTo(navToNextStealthPt_path, rotateTowardsNextSP);
+
+
+            /// NODE ///
+            /// 
+            DecisionNode doNothingNode0  = new DecisionNode(DecisionType.RepeatUntilCanProgress, "WaitAtStealthPoint");
+            Action doNothing = new Action(DoNothing);
+            doNothingNode0.AddAction(doNothing);
+
+            m_StealthTree.AddDecisionNodeTo(rotateTowardsNextSP, doNothingNode0);
+
+            /// NODE ///
+            /// 
+            DecisionNode waitHere = new DecisionNode(DecisionType.RepeatUntilCanProgress, "WaitForSafePath");
+            Condition isWaitDone = new Condition(IsDoneWaitAtStealthPoint);
+            waitHere.AddAction(doNothing);
+            waitHere.AddCondition(isWaitDone);
+
+            m_StealthTree.AddDecisionNodeTo(doNothingNode0, waitHere);
+
+            /// NODE ///
+            /// 
+            DecisionNode doNothingNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "DoNothing");
+            Condition isPathComplete = new Condition(new BoolTypeDelegate(m_StealthNav.IsStealthPathComplete));
+           // Action doNothing = new Action(DoNothing);
+            doNothingNode.AddCondition(isPathComplete);
+            doNothingNode.AddAction(doNothing);
+
+            m_StealthTree.AddDecisionNodeTo(waitHere, doNothingNode);
+
+            // Loop back to "nav to next" if not at end of path
+            m_StealthTree.AddDecisionNodeTo(waitHere, findNextStealthPt_path);
+
+            #endregion
         }
 
         #endregion
 
 
-        IEnumerator waitFiveSeconds()
+        IEnumerator waitForTime(float waitTime)
         {
-            yield return new WaitForSeconds(3);
+            yield return new WaitForSeconds(waitTime);
 
-            SetMainState(WolfMainState.Stealth);
+            m_WaitStealthTimerSet = false;
+            CompleteCurrentActionExternal(true);
         }
+
+        
 
         // Update is called once per frame
         void Update()
@@ -350,7 +461,7 @@ namespace AI
             if (!ReferenceEquals(m_CurrentBT, null))
                 m_CurrentBT.ContinueBehaviorTree();
             else
-                Debug.Log("CompanionAISM: current BT not initialized yet");
+                Debug.Assert(false, "CompanionAISM: current BT not initialized yet");
 
 
             // Determine what the current state should be
@@ -363,11 +474,20 @@ namespace AI
         {
             DistToPlayerSq.value = (Player.transform.position - transform.position).sqrMagnitude;
 
-            if (false && switchToAttack)
+
+            // Determine if Stealth is correct state to be in
+            bool isPlayerStealthed = Player.GetComponent<MoveComponent>().m_Crouching;
+            if (isPlayerStealthed && m_CurrentMainState != WolfMainState.Stealth)
             {
-                SetMainState(WolfMainState.Attack);
-                switchToAttack = false;
+                SetMainState(WolfMainState.Stealth);
+                Debug.Log("Accalia Switched to Stealth state");
             }
+
+            //if (false && switchToAttack)
+            //{
+            //    SetMainState(WolfMainState.Attack);
+            //    switchToAttack = false;
+            //}
         }
 
 
@@ -489,6 +609,7 @@ namespace AI
                 }
             }
         }
+
         #endregion
 
         #region Idle Functions
@@ -524,6 +645,75 @@ namespace AI
         private void AttackMyEnemy()
         {
             //Debug.Log("Attacking enemy!");
+        }
+
+        #endregion
+
+        #region StealthFunctions
+
+        public void RotateTowardsNextStealthPos()
+        {
+            //if (m_StealthNav.IsStealthPathComplete())
+            //{
+            //    m_WolfMoveComp.Stop();
+            //    CompleteCurrentActionExternal(true);
+            //}
+
+            if (m_StealthNav.NextStealthPos)
+            {
+                Vector3 nextStealthPos = m_StealthNav.NextStealthPos.transform.position;
+
+                if (m_WolfMoveComp.RotateTowards(nextStealthPos))
+                {
+                    m_WolfMoveComp.Stop();
+                    CompleteCurrentActionExternal(true);
+                }
+            }
+            else {
+                m_WolfMoveComp.Stop();
+                CompleteCurrentActionExternal(true);
+            }
+
+        }
+
+        public void RotateTowardsEnemyPath()
+        {
+            if (m_RotateToDirection == Vector3.zero)
+            {
+                Vector3 EnemyPos = Enemy.transform.position;
+                Vector3 EnemyDir = Enemy.GetComponent<NavMeshAgent>().destination - EnemyPos;
+                EnemyDir.Normalize();
+
+                Vector3 toWolfFromEnemy = transform.position - EnemyPos;
+                toWolfFromEnemy.Normalize();
+
+                float lengthUntilPathsIntersect = Vector3.Dot(toWolfFromEnemy, EnemyDir);
+                m_RotateToDirection = EnemyPos + EnemyDir * lengthUntilPathsIntersect;
+            }
+
+            if (m_WolfMoveComp.RotateTowards(m_RotateToDirection))
+            {
+                m_RotateToDirection = Vector3.zero;
+                CompleteCurrentActionExternal(true);
+            }
+        }
+
+
+        public bool IsDoneWaitAtStealthPoint()
+        {
+            if (!m_WaitStealthTimerSet)
+            {
+                m_WaitStealthTimerSet = true;
+                m_WaitStealthEndTime = Time.time + m_MaxTimeToWaitAtStealthPoint;
+            }
+
+            if(Time.time < m_WaitStealthEndTime)
+            {
+                return false;
+            }
+
+            m_WaitStealthTimerSet = false;
+            return true;
         }
 
         #endregion
