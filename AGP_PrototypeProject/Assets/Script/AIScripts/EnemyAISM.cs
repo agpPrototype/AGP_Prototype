@@ -18,6 +18,7 @@ namespace AI
             PATROLLING,
             ATTACKING,
             CHASING,
+            LOOKING,
         }
         private EnemyAIState m_State;
         private ThreatLevel m_ThreatLevel;
@@ -25,6 +26,7 @@ namespace AI
         private BehaviorTree m_CurrentBT;
         private BehaviorTree m_PatrolBT;
         private BehaviorTree m_ChaseBT;
+        private BehaviorTree m_LookBT;
         private BehaviorTree m_AttackBT;
         #endregion
 
@@ -85,14 +87,60 @@ namespace AI
             createChaseBT();
             createPatrolBT();
             createAttackBT();
+            createLookBT();
 
             m_CurrentBT = m_PatrolBT;
+        }
+
+        #region Look Methods
+        private bool isLookTimeOver()
+        {
+            // set start time and end time for timer if it hasnt been set.
+            if (!m_IsLookTimerSet)
+            {
+                m_LookStartTime = Time.time;
+                m_LookEndTime = Time.time + m_LookTime;
+                m_IsLookTimerSet = true;
+            }
+
+            // check to see if timer done.
+            if (Time.time < m_LookEndTime)
+            {
+                return false;
+            }
+
+            // if we get this far timer is done.
+            m_IsLookTimerSet = false;
+            return true;
+        }
+        #endregion
+
+        private void createLookBT()
+        {
+            DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Look_Root_Node");
+
+            m_LookBT = new BehaviorTree(rootNode, this, "Look BT");
+
+            /// Wait_Node
+            DecisionNode lookNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Look_Node");
+            lookNode.AddAction(new Action(idle));
+            m_LookBT.AddDecisionNodeTo(rootNode, lookNode);
+
+            /// ChaseBT->PatrolBT
+            DecisionNode chaseToPatrol = new DecisionNode(DecisionType.RepeatUntilActionComplete, "ChaseBT->PatrolBT");
+            chaseToPatrol.AddAction(new Action(switchToAttackBT));
+            chaseToPatrol.AddCondition(new Condition(isLookTimeOver));
+            m_LookBT.AddDecisionNodeTo(lookNode, chaseToPatrol);
         }
 
         #region Chase Methods
         private void switchToAttackBT()
         {
             SetMainState(EnemyAIState.ATTACKING);
+        }
+        private void switchToLookBT()
+        {
+            SetMainState(EnemyAIState.LOOKING);
         }
         private bool isReachedLastSeenLocation()
         {
@@ -160,14 +208,24 @@ namespace AI
             chaseNode.AddAction(new Action(chase));
             m_ChaseBT.AddDecisionNodeTo(rootNode, chaseNode);
 
-            /// Arrive_Node
-            DecisionNode arriveNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "Arrive_Node");
-            arriveNode.AddCondition(new Condition(isReachedLastSeenLocation));
-            arriveNode.AddAction(new Action(switchToAttackBT));
-            m_ChaseBT.AddDecisionNodeTo(chaseNode, arriveNode);
+            /// ChaseBT->AttackBT
+            /*DecisionNode chaseToAttack = new DecisionNode(DecisionType.RepeatUntilActionComplete, "Chase->Attack_Node");
+            chaseToAttack.AddCondition(new Condition(isReachedLastSeenLocation));
+            chaseToAttack.AddAction(new Action(switchToAttackBT));
+            m_ChaseBT.AddDecisionNodeTo(arriveNode, chaseToAttack);*/
+
+            /// ChaseBT->LookBT
+            DecisionNode chaseToLook = new DecisionNode(DecisionType.RepeatUntilActionComplete, "ChaseBT->LookBT_Node");
+            chaseToLook.AddAction(new Action(switchToLookBT));
+            chaseToLook.AddCondition(new Condition(isReachedLastSeenLocation));
+            m_ChaseBT.AddDecisionNodeTo(chaseNode, chaseToLook);
         }
 
         #region Attack Methods
+        private void idle()
+        {
+
+        }
         private void attack()
         {
             Debug.Log("AI is attacking");
@@ -193,6 +251,7 @@ namespace AI
             ///         AttackBT->LookBT_Node       (when out of attack range go back to patrolling)
 
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Attack_Root_Node");
+            rootNode.AddAction(new Action(idle));
 
             m_AttackBT = new BehaviorTree(rootNode, this, "Attack BT");
 
@@ -209,10 +268,6 @@ namespace AI
         }
 
         #region Patrol Methods
-        private void idle()
-        {
-            Debug.Log("AI is idling");
-        }
         private void switchToChaseBT()
         {
             SetMainState(EnemyAIState.CHASING);
@@ -340,6 +395,10 @@ namespace AI
                     m_CurrentBT = m_ChaseBT;
                     break;
 
+                case EnemyAIState.LOOKING:
+                    m_CurrentBT = m_LookBT;
+                    break;
+
                 default:
                     Debug.Log("Error: EnemyAISM.cs : No Behavior Tree to switch to for desired new state.");
                     break;
@@ -348,35 +407,6 @@ namespace AI
             }
 
             m_CurrentBT.RestartTree();
-        }
-
-        private void LookAroundUntilLookTimerDone()
-        {
-            if(!m_IsLookTimerSet)
-            {
-                m_LookStartTime = Time.time;
-                m_LookEndTime = Time.time + m_LookTime;
-                m_IsLookTimerSet = true;
-            }
-
-            if(Time.time < m_LookEndTime)
-            {
-                this.transform.Rotate(0, LookRotationSpeed * Time.deltaTime, 0);
-                /*if(m_TargetLastSeenVelocity != null)
-                {
-                    Vector3 lastSeenVelocity = m_TargetLastSeenVelocity;
-                    float step = LookRotationSpeed * Time.deltaTime;
-                    Vector3 newDir = Vector3.RotateTowards(transform.forward, lastSeenVelocity, step, 0.0f);
-                    transform.rotation = Quaternion.LookRotation(newDir);
-                    this.transform.Rotate(0, LookRotationSpeed * Time.deltaTime, 0);
-                    return;
-                }*/
-            }
-
-            m_IsLookTimerSet = false;
-
-            // Switch states from looking around to something else.
-            m_State = EnemyAIState.PATROLLING;
         }
 
         private void OnDrawGizmos()
