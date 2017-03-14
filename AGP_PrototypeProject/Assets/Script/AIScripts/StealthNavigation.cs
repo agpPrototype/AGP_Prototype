@@ -261,11 +261,11 @@ namespace AI
             Vector3 peripheralRight = enemy.GetComponent<Detection.AILineOfSightDetection>().GetFOVVector(enemyTransform.forward,
                                                                                                           enemyTransform.up,
                                                                                                           Detection.AILineOfSightDetection.FOV_REGION.PERIPHERAL,
-                                                                                                          true);
+                                                                                                          true, true);
             Vector3 peripheralLeft = enemy.GetComponent<Detection.AILineOfSightDetection>().GetFOVVector(enemyTransform.forward,
                                                                                                          enemyTransform.up,
                                                                                                          Detection.AILineOfSightDetection.FOV_REGION.PERIPHERAL,
-                                                                                                         false);
+                                                                                                         false, true);
             // If my path does not intersect with the peripherals, it is safe
             float rightPeriphTime = 0;
             float leftPeriphTime = 0;

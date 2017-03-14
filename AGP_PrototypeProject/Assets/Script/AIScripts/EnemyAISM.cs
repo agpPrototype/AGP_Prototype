@@ -118,6 +118,7 @@ namespace AI
         private void createLookBT()
         {
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Look_Root_Node");
+            rootNode.AddAction(new Action(idle));
 
             m_LookBT = new BehaviorTree(rootNode, this, "Look BT");
 
@@ -152,7 +153,6 @@ namespace AI
                     if (m_NavAgent.remainingDistance <= m_NavAgent.stoppingDistance)
                     {
                         // Done pathfinding.
-                        Debug.Log("AI got to target.");
                         // set this variable to true so we can progress to next node.
                         return true;
                     }
@@ -166,7 +166,6 @@ namespace AI
         }
         private void chase()
         {
-            Debug.Log("AI is chasing");
             if (!m_NavAgent.isOnNavMesh)
             {
                 Debug.Log("AI nav agent not on a nav mesh.");
@@ -200,6 +199,7 @@ namespace AI
             ///         Arrive_Node                     (go to last seen position)
 
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Chase_Root_Node");
+            rootNode.AddAction(new Action(idle));
 
             m_ChaseBT = new BehaviorTree(rootNode, this, "Chase BT");
 
@@ -209,26 +209,29 @@ namespace AI
             m_ChaseBT.AddDecisionNodeTo(rootNode, chaseNode);
 
             /// ChaseBT->AttackBT
-            /*DecisionNode chaseToAttack = new DecisionNode(DecisionType.RepeatUntilActionComplete, "Chase->Attack_Node");
-            chaseToAttack.AddCondition(new Condition(isReachedLastSeenLocation));
+            DecisionNode chaseToAttack = new DecisionNode(DecisionType.RepeatUntilActionComplete, "Chase->Attack_Node");
             chaseToAttack.AddAction(new Action(switchToAttackBT));
-            m_ChaseBT.AddDecisionNodeTo(arriveNode, chaseToAttack);*/
+            chaseToAttack.AddCondition(new Condition(isReachedLastSeenLocation));
+            chaseToAttack.AddCondition(new Condition(isTargetInRange));
+            m_ChaseBT.AddDecisionNodeTo(chaseNode, chaseToAttack);
 
             /// ChaseBT->LookBT
             DecisionNode chaseToLook = new DecisionNode(DecisionType.RepeatUntilActionComplete, "ChaseBT->LookBT_Node");
             chaseToLook.AddAction(new Action(switchToLookBT));
             chaseToLook.AddCondition(new Condition(isReachedLastSeenLocation));
+            chaseToLook.AddCondition(new Condition(isTargetOutOfRange));
+            chaseToLook.AddCondition(new Condition(isNoThreat));
             m_ChaseBT.AddDecisionNodeTo(chaseNode, chaseToLook);
         }
 
         #region Attack Methods
         private void idle()
         {
-
+            // do nothing just used as placeholder for callback for Nodes.
         }
         private void attack()
         {
-            Debug.Log("AI is attacking");
+            // ADD AS U WISH HERE SAMMY BOY! ;)
         }
         private bool isTargetOutOfRange()
         {
@@ -275,6 +278,10 @@ namespace AI
         private bool isHasThreat()
         {
             return m_Target != null;
+        }
+        private bool isNoThreat()
+        {
+            return m_Target == null;
         }
         private void patrol()
         {
