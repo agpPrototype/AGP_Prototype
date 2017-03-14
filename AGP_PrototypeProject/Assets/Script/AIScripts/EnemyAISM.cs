@@ -66,6 +66,7 @@ namespace AI
 
         // target related members
         private Vector3 m_TargetLastPosition;
+        private bool m_IsTargetInRange;
         private AIDetectable m_Target; // current prioritized target.
 
         // Use this for initialization
@@ -146,11 +147,11 @@ namespace AI
 
         private void createChaseBT()
         {
-            /// Root_Node                               (does nothing)
+            /// Chase_Root_Node                         (does nothing)
             ///     Chase_Node                          (chase enemy if seen or heard)
             ///         Arrive_Node                     (go to last seen position)
 
-            DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Root_Node");
+            DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Chase_Root_Node");
 
             m_ChaseBT = new BehaviorTree(rootNode, this, "Chase BT");
 
@@ -173,14 +174,11 @@ namespace AI
         }
         private bool isTargetOutOfRange()
         {
-            if (m_Target != null)
-            {
-                if (Vector3.Distance(m_Target.transform.position, this.transform.position) > m_AttackRange)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return !m_IsTargetInRange;
+        }
+        private bool isTargetInRange()
+        {
+            return m_IsTargetInRange;
         }
         private void switchToPatrolBT()
         {
@@ -190,18 +188,24 @@ namespace AI
 
         private void createAttackBT()
         {
-            /// Basic_Attack_Node               (perform basic attack)
-            ///     AttackBT->LookBT_Node       (when out of attack range go back to patrolling)
+            /// Attack_Root_Node                    (does nothing)
+            ///     Basic_Attack_Node               (perform basic attack when in range)
+            ///         AttackBT->LookBT_Node       (when out of attack range go back to patrolling)
+
+            DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Attack_Root_Node");
+
+            m_AttackBT = new BehaviorTree(rootNode, this, "Attack BT");
 
             DecisionNode basicAttackNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Basic_Attack_Node");
+            basicAttackNode.AddCondition(new Condition(isTargetInRange));
             basicAttackNode.AddAction(new Action(attack));
-
-            m_AttackBT = new BehaviorTree(basicAttackNode, this, "Attack BT");
+            m_AttackBT.AddDecisionNodeTo(rootNode, basicAttackNode);
 
             DecisionNode attackToLookNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "AttackBT->LookBT_Node");
             attackToLookNode.AddAction(new Action(switchToPatrolBT));
             attackToLookNode.AddCondition(new Condition(isTargetOutOfRange));
             m_AttackBT.AddDecisionNodeTo(basicAttackNode, attackToLookNode);
+            m_AttackBT.AddDecisionNodeTo(rootNode, attackToLookNode);
         }
 
         #region Patrol Methods
@@ -262,11 +266,11 @@ namespace AI
 
         private void createPatrolBT()
         {
-            /// Patrol_Node                         (patrol the waypoints)
+            /// Patrol_Root_Node                    (patrol the waypoints)
             ///     PatrolBT->ChaseBT               (chase enemy if seen or heard)
 
             /// Patrol_Node
-            DecisionNode patrolNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Patrol_Node");
+            DecisionNode patrolNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Patrol_Root_Node");
             patrolNode.AddAction(new Action(patrol));
 
             m_PatrolBT = new BehaviorTree(patrolNode, this, "Patrol BT");
@@ -282,9 +286,16 @@ namespace AI
         {
             // get highest threat and store as target.
             m_Target = (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection));
-            if(m_Target != null)
+
+            // update factors if our current target isnt null.
+            if (m_Target != null)
             {
+                m_IsTargetInRange = Vector3.Distance(m_Target.transform.position, this.transform.position) <= m_AttackRange;
                 m_TargetLastPosition = m_Target.transform.position;
+            }
+            else
+            {
+                m_IsTargetInRange = false;
             }
         }
 
@@ -375,88 +386,5 @@ namespace AI
                 Debug.DrawLine(m_AILineOfSightDetection.Apex.position, m_Target.transform.position, Color.red);
             }
         }
-
-#if false
-            if (state == State.CHASING)
-            {
-                if (!m_NavAgent.isOnNavMesh)
-                {
-                    Debug.Log("AI nav agent not on a nav mesh.");
-                    return;
-                }
-                // Keep updating target position if we can see the target.
-                m_NavAgent.SetDestination(m_TargetLastSeenPosition);
-                // Check to see if we have gotten close enough to target.
-                m_NavAgent.stoppingDistance = StopDistFromTarget;
-                // Check if we've reached the destination
-                if (!m_NavAgent.pathPending)
-                {
-                    if (m_NavAgent.remainingDistance <= m_NavAgent.stoppingDistance)
-                    {
-                        // Done pathfinding.
-                        state = State.LOOKING_AROUND;
-                    }
-                }
-            }
-            else if(state == State.PATROLLING)
-            {
-                // Get next waypoint from patrol area if we have one
-                if(PatrolArea != null)
-                {
-                    if(m_CurrentWaypoint != null)
-                    {
-                        if (!m_NavAgent.isOnNavMesh)
-                        {
-                            Debug.Log("AI nav agent not on a nav mesh.");
-                            return;
-                        }
-
-                        // Move to the waypoint
-                        //m_NavAgent.Resume();// SetDestination(m_CurrentWaypoint.transform.position);
-                        m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
-
-                        // If we made it to the waypoint.
-                        if (m_NavAgent.remainingDistance <= StopDistFromWaypoints)
-                        {
-                            m_CurrentWaypoint = PatrolArea.GetRandomWaypoint();
-                            if(m_CurrentWaypoint != null)
-                            {
-                                m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
-                            }
-                            else
-                            {
-                                Debug.Log("Randomly generated AI waypoint destination is null.");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        m_CurrentWaypoint = PatrolArea.GetRandomWaypoint();
-                        if(m_CurrentWaypoint != null)
-                        {
-                            m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
-                        }
-                    }
-                }
-            }
-            else if (state == State.LOOKING_AROUND)
-            {
-                LookAroundUntilLookTimerDone();
-            }
-            else if (state == State.ATTACKING)
-            {
-                Debug.Log("In attacking state.");
-            }
-#endif
     }
 }
-
-/*private void updateLastSeenVariables(GameObject target)
-{
-    m_TargetLastSeenPosition = target.transform.position;
-    Rigidbody rigidBody = target.GetComponentInParent<Rigidbody>();
-    if(rigidBody != null)
-    {
-        m_TargetLastSeenVelocity = rigidBody.velocity;
-    }
-}*/
