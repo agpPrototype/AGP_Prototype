@@ -138,7 +138,12 @@ public class AiLineOfSightDetectionEditor : Editor {
         ///////////////////////////////////////////////////////////////////// END BOX
 
         GUILayout.Space(20);
+
+        // draw normal inspector elements.
         base.OnInspectorGUI();
+
+        // don't allow change values to revert to old values when "Play" is pressed in editor.
+        if (GUI.changed) EditorUtility.SetDirty(target);
     }
 
     public void OnValidate()
