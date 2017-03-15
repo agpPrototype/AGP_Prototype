@@ -59,7 +59,13 @@ namespace Bond
 				}
 			}
 			UpdateGUI();
-		}   
+		}  
+        
+        // A function is needed to use in Behavior Tree
+        public float GetBondStatus()
+        {
+            return m_BondStatus;
+        } 
 
         public void SetBondStatus(int b)
         {

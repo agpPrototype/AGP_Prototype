@@ -138,8 +138,22 @@ namespace AI
                 m_PeriphFOVHalfed = PeriphFOVPercentage * FOV / 2;
             }
 
-            public Vector3 GetFOVVector(Vector3 forward, Vector3 up, FOV_REGION fovRegion, bool wantRightVector)
+            /* gets the max distance that AI can see within a specific FOV region. */
+            private float getFOVViewDistance(FOV_REGION fovRegion)
             {
+                if (fovRegion == FOV_REGION.DIRECT)
+                    return DirectRaycastMaxDistance;
+                else if (fovRegion == FOV_REGION.SIDE)
+                    return SideRaycastMaxDistance;
+                else if (fovRegion == FOV_REGION.PERIPHERAL)
+                    return PeriphRaycastMaxDistance;
+                else
+                    return 0;
+            }
+
+            public Vector3 GetFOVVector(Vector3 forward, Vector3 up, FOV_REGION fovRegion, bool wantRightVector, bool wantNormalized)
+            {
+                // figure out what angle to rotate vector by depending on region requested.
                 float angle = 0.0f;
                 if (fovRegion == FOV_REGION.DIRECT)
                 {
@@ -154,10 +168,17 @@ namespace AI
                     angle = m_DirectFOVHalfed + m_SideFOVHalfed;
                 }
 
+                // return either normalized or non-normalized vector representing FOV vector.
+                Vector3 normalized;
                 if (wantRightVector)
-                    return (Quaternion.AngleAxis(angle, up) * forward).normalized;
+                {
+                    normalized = (Quaternion.AngleAxis(angle, up) * forward).normalized;
+                }
                 else
-                    return (Quaternion.AngleAxis(-angle, up) * forward).normalized;
+                {
+                    normalized = (Quaternion.AngleAxis(-angle, up) * forward).normalized;
+                }
+                return wantNormalized ? normalized : normalized * getFOVViewDistance(fovRegion);
             }
 
             /* gets highest priority visible based on AILineOfSightDetection settings */
@@ -222,26 +243,48 @@ namespace AI
                 return angle;
             }
 
-            /* Gets which FOV_REGION the target is in */
+            private bool isInFOV(FOV_REGION fovRegion, AIVisible target)
+            {
+                // get vector to target.
+                Vector3 vToTarget = (target.transform.position - this.Apex.position);
+                // need forward of AI vision.
+                Vector3 apexForward = Apex.transform.forward;
+                // dot the normalized dir to target with forward for calculations below.
+                float targetDotForward = Vector3.Dot(vToTarget.normalized, apexForward);
+
+                // get non normalized FOV vector.
+                Vector3 vFOVVector = GetFOVVector(Apex.forward, Apex.up, fovRegion, true, true);
+                // normalize vector to then use to see if target is within FOV angle.
+                float fovDotForward = Vector3.Dot(vFOVVector.normalized, apexForward);
+                if (targetDotForward > fovDotForward)
+                {
+                    // check to see if AI can see the target in terms of distance.
+                    if (vFOVVector.sqrMagnitude <= vToTarget.sqrMagnitude)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            /* Gets which FOV_REGION the target is in but does not take into account the distance
+             * to which the AI can see in that field of view. This is purely based on angles. */
             private FOV_REGION getFOVRegion(AIVisible target)
             {
-                float angleToTarget = getAngleToTarget(target);
-                if (angleToTarget <= m_DirectFOVHalfed)
+                if (isInFOV(FOV_REGION.PERIPHERAL, target))
                 {
-                    return FOV_REGION.DIRECT;
-                }
-                else if(angleToTarget <= m_DirectFOVHalfed + m_SideFOVHalfed)
-                {
-                    return FOV_REGION.SIDE;
-                }
-                else if (angleToTarget <= m_DirectFOVHalfed + m_SideFOVHalfed + m_PeriphFOVHalfed)
-                {
+                    if (isInFOV(FOV_REGION.SIDE, target))
+                    {
+                        if (isInFOV(FOV_REGION.DIRECT, target))
+                        {
+                            return FOV_REGION.DIRECT;
+                        }
+                        return FOV_REGION.SIDE;
+                    }
                     return FOV_REGION.PERIPHERAL;
                 }
-                else
-                {
-                    return FOV_REGION.NO_REGION;
-                }
+                return FOV_REGION.NO_REGION;
             }
 
             // Shoot raycast at player to see if AI can see them.

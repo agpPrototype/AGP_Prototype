@@ -78,6 +78,42 @@ namespace Wolf {
             #endregion
         }
 
+        public bool RotateTowards(Vector3 targetPos)
+        {
+            Vector3 dir = targetPos - transform.position;
+            dir.Normalize();
+
+            Vector3 cross = Vector3.zero; //will be the cross product between the wolf's forward and the move direction
+
+            float DotDirs = Vector3.Dot(transform.forward, dir);
+
+            if (DotDirs < 0.8f) //only rotate if wolf's forward and dir are different
+            {
+                cross = Vector3.Cross(transform.forward, dir);
+                float angle = Vector3.Angle(transform.forward, dir);
+                float rate = angle / m_AnimRotationFactor;
+
+                Mathf.Clamp(rate, 0, 3); //max rate is 3 in animator
+
+                //rotate either clockwise or counter-clockwise
+                if (Vector3.Dot(cross, Vector3.up) > 0)
+                {
+                    rate = Mathf.Lerp(m_CurRotRate, rate, Time.deltaTime * 15);
+                    m_CurRotRate = rate;
+                }
+                else
+                {
+                    rate *= -1;
+                    rate = Mathf.Lerp(m_CurRotRate, rate, Time.deltaTime * 15);
+                    m_CurRotRate = rate;
+                }
+                m_Animator.SetFloat("Horizontal", rate);
+                return false;
+            }
+
+            return true;
+        }
+
         //call this function when we have appropriate place for it
         public void Stop()
         {

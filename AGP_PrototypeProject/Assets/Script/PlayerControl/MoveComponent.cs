@@ -16,7 +16,7 @@ public class MoveComponent : MonoBehaviour {
     [SerializeField]
     float m_StationaryTurnSpeed = 180;
     [SerializeField]
-    float m_JumpPower = 9f;
+    float m_JumpPower = 11f;
     [Range(1f, 4f)]
     [SerializeField]
     float m_GravityMultiplier = 2f;
@@ -48,7 +48,7 @@ public class MoveComponent : MonoBehaviour {
     float m_CapsuleHeight;
     Vector3 m_CapsuleCenter;
     CapsuleCollider m_Capsule;
-    bool m_Crouching;
+    public bool m_Crouching;
     float m_CrouchingToggleDelay;
     bool m_Running;
     float m_RunningToggleDelay;
@@ -56,6 +56,7 @@ public class MoveComponent : MonoBehaviour {
     float m_StrafeRight;
     bool m_Aim;
     CameraRig m_CamRig;
+    float m_jumpDeficit;
 
     void Start()
     {
@@ -302,9 +303,16 @@ public class MoveComponent : MonoBehaviour {
     {
         // apply extra gravity from multiplier:
         Vector3 extraGravityForce = (Physics.gravity * m_GravityMultiplier) - Physics.gravity;
-        m_Rigidbody.AddForce(extraGravityForce);
-
+        Vector3 toMove = transform.forward * m_ForwardAmount;
+        if (m_jumpDeficit < 130.0f) { 
+            transform.position += new Vector3(toMove.x / 8.0f, 0, toMove.z /8.0f);
+        } else
+        {
+            transform.position += new Vector3(toMove.x / 11.0f, 0, toMove.z / 11.0f);
+        }
+        m_Rigidbody.AddForce(extraGravityForce);        
         m_GroundCheckDistance = m_Rigidbody.velocity.y < 0 ? m_OrigGroundCheckDistance : 0.5f;
+
     }
 
     private void HandleGroundedMovement(bool crouch, bool jump)
@@ -317,6 +325,7 @@ public class MoveComponent : MonoBehaviour {
             m_IsGrounded = false;
             m_Animator.applyRootMotion = false;
             m_GroundCheckDistance = 0.1f;
+            m_jumpDeficit = m_Rigidbody.velocity.sqrMagnitude;
         }
     }
 
