@@ -22,6 +22,10 @@ namespace Wolf {
 
         public void Move(Vector3 targetPos, Vector3[] path)
         {
+
+            if (JumpOffMeshLink(path[1]))
+                return;
+
             m_TargetPos = targetPos;
             m_Path = path;
 
@@ -119,6 +123,18 @@ namespace Wolf {
         {
             m_Animator.SetFloat("Vertical", 0);
             m_Animator.SetFloat("Horizontal", 0);
+        }
+
+        private bool JumpOffMeshLink(Vector3 nextNode)
+        {
+            NavMeshAgent wolfNavAgent = GetComponent<NavMeshAgent>();
+            if (wolfNavAgent.isOnOffMeshLink)
+            {
+                Debug.Assert(false, "At Off Mesh Link!");
+                return false;
+            }
+
+            return true;
         }
 
         //move this to utility later plz?
