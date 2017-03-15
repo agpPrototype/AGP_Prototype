@@ -23,8 +23,8 @@ namespace Wolf {
         public void Move(Vector3 targetPos, Vector3[] path)
         {
 
-            if (JumpOffMeshLink(path[1]))
-                return;
+            //if (JumpOffMeshLink(path[1]))
+            //    return;
 
             m_TargetPos = targetPos;
             m_Path = path;
