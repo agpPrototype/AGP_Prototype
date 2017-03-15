@@ -285,62 +285,6 @@ namespace AI
                     return FOV_REGION.PERIPHERAL;
                 }
                 return FOV_REGION.NO_REGION;
-                /*
-                    #region check in side/direct vision
-                    Vector3 vSide = GetFOVVector(Apex.forward, Apex.up, FOV_REGION.SIDE, true, true);
-                    float sideDotForward = Vector3.Dot(vSide.normalized, apexForward);
-                    // check to see if target is inside side view
-                    if(targetDotForward > sideDotForward)
-                    {
-                        #region check in direct vision
-                        Vector3 vDirect = GetFOVVector(Apex.forward, Apex.up, FOV_REGION.DIRECT, true, true);
-                        float directDotForward = Vector3.Dot(vDirect.normalized, apexForward);
-                        // check to see if target is inside direct view.
-                        if (targetDotForward > directDotForward)
-                        {
-                            // check to see if AI can see the target in terms of distance.
-                            if (vDirect.sqrMagnitude >= vToTargetSqrMagn)
-                            {
-                                Debug.Log("IN DIRECT VISION");
-                                return FOV_REGION.DIRECT;
-                            }
-                        }
-                        #endregion
-                        // check to see if AI can see the target in terms of distance.
-                        if (vSide.sqrMagnitude >= vToTargetSqrMagn)
-                        {
-                            Debug.Log("IN SIDE VISION");
-                            return FOV_REGION.SIDE;
-                        }
-                    }
-                    #endregion
-                    if(vPeriph.sqrMagnitude >= vToTargetSqrMagn)
-                    {
-                        Debug.Log("IN PERIPHERAL VISION");
-                        return FOV_REGION.PERIPHERAL;
-                    } */
-
-
-
-
-                /*
-                float angleToTarget = getAngleToTarget(target);
-                if (angleToTarget <= m_DirectFOVHalfed)
-                {
-                    return FOV_REGION.DIRECT;
-                }
-                else if(angleToTarget <= m_DirectFOVHalfed + m_SideFOVHalfed)
-                {
-                    return FOV_REGION.SIDE;
-                }
-                else if (angleToTarget <= m_DirectFOVHalfed + m_SideFOVHalfed + m_PeriphFOVHalfed)
-                {
-                    return FOV_REGION.PERIPHERAL;
-                }
-                else
-                {
-                    return FOV_REGION.NO_REGION;
-                }*/
             }
 
             // Shoot raycast at player to see if AI can see them.
