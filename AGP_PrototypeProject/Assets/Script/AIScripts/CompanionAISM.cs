@@ -62,6 +62,15 @@ namespace AI
 
     #endregion
 
+    #region Wolf Command Enums
+    public enum WolfCommand{
+        GOTO,
+        STAY,
+        COME
+    }
+
+    #endregion
+
     public class CompanionAISM : AIStateMachine
     {
 
@@ -166,21 +175,11 @@ namespace AI
             m_CurrentMainState =  WolfMainState.Idle;
             m_PreviousMainState = WolfMainState.Attack;
             WolfNavAgent = GetComponentInParent<NavMeshAgent>();
-            //testConditionValue = new Int(0);
-            //Int testRight = new Int(1);
-
-
-            //cond2 = new Condition(testConditionValue, ConditionComparison.Equal, testRight);
-
-            //printMe = new Action(new VoidTypeDelegate(TestActionPrintFunc));
 
             playerLoc = Player.transform.position;
             DistToPlayerSq = new Float((playerLoc - transform.position).sqrMagnitude);
 
             m_RotateToDirection = Vector3.zero;
-            // TEMP
-            //SetMainState(WolfMainState.Stealth);
-
 
             // Get References to key components
             m_WolfMoveComp = GetComponent<WolfMoveComponent>();
@@ -190,8 +189,6 @@ namespace AI
 
             InitializeStateBehaviorTrees();
 
-
-            //StartCoroutine(waitFiveSeconds());
         }
 
         private void InitializeStateBehaviorTrees()
@@ -562,6 +559,22 @@ namespace AI
             m_PreviousMainState = newState;
         }
 
+        /// <summary>
+        /// Call this for Commands other than "GoTo"
+        /// </summary>
+        public void GiveCommand(WolfCommand playerCommand)
+        {
+
+        }
+
+        /// <summary>
+        /// For a "GoTo" command: Pass in the game object that was hit from the raycast (to check if it was an enemy),
+        /// as well as the location that the ray cast hit (to tell the wolf to actually go to that location
+        /// </summary>
+        public void GiveGoToCommand(GameObject hitObject, Vector3 goToLocation)
+        {
+
+        }
 
         #region MovementFunctions
 

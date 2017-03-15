@@ -20,7 +20,11 @@ namespace AI
             CHASING,
             LOOKING,
         }
+
+        [SerializeField]
         private EnemyAIState m_State;
+
+        [SerializeField]
         private ThreatLevel m_ThreatLevel;
 
         private BehaviorTree m_CurrentBT;
