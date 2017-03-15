@@ -319,7 +319,7 @@ namespace AI
                     // If we made it to the waypoint.
                     if (m_NavAgent.remainingDistance <= StopDistFromWaypoints)
                     {
-                        m_CurrentWaypoint = PatrolArea.GetRandomWaypoint();
+                        m_CurrentWaypoint = PatrolArea.GetNextWaypoint(m_CurrentWaypoint);
                         if (m_CurrentWaypoint != null)
                         {
                             m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
