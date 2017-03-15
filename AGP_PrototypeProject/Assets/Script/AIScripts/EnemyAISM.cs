@@ -121,6 +121,10 @@ namespace AI
 
         private void createLookBT()
         {
+            /// Look_Root_Node
+            ///     Wait_Node
+            ///         LookBT->PatrolBT_Node
+            ///         LookBT->ChaseBT_Node
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Look_Root_Node");
             rootNode.AddAction(new Action(idle));
 
@@ -131,11 +135,17 @@ namespace AI
             lookNode.AddAction(new Action(idle));
             m_LookBT.AddDecisionNodeTo(rootNode, lookNode);
 
-            /// ChaseBT->PatrolBT
-            DecisionNode chaseToPatrol = new DecisionNode(DecisionType.RepeatUntilActionComplete, "ChaseBT->PatrolBT");
-            chaseToPatrol.AddAction(new Action(switchToAttackBT));
-            chaseToPatrol.AddCondition(new Condition(isLookTimeOver));
-            m_LookBT.AddDecisionNodeTo(lookNode, chaseToPatrol);
+            /// LookBT->PatrolBT
+            DecisionNode lookToPatrol = new DecisionNode(DecisionType.RepeatUntilActionComplete, "LookBT->PatrolBT_Node");
+            lookToPatrol.AddAction(new Action(switchToAttackBT));
+            lookToPatrol.AddCondition(new Condition(isLookTimeOver));
+            m_LookBT.AddDecisionNodeTo(lookNode, lookToPatrol);
+
+            /// LookBT->ChaseBT
+            DecisionNode looktoChase = new DecisionNode(DecisionType.RepeatUntilActionComplete, "LookBT->ChaseBT_Node");
+            looktoChase.AddAction(new Action(switchToChaseBT));
+            looktoChase.AddCondition(new Condition(isHasThreat));
+            m_LookBT.AddDecisionNodeTo(lookNode, looktoChase);
         }
 
         #region Chase Methods
@@ -200,7 +210,8 @@ namespace AI
         {
             /// Chase_Root_Node                         (does nothing)
             ///     Chase_Node                          (chase enemy if seen or heard)
-            ///         Arrive_Node                     (go to last seen position)
+            ///         ChaseBT->AttackBT_Node          (switch to attack BT)
+            ///         ChaseBT->LookBT_Node            (switch to look BT)
 
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Chase_Root_Node");
             rootNode.AddAction(new Action(idle));
@@ -213,7 +224,7 @@ namespace AI
             m_ChaseBT.AddDecisionNodeTo(rootNode, chaseNode);
 
             /// ChaseBT->AttackBT
-            DecisionNode chaseToAttack = new DecisionNode(DecisionType.RepeatUntilActionComplete, "Chase->Attack_Node");
+            DecisionNode chaseToAttack = new DecisionNode(DecisionType.RepeatUntilActionComplete, "ChaseBT->AttackBT_Node");
             chaseToAttack.AddAction(new Action(switchToAttackBT));
             chaseToAttack.AddCondition(new Condition(isReachedLastSeenLocation));
             chaseToAttack.AddCondition(new Condition(isTargetInRange));
@@ -256,6 +267,7 @@ namespace AI
             /// Attack_Root_Node                    (does nothing)
             ///     Basic_Attack_Node               (perform basic attack when in range)
             ///         AttackBT->LookBT_Node       (when out of attack range go back to patrolling)
+            ///     AttackBT->LookBT_Node       (when out of attack range go back to patrolling)
 
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Attack_Root_Node");
             rootNode.AddAction(new Action(idle));

@@ -25,6 +25,7 @@ namespace Player
         private MoveComponent m_moveComp;
         //private InputPacket[] m_inputPackets;
         private EquipmentHandler m_EquipmentHandler;
+        private PowerHandler m_PowerHandler;
 
         private PCActions m_PCActions;
 
@@ -40,6 +41,7 @@ namespace Player
             }
             m_moveComp = GetComponent<MoveComponent>();
             m_EquipmentHandler = GetComponent<EquipmentHandler>();
+            m_PowerHandler = GetComponent<PowerHandler>();
             m_PCActions = new PCActions();
             m_PCActions.InputPackets = new InputPacket[18];
             m_UserInput = FindObjectOfType<UserInput>();
@@ -60,6 +62,7 @@ namespace Player
             CheckMovement();
             CheckActions();
             CheckCommands();
+            CheckPowers();
         }
 
         private void CheckCommands()
@@ -75,6 +78,11 @@ namespace Player
         private void CheckMovement()
         {
             m_moveComp.ProcessMovement(m_PCActions);
+        }
+
+        private void CheckPowers()
+        {
+            m_PowerHandler.ProcessPowers(m_PCActions);
         }
     }
 }

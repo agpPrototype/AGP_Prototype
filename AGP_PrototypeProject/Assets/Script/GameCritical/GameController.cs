@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Bond;
+using vfx;
 
 namespace GameCritical
 {
@@ -12,8 +13,10 @@ namespace GameCritical
     {
         private static GameController s_GameController = null;
         private BondManager m_BondManager;
+        private SmellSmokeDriver m_SmellSmokeDriver;
         private GameObject m_Player;
         private GameObject m_Wolf;
+
 
         private void Awake () 
         {
@@ -45,7 +48,7 @@ namespace GameCritical
 
         private void InitializeGame()
         {
-            
+            m_SmellSmokeDriver = GetComponent<SmellSmokeDriver>();
         }
 
         public void RegisterPlayer(GameObject player)
@@ -60,6 +63,7 @@ namespace GameCritical
 
         public static GameController Instance { get { return s_GameController; } }
         public BondManager BondManager { get { return m_BondManager; } }
+        public SmellSmokeDriver SmellSmokeDriver { get { return m_SmellSmokeDriver; } }
         public GameObject Player { get { return m_Player; } }
         public GameObject Wolf { get { return m_Player; } }
     }
