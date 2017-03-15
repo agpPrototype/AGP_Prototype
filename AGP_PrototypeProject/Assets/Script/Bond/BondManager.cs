@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Bond 
 {
@@ -9,8 +8,7 @@ namespace Bond
     {
 		public static BondManager Instance = null;
 
-        [SerializeField]
-        private Slider BondBar;
+		private HashSet<BondEffect> m_RegisteredEffects;
 
 		[SerializeField]
 		[Range(0, 100)]
@@ -23,19 +21,8 @@ namespace Bond
             // constrain between 0 and 100
             set
             {
-                if (value > 100)
-                {
-                    m_BondStatus = 100;
-                }
-                else if (value < 0)
-                {
-                    m_BondStatus = 0;
-                }
-                else
-                {
-                    m_BondStatus = value;    
-                }
-				UpdateGUI();
+				m_BondStatus = Mathf.Clamp(value, 0, 100);
+				UpdateEffects();
 
             }
         }
@@ -50,6 +37,7 @@ namespace Bond
 			if (Instance == null)
 			{
 				Instance = this;
+				m_RegisteredEffects = new HashSet<BondEffect>();
 			}
 			else
 			{
@@ -58,31 +46,44 @@ namespace Bond
 					Destroy(this.gameObject);
 				}
 			}
-			UpdateGUI();
-		}  
+			UpdateEffects();
+		} 
+
+		public void UpdateEffects()
+		{
+			foreach(BondEffect b in m_RegisteredEffects)
+			{
+				b.DoEffect();
+			}
+		}
+
+		public void RegisterEffect(BondEffect be)
+		{
+			m_RegisteredEffects.Add(be);
+		}
+
+		public void UnRegisterEffect(BondEffect be)
+		{
+			m_RegisteredEffects.Remove(be);
+		}
         
         // A function is needed to use in Behavior Tree
         public float GetBondStatus()
         {
-            return m_BondStatus;
+            return (float)m_BondStatus;
         } 
+
+		public float GetBondStatus01()
+		{
+			return (float)m_BondStatus / 100.0f;
+		}
 
         public void SetBondStatus(int b)
         {
             b = Mathf.Clamp(b, 0, 100);
 
             m_BondStatus = b;
-            UpdateGUI();
-        }
-
-        public void UpdateGUI()
-        {
-            if(!BondBar)
-            {
-                Debug.LogError("BondBar missing from scene");
-                return;
-            }
-            BondBar.GetComponent<Slider>().value = m_BondStatus;
+			UpdateEffects();
         }
     }
 

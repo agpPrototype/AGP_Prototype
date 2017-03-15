@@ -6,6 +6,7 @@ using Utility;
 using System;
 using Player;
 using Items;
+using AI;
 
 namespace Player
 {
@@ -26,8 +27,10 @@ namespace Player
         //private InputPacket[] m_inputPackets;
         private EquipmentHandler m_EquipmentHandler;
         private PowerHandler m_PowerHandler;
+        private CommandHandler m_CommandHandler;
 
         private PCActions m_PCActions;
+        private CompanionAISM m_WolfAI;
 
         void Start()
         {
@@ -42,9 +45,23 @@ namespace Player
             m_moveComp = GetComponent<MoveComponent>();
             m_EquipmentHandler = GetComponent<EquipmentHandler>();
             m_PowerHandler = GetComponent<PowerHandler>();
+            m_CommandHandler = GetComponent<CommandHandler>();
             m_PCActions = new PCActions();
             m_PCActions.InputPackets = new InputPacket[18];
             m_UserInput = FindObjectOfType<UserInput>();
+            m_WolfAI = FindObjectOfType<CompanionAISM>();
+            Initialize();
+        }
+
+        void Initialize()
+        {
+            if (m_WolfAI)
+            {
+                if (m_CommandHandler)
+                {
+
+                }
+            }
         }
 
         void FixedUpdate()
@@ -67,7 +84,7 @@ namespace Player
 
         private void CheckCommands()
         {
-
+            m_CommandHandler.ProcessCommands(m_PCActions);
         }
 
         private void CheckActions()
