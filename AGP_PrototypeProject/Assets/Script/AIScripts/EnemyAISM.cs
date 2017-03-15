@@ -24,9 +24,6 @@ namespace AI
         [SerializeField]
         private EnemyAIState m_State;
 
-        [SerializeField]
-        private ThreatLevel m_ThreatLevel;
-
         private BehaviorTree m_CurrentBT;
         private BehaviorTree m_PatrolBT;
         private BehaviorTree m_ChaseBT;
@@ -306,6 +303,9 @@ namespace AI
             {
                 if (m_CurrentWaypoint != null)
                 {
+                    // set stopping distance from waypoint (same for all waypoints right now).
+                    m_NavAgent.stoppingDistance = StopDistFromWaypoints;
+
                     if (!m_NavAgent.isOnNavMesh)
                     {
                         Debug.Log("AI nav agent not on a nav mesh.");
