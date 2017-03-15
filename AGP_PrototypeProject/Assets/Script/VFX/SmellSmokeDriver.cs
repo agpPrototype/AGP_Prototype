@@ -7,16 +7,18 @@ namespace vfx
     public class SmellSmokeDriver : MonoBehaviour 
     {
         [SerializeField]private GameObject m_VFXCamera;
-        private Camera m_mainCam;
+        private Camera m_MainCam;
         private GameObject[] m_SmokeSystems;
 
-        private bool m_isSmoking;
+        private bool m_IsSmoking;
+        private bool m_CanActivateSmell;
 
         // Use this for initialization
         void Awake() 
         {
-            m_isSmoking = false;
-            m_mainCam = Camera.main;
+            m_IsSmoking = false;
+            m_CanActivateSmell = true; //cooldown
+            m_MainCam = Camera.main;
            
             m_SmokeSystems = GameObject.FindGameObjectsWithTag("SmellSmoke");
 
@@ -30,8 +32,8 @@ namespace vfx
         private void EnableSmellSmoke()
         {
             m_VFXCamera.SetActive(true);
-            m_mainCam.GetComponent<ColorCorrectionCurves>().enabled = true;
-            m_mainCam.GetComponent<VignetteAndChromaticAberration>().enabled = true;
+            m_MainCam.GetComponent<ColorCorrectionCurves>().enabled = true;
+            m_MainCam.GetComponent<VignetteAndChromaticAberration>().enabled = true;
             for (int i = 0; i < m_SmokeSystems.Length; i++)
             {
                 m_SmokeSystems[i].SetActive(true);
@@ -41,8 +43,8 @@ namespace vfx
         private void DisableSmellSmoke()
         {
             m_VFXCamera.SetActive(false);
-            m_mainCam.GetComponent<ColorCorrectionCurves>().enabled = false;
-            m_mainCam.GetComponent<VignetteAndChromaticAberration>().enabled = false;
+            m_MainCam.GetComponent<ColorCorrectionCurves>().enabled = false;
+            m_MainCam.GetComponent<VignetteAndChromaticAberration>().enabled = false;
             for (int i = 0; i < m_SmokeSystems.Length; i++)
             {
                 m_SmokeSystems[i].SetActive(false);
@@ -51,22 +53,28 @@ namespace vfx
 
         public void ToggleSmellSmoke()
         {
-            if(!m_isSmoking)
+            if(m_CanActivateSmell)
             {
-                EnableSmellSmoke();
-                StartCoroutine(CoolToggle(0.1f));
+                m_CanActivateSmell = false;
+                if(!m_IsSmoking)
+                {
+                    EnableSmellSmoke();
+                    StartCoroutine(CoolToggle(0.3f));
+                }
+                else
+                {
+                    DisableSmellSmoke();
+                    StartCoroutine(CoolToggle(0.3f));
+                }
             }
-            else
-            {
-                DisableSmellSmoke();
-                StartCoroutine(CoolToggle(0.1f));
-            }
+
         }
 
         private IEnumerator CoolToggle(float sec)
         {
             yield return new WaitForSeconds(sec);
-            m_isSmoking = !m_isSmoking;
+            m_IsSmoking = !m_IsSmoking;
+            m_CanActivateSmell = true;
         }
     }
 }
