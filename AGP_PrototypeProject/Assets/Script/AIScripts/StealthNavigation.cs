@@ -122,7 +122,7 @@ namespace AI
         }
 
         [SerializeField]
-        float MinDistToPointSq = 1.0f;
+        float MinDistToPointSq = 2.0f;
 
         public bool IsAtNextNode()
         {
@@ -197,7 +197,7 @@ namespace AI
                 m_NextStealthPos = closestPoint.gameObject;
         }
 
-        public void DetermineNextStealthPointInPath() // Just find the closest points for now
+        public void DetermineNextStealthPointInPath()
         {
             if(m_PathToDestination.Count != 0 && IsAtNextNode())
                 m_NextStealthPos = m_PathToDestination.Pop();

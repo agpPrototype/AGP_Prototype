@@ -20,5 +20,6 @@ namespace Player
         public float StrafeRight;
         public bool Aim;
         public bool Fire;
+        public bool SmellSmoke;
     }
 }
