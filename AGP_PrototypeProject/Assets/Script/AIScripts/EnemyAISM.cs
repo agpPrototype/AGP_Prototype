@@ -294,8 +294,6 @@ namespace AI
         #region Attack Methods
         private void attack()
         {
-            // ADD AS U WISH HERE SAMMY BOY! ;)
-            Debug.Log("ATTACKING");
             // set animator to idle for AI
             setAnimation(EnemyAIAnimation.Attacking);
         }
