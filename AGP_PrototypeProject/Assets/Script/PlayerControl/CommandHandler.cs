@@ -50,7 +50,6 @@ namespace Player
         {
             if (pca.Aim && pca.MoveTo && m_MoveToDelay > 0.5f)
             {
-                Debug.Log("Gave 'GoTo' command");
                 m_MoveToDelay = 0.0f;
                 //ray hit point
                 Vector3 rayHitPoint = Vector3.zero;
@@ -81,7 +80,7 @@ namespace Player
                         m_CompanionAISM.GiveGoToCommand(hit.transform.gameObject, worldSpace);
                     else
                     {
-                        Debug.Log("Cannot command Accalia to move that far! Distance Given = " + distSq);
+                        Debug.Log("Cannot command Accalia to move that far! Distance Given: " + Mathf.Sqrt(distSq) + ", Max is:" + m_MaxDistanceMoveTo);
                     }
                 }
                 else

@@ -166,8 +166,10 @@ namespace AI
 
             if (path.corners.Length != 0 && !IsAtNextNode())
             {
-                    wolfMoveComp.Move(TargetMoveToLocation, path.corners);
-                    m_isNavigating = true;
+                //wolfMoveComp.Move(TargetMoveToLocation, path.corners);
+                NavMeshAgent navAgent = GetComponent<NavMeshAgent>();
+                StartCoroutine(wolfMoveComp.Move(TargetMoveToLocation, path.corners, navAgent));
+                m_isNavigating = true;
             }
 
             
