@@ -12,6 +12,7 @@ namespace Player
         private CompanionAISM m_CompanionAISM;
         private float m_MoveToDelay;
         private float m_StayDelay;
+        private float m_ComeDelay;
 
         [SerializeField]
         private float m_MaxDistanceMoveTo;
@@ -41,6 +42,11 @@ namespace Player
             if (pca.InputPackets[(int)EnumService.InputType.DDown] != null)
             {
                 pca.Stay = Convert.ToBoolean(pca.InputPackets[(int)EnumService.InputType.DDown].Value);
+            }
+
+            if (pca.InputPackets[(int)EnumService.InputType.Square] != null)
+            {
+                pca.Come = Convert.ToBoolean(pca.InputPackets[(int)EnumService.InputType.Square].Value);
             }
 
             DoCommands(pca);
@@ -91,9 +97,16 @@ namespace Player
 
             if (pca.Stay && m_StayDelay > 0.5f)
             {
-                Debug.Log("Gave 'GoTo' command");
+                Debug.Log("Gave 'Stay' command");
                 m_StayDelay = 0.0f;
                 m_CompanionAISM.GiveCommand(WolfCommand.STAY);
+            }
+
+            if (pca.Come && m_ComeDelay > 0.5f)
+            {
+                Debug.Log("Gave 'Come' command");
+                m_ComeDelay = 0.0f;
+                m_CompanionAISM.GiveCommand(WolfCommand.COME);
             }
         }
 
@@ -101,6 +114,7 @@ namespace Player
         {
             m_MoveToDelay += Time.deltaTime;
             m_StayDelay += Time.deltaTime;
+            m_ComeDelay += Time.deltaTime;
             if (m_MoveToDelay > 10)
             {
                 m_MoveToDelay = 0.0f;
@@ -108,6 +122,10 @@ namespace Player
             if (m_StayDelay > 10)
             {
                 m_StayDelay = 0.0f;
+            }
+            if (m_ComeDelay > 10)
+            {
+                m_ComeDelay = 0.0f;
             }
         }
 

@@ -23,5 +23,6 @@ namespace Player
         public bool SmellSmoke;
         public bool MoveTo;
         public bool Stay;
+        public bool Come;
     }
 }

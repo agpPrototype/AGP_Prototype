@@ -134,6 +134,14 @@ public class ActionZone : MonoBehaviour {
         }
     }
 
+    public GameObject GetEnemy(int idx)
+    {
+        if(idx < m_EnemyList.Count)
+            return m_EnemyList[idx];
+
+        return null;
+    }
+
     public void EnemyDestroyed(GameObject enemy)
     {
         if (enemy)
