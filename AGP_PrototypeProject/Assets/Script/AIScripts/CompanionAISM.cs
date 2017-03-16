@@ -66,7 +66,8 @@ namespace AI
     public enum WolfCommand{
         GOTO,
         STAY,
-        COME
+        COME,
+        NONE
     }
 
     #endregion
@@ -136,6 +137,22 @@ namespace AI
         private Vector3 m_RotateToDirection;
 
 
+        #region Command Vars
+
+        private WolfCommand m_CurrentCommand;
+        public WolfCommand CurrentCommand { get { return m_CurrentCommand; } }
+
+        public Int m_CurrentCommandAsInt;
+
+        [SerializeField]
+        private float m_GoToBondRequirement;
+        [SerializeField]
+        private float m_StayBondRequirement;
+        [SerializeField]
+        private float m_ComeBondRequirement;
+
+        #endregion
+
         #region Temp Variables For Testing (To go in another file later)
 
         private NavMeshAgent WolfNavAgent;
@@ -181,6 +198,8 @@ namespace AI
             m_CurrentMainState =  WolfMainState.Idle;
             m_PreviousMainState = WolfMainState.Attack;
             WolfNavAgent = GetComponentInParent<NavMeshAgent>();
+
+            m_CurrentCommand = WolfCommand.NONE;
 
             playerLoc = Player.transform.position;
             DistToPlayerSq = new Float((playerLoc - transform.position).sqrMagnitude);
@@ -316,16 +335,16 @@ namespace AI
 
         private void CreateStealthBT()
         {
-            ///                              root
-            /// (FollowStealth)                            (FindOwnPath)
-            /// FindNextStealthPt                           FindPathToEnd
-            /// GoToNextStealthPt                           GoToNextStealthPt
-            /// RotateTowardsNext (once arrived)            RotateTowardsNext (once arrived)
-            /// LoopToRoot                                  Wait
-            ///                                             LoopTo"GoToNextStealthPt"
+            ///                                              root
+            /// (FollowStealth)                                                                   (FindOwnPath)
+            /// FindNextStealthPt                                                                  FindPathToEnd
+            ///                                                 
+            /// GoToNextStealthPt                                     GoToNextStealthPt                         WaitForTime
+            /// RotateTowardsNext (once arrived)                      RotateTowardsNext (once arrived)
+            /// LoopToRoot                                            Wait
+            ///                                                       LoopTo"GoToNextStealthPt"
             ///                                             
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Root Stealth");
-            //Condition isAtStealthPt = new Condition(new BoolTypeDelegate(m_StealthNav.IsAtNextNode));
             Action beginStealth = new Action(DoNothing);
 
             // Test Go To stealth navigation
@@ -338,27 +357,52 @@ namespace AI
             /// NODE ///
             /// 
             DecisionNode findNextStealthPt = new DecisionNode(DecisionType.RepeatUntilCanProgress, "FindNextStealthPt");
-            Condition isBondLow1 = new Condition(new FloatTypeDelegate(BondManager.Instance.GetBondStatus), ConditionComparison.Greater, new Float(50.0f));
+            Condition isBondHigh1 = new Condition(new FloatTypeDelegate(BondManager.Instance.GetBondStatus), ConditionComparison.Greater, new Float(50.0f));
+            Condition isNotUnderCommand = new Condition(new BoolTypeDelegate(IsNotUnderCommand));
+           // Condition isNotUnderCommand = new Condition(m_CurrentCommandAsInt, ConditionComparison.NotEqual, new Int((int)WolfCommand.GOTO));
             Action getNextPt = new Action(m_StealthNav.DetermineNextStealthPointToPlayer);
-            findNextStealthPt.AddCondition(isBondLow1);
+            findNextStealthPt.AddCondition(isBondHigh1);
+            findNextStealthPt.AddCondition(isNotUnderCommand);
             findNextStealthPt.AddAction(getNextPt);
 
             m_StealthTree.AddDecisionNodeTo(rootNode, findNextStealthPt);
+
             
+
             /// NODE ///
             /// 
             DecisionNode navigateToNextStealthPt = new DecisionNode(DecisionType.RepeatUntilCanProgress, "NavigateToStealthPt");
             Condition isPlayerAway = new Condition(new FloatTypeDelegate(GetDistToPlayerSq), ConditionComparison.Greater, new Float(StartToFollowDistance * StartToFollowDistance));
-            // Condition isBondHigh = new Condition(new FloatTypeDelegate(BondManager.Instance.GetBondStatus), ConditionComparison.Greater, new Float(50.0f));
             Condition isPathSafe = new Condition(new BoolTypeDelegate(m_StealthNav.IsPathSafeToNext));
             Action navToNext = new Action(m_StealthNav.NavigateToNextNode);
 
-            // navigateToNextStealthPt.AddCondition(isBondHigh);
             navigateToNextStealthPt.AddCondition(isPathSafe);
             navigateToNextStealthPt.AddCondition(isPlayerAway);
             navigateToNextStealthPt.AddAction(navToNext);
 
             m_StealthTree.AddDecisionNodeTo(findNextStealthPt, navigateToNextStealthPt);
+
+                //Only Wait loop if path is not safe (give the ai some time to get out of the way
+                    /// NODE ///
+                    /// 
+                    DecisionNode doNothingNode1 = new DecisionNode(DecisionType.RepeatUntilCanProgress, "WaitAtStealthPoint");
+                    Action doNothing0 = new Action(DoNothing);
+                    doNothingNode1.AddAction(doNothing0);
+
+                    m_StealthTree.AddDecisionNodeTo(findNextStealthPt, doNothingNode1);
+
+                    /// NODE ///
+                    /// 
+                    DecisionNode waitHere0 = new DecisionNode(DecisionType.RepeatUntilCanProgress, "WaitForSafePath");
+                    Condition isWaitDone0 = new Condition(IsDoneWaitAtStealthPoint);
+                    waitHere0.AddAction(doNothing0);
+                    waitHere0.AddCondition(isWaitDone0);
+
+                    m_StealthTree.AddDecisionNodeTo(doNothingNode1, waitHere0);
+
+                    // Add loop to wait again if path is not safe
+                    m_StealthTree.AddDecisionNodeTo(waitHere0, navigateToNextStealthPt);
+                    m_StealthTree.AddDecisionNodeTo(waitHere0, doNothingNode1);
 
             /// NODE ///
             /// 
@@ -452,7 +496,23 @@ namespace AI
             CompleteCurrentActionExternal(true);
         }
 
-        
+        #region Command Functions
+
+        public bool IsNotUnderCommand()
+        {
+            if (m_CurrentCommand == WolfCommand.NONE)
+                return true;
+
+            return false;
+        }
+
+        public WolfCommand GetCurentCommand()
+        {
+            return m_CurrentCommand;
+        }
+
+        #endregion
+
 
         // Update is called once per frame
         void Update()
@@ -592,7 +652,48 @@ namespace AI
         /// </summary>
         public void GiveGoToCommand(GameObject hitObject, Vector3 goToLocation)
         {
+            float bondStatus = m_GameControl.BondManager.BondStatus;
+            if(bondStatus > m_GoToBondRequirement)
+            {
+                SetCurrentCommand(WolfCommand.GOTO);
 
+                if (hitObject.GetComponent<EnemyAISM>())
+                {
+                    // Attack this enemy!
+                    Debug.Log("Attack the enemy!");
+                }
+                else
+                {
+                    ActionZone AZPointIsIn = m_GameControl.GetActionZoneFromPoint(goToLocation);
+                    if (AZPointIsIn && AZPointIsIn.GetNumEnemiesAlive() > 0)
+                    {
+                        m_GameControl.CurrentActionZone = AZPointIsIn;
+                        
+                        SetMainState(WolfMainState.Stealth);
+                        m_StealthNav.ExecuteStealthGoToCommand(goToLocation);
+                        Debug.Log("Executing GoTo in stealth");
+                    }
+
+                    if(m_CurrentMainState == WolfMainState.Stealth)
+                    {
+                        
+                    }
+                    else
+                    {
+                        // TODO: Make a movement/command tree that just executes commands
+                    }
+                }
+            }
+            else
+            {
+                Debug.Log("Go To failed! Bond is not high enough to give commands.");
+            }
+        }
+
+        private void SetCurrentCommand(WolfCommand commandType)
+        {
+            m_CurrentCommand = commandType;
+            m_CurrentCommandAsInt = new Int((int)commandType);
         }
 
         #endregion

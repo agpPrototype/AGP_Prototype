@@ -12,6 +12,10 @@ public class ActionZone : MonoBehaviour {
 
     [SerializeField]
     private GameObject m_FinalStealthPos;
+    public GameObject FinalStealthPos {  get { return m_FinalStealthPos; } }
+
+    [SerializeField]
+    private GameObject m_EnemyListObjectRef;
 
     private GameObject[] m_StealthPointList;
     public GameObject[] StealthPointList
@@ -30,6 +34,8 @@ public class ActionZone : MonoBehaviour {
 
         m_ZoneCollider = GetComponent<Collider>();
         Debug.Assert(m_ZoneCollider != null, "No Collider for zone");
+
+        RegisterEnemiesInZone();
 
         InitializeStealthGraph();
 	}
@@ -64,6 +70,9 @@ public class ActionZone : MonoBehaviour {
         {
             m_IsWolfInZone = true;
         }
+        // If Enemy, register it with this Zone
+        
+
     }
 
     void OnTriggerExit(Collider other)
@@ -79,6 +88,10 @@ public class ActionZone : MonoBehaviour {
             m_IsWolfInZone = false;
 
         }
+        //else if (other.GetComponent<AI.EnemyAISM>())
+        //{
+        //    m_EnemyList.Remove(other.gameObject);
+        //}
 
         if (!m_IsWolfInZone && !m_IsPlayerInZone)
         {
@@ -87,6 +100,25 @@ public class ActionZone : MonoBehaviour {
             GameController.Instance.Wolf.GetComponent<AI.CompanionAISM>().SetMainState(AI.WolfMainState.Follow);
             Debug.Log("Both wolf and player left Action Zone");
         }
+    }
+
+    public bool IsLocationInZone(Vector3 location)
+    {
+        return GetComponent<Collider>().bounds.Contains(location);
+    }
+
+    private void RegisterEnemiesInZone()
+    {
+        // Get all child game objects
+        int numChild = m_EnemyListObjectRef.transform.childCount;
+        m_EnemyList = new List<GameObject>();
+
+        for (int i = 0; i < numChild; ++i)
+        {
+            m_EnemyList.Add(m_EnemyListObjectRef.transform.GetChild(i).gameObject);
+        }
+
+        Debug.Assert(m_EnemyList.Count > 0, "Warning: No enemies set in an action zone. Continue if this is expected behavior.");
     }
 
     // Update is called once per frame
@@ -99,6 +131,14 @@ public class ActionZone : MonoBehaviour {
         if (enemy)
         {
             m_EnemyList.Add(enemy);
+        }
+    }
+
+    public void EnemyDestroyed(GameObject enemy)
+    {
+        if (enemy)
+        {
+            m_EnemyList.Remove(enemy);
         }
     }
 
@@ -123,6 +163,7 @@ public class ActionZone : MonoBehaviour {
             {
                 return true;
             }
+
             return false;
         }
     }

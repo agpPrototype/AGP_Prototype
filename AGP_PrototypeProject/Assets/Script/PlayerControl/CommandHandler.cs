@@ -13,10 +13,19 @@ namespace Player
         private float m_MoveToDelay;
         private float m_StayDelay;
 
+        [SerializeField]
+        private float m_MaxDistanceMoveTo;
+
+        void Start()
+        {
+            m_CompanionAISM = GameCritical.GameController.Instance.Wolf.GetComponent<CompanionAISM>();
+        }
+
         public void SetCompanionAISM(CompanionAISM wolfAI)
         {
             m_CompanionAISM = wolfAI;
         }
+
         public void ProcessCommands(PCActions pca)
         {
             if (pca.InputPackets[(int)EnumService.InputType.LT] != null)
@@ -29,9 +38,9 @@ namespace Player
                 pca.MoveTo = Convert.ToBoolean(pca.InputPackets[(int)EnumService.InputType.RB].Value);
             }
 
-            if (pca.InputPackets[(int)EnumService.InputType.LB] != null)
+            if (pca.InputPackets[(int)EnumService.InputType.DDown] != null)
             {
-                pca.Stay = Convert.ToBoolean(pca.InputPackets[(int)EnumService.InputType.LB].Value);
+                pca.Stay = Convert.ToBoolean(pca.InputPackets[(int)EnumService.InputType.DDown].Value);
             }
 
             DoCommands(pca);
@@ -41,6 +50,7 @@ namespace Player
         {
             if (pca.Aim && pca.MoveTo && m_MoveToDelay > 0.5f)
             {
+                Debug.Log("Gave 'GoTo' command");
                 m_MoveToDelay = 0.0f;
                 //ray hit point
                 Vector3 rayHitPoint = Vector3.zero;
@@ -49,9 +59,30 @@ namespace Player
                 RaycastHit hit;
                 if (Physics.Raycast(ray, out hit))
                 {
+                    // Bypass the collider of 1 Action Zone so that you can call "MoveTo" from outside of an Action Zone
+                    if (hit.collider.gameObject.GetComponent<ActionZone>())
+                    {
+                        ray = new Ray(hit.point, ray.direction);
+                        if (Physics.Raycast(ray, out hit))
+                        {
+                            if (hit.collider.gameObject.GetComponent<ActionZone>())
+                            {
+                                return;
+                            }
+                        }
+                    }
+
                     worldSpace = hit.point;
                     rayHitPoint = worldSpace;
-                    //m_CompanionAISM.MoveTo(worldSpace, hit.transform.gameObject);
+
+                    // Limit command to a certain range
+                    float distSq = (rayHitPoint - m_CompanionAISM.gameObject.transform.position).sqrMagnitude;
+                    if(distSq < m_MaxDistanceMoveTo * m_MaxDistanceMoveTo)
+                        m_CompanionAISM.GiveGoToCommand(hit.transform.gameObject, worldSpace);
+                    else
+                    {
+                        Debug.Log("Cannot command Accalia to move that far! Distance Given = " + distSq);
+                    }
                 }
                 else
                 {
@@ -61,8 +92,9 @@ namespace Player
 
             if (pca.Stay && m_StayDelay > 0.5f)
             {
+                Debug.Log("Gave 'GoTo' command");
                 m_StayDelay = 0.0f;
-                //m_CompanionAISM.Stay();
+                m_CompanionAISM.GiveCommand(WolfCommand.STAY);
             }
         }
 

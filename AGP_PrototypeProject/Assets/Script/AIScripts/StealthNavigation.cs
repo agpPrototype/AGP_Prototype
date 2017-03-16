@@ -112,22 +112,37 @@ namespace AI
 
         public void ActivateStealthNavigation()
         {
-            // Set which stealth strategy to use
-            if (GameCritical.GameController.Instance.BondManager.BondStatus >= 50)
-                m_FindOwnPath = false;
-            else
-                m_FindOwnPath = true;
-
             // Get the correct stealth points from current ActionZone
             m_CurrentActionZone = GameCritical.GameController.Instance.CurrentActionZone;
             m_StealthPointList = m_CurrentActionZone.StealthPointList;
 
-            m_NextStealthPos = FindClosestPointToPlayer();
-            m_CurrentStealthPos =  m_NextStealthPos;
+            //m_NextStealthPos = FindClosestPointToPlayer();
+            //m_CurrentStealthPos =  m_NextStealthPos;
 
-            // Test "Go To" for stealth - default to go to last node in the path in test level
-            SetStealthToDestination(Vector3.zero);
-            CalculateBestPathToFinalDestination();
+            // Set which stealth strategy to use
+            if (GameCritical.GameController.Instance.BondManager.BondStatus >= 50)
+            {
+                m_FindOwnPath = false;
+                m_NextStealthPos = FindClosestPointToPlayer();
+                m_CurrentStealthPos = m_NextStealthPos;
+            }
+            else if (m_CurrentActionZone)
+            {
+                m_FindOwnPath = true;
+                m_ClosestSPToFinalDest = m_CurrentActionZone.FinalStealthPos;
+                m_NextStealthPos = FindClosestPointToWolf();
+                m_CurrentStealthPos = m_NextStealthPos;
+                CalculateBestPathToFinalDestination();
+            }
+            else
+            {
+                Debug.Assert(false, "Not sure what to do for stealth Nav!");
+            }
+
+
+            //if (GetComponent<CompanionAISM>().CurrentCommand == WolfCommand.GOTO)
+            //    m_FindOwnPath = true;
+
         }
 
 
@@ -177,6 +192,15 @@ namespace AI
             return false;
         }
 
+        public void ExecuteStealthGoToCommand(Vector3 goToLocation)
+        {
+            m_NextStealthPos = FindClosestPointToWolf();
+            m_CurrentStealthPos = m_NextStealthPos;
+
+            SetStealthToDestination(goToLocation);
+            CalculateBestPathToFinalDestination();
+        }
+
 
         //////////////////////////////////////
         // Helper Funcitons
@@ -193,6 +217,27 @@ namespace AI
             {
                 float distSq = Vector3.SqrMagnitude(playerLoc - m_StealthPointList[i].transform.position);
                 if(distSq < minDistSq)
+                {
+                    closestPoint = m_StealthPointList[i];
+                    minDistSq = distSq;
+                }
+
+            }
+
+            return closestPoint;
+        }
+
+        GameObject FindClosestPointToWolf()
+        {
+            Vector3 wolfLoc = gameObject.transform.position;
+            GameObject closestPoint = null;
+
+            float minDistSq = 1000000;
+
+            for (int i = 0; i < m_StealthPointList.Length; ++i)
+            {
+                float distSq = Vector3.SqrMagnitude(wolfLoc - m_StealthPointList[i].transform.position);
+                if (distSq < minDistSq)
                 {
                     closestPoint = m_StealthPointList[i];
                     minDistSq = distSq;
@@ -221,7 +266,6 @@ namespace AI
                 StealthPosition sp = allSP[i];
 
                 float distSq = Vector3.SqrMagnitude(playerLoc - sp.transform.position);
-                //bool isPlayerFacingNode = 
                 if (distSq < minDistSq)
                 {
                     closestPoint = sp;
@@ -240,7 +284,7 @@ namespace AI
                 m_NextStealthPos = m_PathToDestination.Pop();
             else
             {
-                Debug.Log("No Nodes for stealth path!");
+                //Debug.Log("No Nodes for stealth path!");
             }
         }
 
@@ -377,6 +421,7 @@ namespace AI
 
             float minDist = 1000000;
 
+            // Find stealth point closest to destination
             for(int i = 0; i < m_StealthPointList.Length; ++i)
             {
                 float distToPointSq = (m_StealthPointList[i].transform.position - goToLocation).sqrMagnitude;
@@ -388,7 +433,7 @@ namespace AI
             }
 
             // TEMP FOR TEST - REMOVE THIS
-            m_ClosestSPToFinalDest = GetComponent<CompanionAISM>().StealthDestination.gameObject;
+            //m_ClosestSPToFinalDest = GetComponent<CompanionAISM>().StealthDestination.gameObject;
         }
 
         private void SetAllStealthPosVisited(bool isVisited)
