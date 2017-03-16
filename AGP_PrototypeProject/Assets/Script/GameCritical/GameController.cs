@@ -17,6 +17,7 @@ namespace GameCritical
         private GameObject m_Player;
         private GameObject m_Wolf;
 
+        private ActionZone m_CurrentActionZone;
 
         private void Awake () 
         {

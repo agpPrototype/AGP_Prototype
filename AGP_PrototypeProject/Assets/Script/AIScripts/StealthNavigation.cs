@@ -43,6 +43,8 @@ namespace AI
 
         private GameObject m_PlayerRef;
 
+        private ActionZone m_CurrentActionZone;
+
         private Vector3 m_FinalDestination;
         private GameObject m_ClosestSPToFinalDest;
 

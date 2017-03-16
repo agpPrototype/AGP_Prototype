@@ -29,7 +29,7 @@ namespace Wolf {
             m_TargetPos = targetPos;
             m_Path = path;
 
-            if (path.Length == 0)
+            if (path.Length < 2)
                 return;
 
             Vector3 nextNode = path[1]; //we only really care the next immediate node, but lets keep passing in the whole array for now cuz maybe we want more from it later

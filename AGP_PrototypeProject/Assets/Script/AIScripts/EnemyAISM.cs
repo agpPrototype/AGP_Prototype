@@ -72,6 +72,12 @@ namespace AI
         private bool m_IsTargetInRange;
         private AIDetectable m_Target; // current prioritized target.
 
+        public void Awake()
+        {
+
+
+        }
+
         // Use this for initialization
         private void Start()
         {
@@ -82,6 +88,7 @@ namespace AI
             m_NavAgent = GetComponent<NavMeshAgent>();
             initBehaviorTrees();
         }
+       
 
         private void initBehaviorTrees()
         {
