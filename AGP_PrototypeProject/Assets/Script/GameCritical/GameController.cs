@@ -50,6 +50,8 @@ namespace GameCritical
         private void InitializeGame()
         {
             m_SmellSmokeDriver = GetComponent<SmellSmokeDriver>();
+
+            m_BondManager = GetComponent<BondManager>();
         }
 
         public void RegisterPlayer(GameObject player)
@@ -66,7 +68,12 @@ namespace GameCritical
         public BondManager BondManager { get { return m_BondManager; } }
         public SmellSmokeDriver SmellSmokeDriver { get { return m_SmellSmokeDriver; } }
         public GameObject Player { get { return m_Player; } }
-        public GameObject Wolf { get { return m_Player; } }
+        public GameObject Wolf { get { return m_Wolf; } }
+
+        public ActionZone CurrentActionZone {
+            get { return m_CurrentActionZone; }
+            set{ m_CurrentActionZone = value; }
+        }
     }
 
 }

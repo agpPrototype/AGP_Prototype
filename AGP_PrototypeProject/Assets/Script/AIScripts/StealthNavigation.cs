@@ -20,7 +20,8 @@ namespace AI
     public class StealthNavigation : MonoBehaviour {
 
 
-        bool tempSelfNav = true;
+        //bool tempSelfNav = true;
+        
 
         [SerializeField]
         private GameObject m_StealthPosGraphObject;
@@ -28,10 +29,12 @@ namespace AI
         private GameObject[] m_StealthPointList;
 
         private GameObject m_CurrentStealthPos;
+        public GameObject CurrentStealthPos { get { return m_CurrentStealthPos; } }
+
         private GameObject m_NextStealthPos;
         public GameObject NextStealthPos {
             get {
-                if (!tempSelfNav)
+                if (!m_FindOwnPath)
                     return m_NextStealthPos;
                 else if (m_PathToDestination.Count > 0)
                     return m_PathToDestination.Peek();
@@ -44,6 +47,11 @@ namespace AI
         private GameObject m_PlayerRef;
 
         private ActionZone m_CurrentActionZone;
+        public ActionZone CurrentActionZone
+        {
+            get { return m_CurrentActionZone; }
+            set { m_CurrentActionZone = value; }
+        }
 
         private Vector3 m_FinalDestination;
         private GameObject m_ClosestSPToFinalDest;
@@ -59,6 +67,13 @@ namespace AI
         [SerializeField]
         private Stack<GameObject> m_PathToDestination;
 
+        [SerializeField]
+        private bool m_FindOwnPath;
+        public bool FindOwnPath
+        {
+            get { return m_FindOwnPath; }
+            set { m_FindOwnPath = value; }
+        }
 
         // Use this for initialization
         void Start() {
@@ -78,6 +93,16 @@ namespace AI
             Debug.Assert(m_StealthPointList.Length > 1, "ERROR: Need stealth points on map in order to have AI Navigate!");
 
             m_PathToDestination = new Stack<GameObject>();
+
+            
+        }
+
+        void Awake()
+        {
+            //if (GameCritical.GameController.Instance.BondManager.BondStatus >= 50)
+            //    m_FindOwnPath = false;
+            //else
+            //    m_FindOwnPath = true;
         }
 
         // Update is called once per frame
@@ -87,7 +112,17 @@ namespace AI
 
         public void ActivateStealthNavigation()
         {
-            m_NextStealthPos = FindClosestPointToPlayer();//.GetComponentInParent<StealthPosition>();
+            // Set which stealth strategy to use
+            if (GameCritical.GameController.Instance.BondManager.BondStatus >= 50)
+                m_FindOwnPath = false;
+            else
+                m_FindOwnPath = true;
+
+            // Get the correct stealth points from current ActionZone
+            m_CurrentActionZone = GameCritical.GameController.Instance.CurrentActionZone;
+            m_StealthPointList = m_CurrentActionZone.StealthPointList;
+
+            m_NextStealthPos = FindClosestPointToPlayer();
             m_CurrentStealthPos =  m_NextStealthPos;
 
             // Test "Go To" for stealth - default to go to last node in the path in test level

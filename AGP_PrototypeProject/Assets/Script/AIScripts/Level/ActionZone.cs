@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using GameCritical;
 
 public class ActionZone : MonoBehaviour {
 
@@ -9,25 +10,28 @@ public class ActionZone : MonoBehaviour {
     [SerializeField]
     private GameObject m_StealthPosGraph;
 
+    [SerializeField]
+    private GameObject m_FinalStealthPos;
+
     private GameObject[] m_StealthPointList;
     public GameObject[] StealthPointList
     {
         get { return m_StealthPointList; }
     }
 
+    private List<GameObject> m_EnemyList;
+
+    private bool m_IsWolfInZone = false;
+    private bool m_IsPlayerInZone = false;
+
 
     // Use this for initialization
     void Start () {
 
-        m_ZoneCollider = GetComponent<BoxCollider>();
+        m_ZoneCollider = GetComponent<Collider>();
         Debug.Assert(m_ZoneCollider != null, "No Collider for zone");
 
         InitializeStealthGraph();
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
 	}
 
     private void InitializeStealthGraph()
@@ -42,6 +46,85 @@ public class ActionZone : MonoBehaviour {
         }
 
         Debug.Assert(m_StealthPointList.Length > 1, "ERROR: Need stealth points on map in order to have AI Navigate!");
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        // Tell wolf that player entered the zone
+        if (other.GetComponent<Player.PlayerControl>())
+        {
+            m_IsPlayerInZone = true;
+            GameController.Instance.Wolf.GetComponent<AI.CompanionAISM>().PlayerLeftActionZone(false);
+
+            GameController.Instance.CurrentActionZone = this;
+            GameController.Instance.Wolf.GetComponent<AI.StealthNavigation>().CurrentActionZone = this;
+            Debug.Log("Set Current Action Zone");
+        }
+        else if (other.GetComponent<AI.CompanionAISM>())
+        {
+            m_IsWolfInZone = true;
+        }
+    }
+
+    void OnTriggerExit(Collider other)
+    {
+        // Tell Wolf that Player left the zone
+        if (other.GetComponent<Player.PlayerControl>())
+        {
+            m_IsPlayerInZone = false;
+            GameController.Instance.Wolf.GetComponent<AI.CompanionAISM>().PlayerLeftActionZone(true);
+        }
+        else if (other.GetComponent<AI.CompanionAISM>())
+        {
+            m_IsWolfInZone = false;
+
+        }
+
+        if (!m_IsWolfInZone && !m_IsPlayerInZone)
+        {
+            GameController.Instance.CurrentActionZone = null;
+            GameController.Instance.Wolf.GetComponent<AI.StealthNavigation>().CurrentActionZone = null;
+            GameController.Instance.Wolf.GetComponent<AI.CompanionAISM>().SetMainState(AI.WolfMainState.Follow);
+            Debug.Log("Both wolf and player left Action Zone");
+        }
+    }
+
+    // Update is called once per frame
+    void Update () {
+		
+	}
+
+    public void RegisterEnemy(GameObject enemy)
+    {
+        if (enemy)
+        {
+            m_EnemyList.Add(enemy);
+        }
+    }
+
+    public int GetNumEnemiesAlive()
+    {
+        return m_EnemyList.Count;
+    }
+
+    public bool IsAtFinalStealthPoint(Vector3 curLocation)
+    {
+        // If all enemies are dead, no need to stealth
+        if (m_EnemyList.Count == 0)
+        {
+            return true;
+        }
+        else
+        {
+            float distToFinalSq = (m_FinalStealthPos.transform.position - curLocation).sqrMagnitude;
+            float distThreshSq = 2.5f;
+
+            if(distToFinalSq < distThreshSq)
+            {
+                return true;
+            }
+            return false;
+        }
     }
 
 }
