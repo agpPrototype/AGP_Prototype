@@ -8,7 +8,9 @@ namespace Wolf {
         [SerializeField]
         private float m_AnimDistFactor = 3;
         [SerializeField]
-        public float m_AnimRotationFactor = 90;
+        public float m_AnimRotationFactor = 15;
+        [SerializeField]
+        private float m_RotateTowards_Threshold = 0.9f;
 
         private Animator m_Animator;
         private Vector3 m_TargetPos;
@@ -29,7 +31,7 @@ namespace Wolf {
             m_TargetPos = targetPos;
             m_Path = path;
 
-            if (path.Length == 0)
+            if (path.Length < 2)
                 return;
 
             Vector3 nextNode = path[1]; //we only really care the next immediate node, but lets keep passing in the whole array for now cuz maybe we want more from it later
@@ -84,14 +86,15 @@ namespace Wolf {
 
         public bool RotateTowards(Vector3 targetPos)
         {
-            Vector3 dir = targetPos - transform.position;
+            //Vector3 dir = targetPos - transform.position;
+            Vector3 dir = targetPos;
             dir.Normalize();
 
             Vector3 cross = Vector3.zero; //will be the cross product between the wolf's forward and the move direction
 
-            float DotDirs = Vector3.Dot(transform.forward, dir);
+            float DotDirs = Vector3.Dot(gameObject.transform.forward, dir);
 
-            if (DotDirs < 0.8f) //only rotate if wolf's forward and dir are different
+            if (DotDirs < m_RotateTowards_Threshold) //only rotate if wolf's forward and dir are different
             {
                 cross = Vector3.Cross(transform.forward, dir);
                 float angle = Vector3.Angle(transform.forward, dir);

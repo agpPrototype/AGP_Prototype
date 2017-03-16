@@ -79,6 +79,12 @@ namespace AI
         private bool m_IsTargetInAttackRange;
         private AIDetectable m_Target; // current prioritized target.
 
+        public void Awake()
+        {
+
+
+        }
+
         // Use this for initialization
         private void Start()
         {
@@ -91,6 +97,7 @@ namespace AI
             m_CurrentWaypoint = PatrolArea.GetNextWaypoint(null);
             initBehaviorTrees();
         }
+       
 
         private void initBehaviorTrees()
         {
