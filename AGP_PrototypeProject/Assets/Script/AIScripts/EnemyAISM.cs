@@ -155,7 +155,16 @@ namespace AI
         {
             setAnimation(EnemyAIAnimation.Idling);
             SetMainState(EnemyAIState.LOOKING);
-        }
+
+			if(m_AILineOfSightDetection != null)
+			{
+				m_AILineOfSightDetection.Beam.SetActive(false);
+			}
+			else
+			{
+				Debug.LogError("No AILineOfSightDetectin on AI.");
+			}
+		}
         #endregion
 
         #region Look Methods
@@ -248,6 +257,8 @@ namespace AI
                 {
                     m_TargetLastPosition = m_Target.transform.position;
                 }
+
+				m_AILineOfSightDetection.Beam.SetActive(true);
             }
             else
             {
