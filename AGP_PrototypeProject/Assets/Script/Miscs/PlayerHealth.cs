@@ -5,21 +5,13 @@ using UnityEngine;
 
 namespace HealthCare
 {
-    public class EnemyHealth : Health
+    public class PlayerHealth : Health
     {
-
-        protected override void Initialize()
-        {
-            base.Initialize();
-        }
-
-
         protected override void OnDeathBegin()
         {
             if (m_Animator)
             {
-                m_Animator.SetBool("Dead", true);
-                Destroy(gameObject, 2.0f);
+                m_Animator.SetBool("Dead", true);                              
             }
         }
 
@@ -27,5 +19,6 @@ namespace HealthCare
         {
             base.TakeDamage(damage, dmgDealer);
         }
+
     }
 }

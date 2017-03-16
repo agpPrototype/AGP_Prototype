@@ -1,25 +1,18 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace HealthCare
 {
-    public class EnemyHealth : Health
+    public class AccaliaHealth : Health
     {
-
-        protected override void Initialize()
-        {
-            base.Initialize();
-        }
-
 
         protected override void OnDeathBegin()
         {
             if (m_Animator)
             {
                 m_Animator.SetBool("Dead", true);
-                Destroy(gameObject, 2.0f);
+                m_Animator.SetTrigger("Death");
             }
         }
 

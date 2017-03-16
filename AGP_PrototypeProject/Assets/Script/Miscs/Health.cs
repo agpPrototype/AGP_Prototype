@@ -2,23 +2,28 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Misc
+namespace HealthCare
 {
-    public class Health : MonoBehaviour
+    public abstract class Health : MonoBehaviour
     {
         [SerializeField]
-        private float MaxHP = 100;
+        protected float MaxHP = 100;
 
-        private float m_CurrHP;
-        private Animator m_Animator;
+        protected float m_CurrHP;
+        protected Animator m_Animator;
         // Use this for initialization
         void Start()
+        {
+            Initialize();
+        }
+
+        protected virtual void Initialize()
         {
             m_CurrHP = MaxHP;
             m_Animator = GetComponent<Animator>();
         }
 
-        public void TakeDamage(float damage, GameObject dmgDealer = null)
+        public virtual void TakeDamage(float damage, GameObject dmgDealer = null)
         {
             if (m_CurrHP > 0)
             {
@@ -55,13 +60,6 @@ namespace Misc
             }
         }
 
-        virtual protected void OnDeathBegin()
-        {
-            if (m_Animator)
-            {
-                m_Animator.SetBool("Dead", true);
-                Destroy(gameObject, 2.0f);
-            }
-        }
+        protected abstract void OnDeathBegin();
     }
 }
