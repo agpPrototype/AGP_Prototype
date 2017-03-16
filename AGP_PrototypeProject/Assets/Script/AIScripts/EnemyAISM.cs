@@ -33,7 +33,7 @@ namespace AI
 
         [SerializeField]
         [Tooltip("Speed AI turns to find target.")]
-        private float LookRotationSpeed = 10.0f;
+        private float m_LookRotationSpeed = 0.04f;
 
         [SerializeField]
         [Tooltip("When chasing target how far away AI will stop when chasing.")]
@@ -69,6 +69,7 @@ namespace AI
 
         // target related members
         private Vector3 m_TargetLastPosition;
+        private Vector3 m_TargetLastVelocity;
         private bool m_IsTargetInRange;
         private AIDetectable m_Target; // current prioritized target.
 
@@ -121,6 +122,12 @@ namespace AI
             m_IsLookTimerSet = false;
             return true;
         }
+        private void rotateTowardLastSeenVelocity()
+        {
+            Vector3 newDir = Vector3.RotateTowards(transform.forward, m_TargetLastVelocity.normalized, m_LookRotationSpeed, 0.0f);
+            Debug.DrawRay(transform.position, newDir, Color.red);
+            transform.rotation = Quaternion.LookRotation(newDir);
+        }
         #endregion
 
         private void createLookBT()
@@ -136,7 +143,7 @@ namespace AI
 
             /// Wait_Node
             DecisionNode lookNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Look_Node");
-            lookNode.AddAction(new Action(idle));
+            lookNode.AddAction(new Action(rotateTowardLastSeenVelocity));
             m_LookBT.AddDecisionNodeTo(rootNode, lookNode);
 
             /// LookBT->PatrolBT
@@ -377,6 +384,11 @@ namespace AI
             {
                 m_IsTargetInRange = Vector3.Distance(m_Target.transform.position, this.transform.position) <= m_AttackRange;
                 m_TargetLastPosition = m_Target.transform.position;
+                Rigidbody rigidBody = m_Target.GetComponent<Rigidbody>();
+                if (rigidBody != null)
+                {
+                    m_TargetLastVelocity = rigidBody.velocity;
+                }
             }
             else
             {

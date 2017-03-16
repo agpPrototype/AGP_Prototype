@@ -15,7 +15,7 @@ namespace Bond
 			BondManager manager = (BondManager)target;
 			if(GUILayout.Button("Update Slider"))
 			{
-				manager.UpdateGUI();
+				manager.UpdateEffects();
 			}
 		}
 	}
