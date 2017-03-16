@@ -14,6 +14,13 @@ namespace AI
         private StealthPosition[] m_NextPositions;
 
         [SerializeField]
+        private Vector3 m_WolfAlignmentDirection;
+        public Vector3 AlignmentDir
+        {
+            get { return m_WolfAlignmentDirection; }
+        }
+
+        [SerializeField]
         public string m_name;
 
         // Used for Path navigation only

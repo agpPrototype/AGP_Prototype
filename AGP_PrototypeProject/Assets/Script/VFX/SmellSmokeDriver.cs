@@ -36,7 +36,8 @@ namespace vfx
             m_MainCam.GetComponent<VignetteAndChromaticAberration>().enabled = true;
             for (int i = 0; i < m_SmokeSystems.Length; i++)
             {
-                m_SmokeSystems[i].SetActive(true);
+                if(m_SmokeSystems[i])
+                    m_SmokeSystems[i].SetActive(true);
             }
         }
 
@@ -47,7 +48,8 @@ namespace vfx
             m_MainCam.GetComponent<VignetteAndChromaticAberration>().enabled = false;
             for (int i = 0; i < m_SmokeSystems.Length; i++)
             {
-                m_SmokeSystems[i].SetActive(false);
+                if (m_SmokeSystems[i])
+                    m_SmokeSystems[i].SetActive(false);
             }
         }
 

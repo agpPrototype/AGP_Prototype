@@ -51,6 +51,8 @@ namespace Player
             m_UserInput = FindObjectOfType<UserInput>();
             m_WolfAI = FindObjectOfType<CompanionAISM>();
             Initialize();
+
+            GameCritical.GameController.Instance.RegisterPlayer(gameObject);
         }
 
         void Initialize()

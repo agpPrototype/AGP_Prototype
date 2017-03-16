@@ -52,12 +52,17 @@ namespace AI
         private float m_UpdateInterval = 0.6f;
         private float m_UpdateIntervalTimer = 0.0f;
 
+        #region timer members
         [SerializeField]
         [Tooltip("Amount of time the AI should look for player they lost until they continue patrolling.")]
         private float m_LookTime;
-        private float m_LookEndTime;
-        private float m_LookStartTime;
-        private bool m_IsLookTimerSet;
+
+        private float m_WaypointWaitTime;
+
+        private float m_TimerEndTime;
+        private float m_TimerStartTime;
+        private bool m_IsTimerSet;
+        #endregion 
 
         [SerializeField]
         private float m_AttackRange = 6.0f;
@@ -66,12 +71,19 @@ namespace AI
         private NavMeshAgent m_NavAgent;
         private AILineOfSightDetection m_AILineOfSightDetection;
         private AIAudioDetection m_AIAudioDetection;
+        private Animator m_Animator;
 
         // target related members
         private Vector3 m_TargetLastPosition;
         private Vector3 m_TargetLastVelocity;
-        private bool m_IsTargetInRange;
+        private bool m_IsTargetInAttackRange;
         private AIDetectable m_Target; // current prioritized target.
+
+        public void Awake()
+        {
+
+
+        }
 
         // Use this for initialization
         private void Start()
@@ -81,8 +93,11 @@ namespace AI
             m_AILineOfSightDetection = GetComponent<AILineOfSightDetection>();
             m_AIAudioDetection = GetComponent<AIAudioDetection>();
             m_NavAgent = GetComponent<NavMeshAgent>();
+            m_Animator = GetComponent<Animator>();
+            m_CurrentWaypoint = PatrolArea.GetNextWaypoint(null);
             initBehaviorTrees();
         }
+       
 
         private void initBehaviorTrees()
         {
@@ -94,25 +109,74 @@ namespace AI
             m_CurrentBT = m_PatrolBT;
         }
 
+        private enum EnemyAIAnimation
+        {
+            Walking,
+            Idling,
+            Attacking
+        }
+        private void setAnimation(EnemyAIAnimation anim)
+        {
+            if(anim == EnemyAIAnimation.Walking)
+            {
+                m_Animator.SetBool("Walk", true);
+                m_Animator.SetBool("Attack", false);
+            }
+            else if (anim == EnemyAIAnimation.Idling)
+            {
+                m_Animator.SetBool("Walk", false);
+                m_Animator.SetBool("Attack", false);
+            }
+            else if (anim == EnemyAIAnimation.Attacking)
+            {
+                m_Animator.SetBool("Walk", false);
+                m_Animator.SetBool("Attack", true);
+            }
+        }
+
+        #region Switch BT functions / idle function
+        private void idle()
+        {
+            // do nothing just used as placeholder for callback for Nodes.
+        }
+        private void switchToChaseBT()
+        {
+            SetMainState(EnemyAIState.CHASING);
+        }
+        private void switchToPatrolBT()
+        {
+            SetMainState(EnemyAIState.PATROLLING);
+        }
+        private void switchToAttackBT()
+        {
+            SetMainState(EnemyAIState.ATTACKING);
+        }
+        private void switchToLookBT()
+        {
+            setAnimation(EnemyAIAnimation.Idling);
+            SetMainState(EnemyAIState.LOOKING);
+        }
+        #endregion
+
         #region Look Methods
         private bool isLookTimeOver()
         {
             // set start time and end time for timer if it hasnt been set.
-            if (!m_IsLookTimerSet)
+            if (!m_IsTimerSet)
             {
-                m_LookStartTime = Time.time;
-                m_LookEndTime = Time.time + m_LookTime;
-                m_IsLookTimerSet = true;
+                m_TimerStartTime = Time.time;
+                m_TimerEndTime = Time.time + m_LookTime;
+                m_IsTimerSet = true;
             }
 
             // check to see if timer done.
-            if (Time.time < m_LookEndTime)
+            if (Time.time < m_TimerEndTime)
             {
                 return false;
             }
 
             // if we get this far timer is done.
-            m_IsLookTimerSet = false;
+            m_IsTimerSet = false;
             return true;
         }
         private void rotateTowardLastSeenVelocity()
@@ -134,33 +198,19 @@ namespace AI
 
             m_LookBT = new BehaviorTree(rootNode, this, "Look BT");
 
-            /// Wait_Node
+            /// Look_Node
             DecisionNode lookNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Look_Node");
             lookNode.AddAction(new Action(rotateTowardLastSeenVelocity));
             m_LookBT.AddDecisionNodeTo(rootNode, lookNode);
 
             /// LookBT->PatrolBT
             DecisionNode lookToPatrol = new DecisionNode(DecisionType.RepeatUntilActionComplete, "LookBT->PatrolBT_Node");
-            lookToPatrol.AddAction(new Action(switchToAttackBT));
+            lookToPatrol.AddAction(new Action(switchToPatrolBT));
             lookToPatrol.AddCondition(new Condition(isLookTimeOver));
             m_LookBT.AddDecisionNodeTo(lookNode, lookToPatrol);
-
-            /// LookBT->ChaseBT
-            DecisionNode looktoChase = new DecisionNode(DecisionType.RepeatUntilActionComplete, "LookBT->ChaseBT_Node");
-            looktoChase.AddAction(new Action(switchToChaseBT));
-            looktoChase.AddCondition(new Condition(isHasThreat));
-            m_LookBT.AddDecisionNodeTo(lookNode, looktoChase);
         }
 
         #region Chase Methods
-        private void switchToAttackBT()
-        {
-            SetMainState(EnemyAIState.ATTACKING);
-        }
-        private void switchToLookBT()
-        {
-            SetMainState(EnemyAIState.LOOKING);
-        }
         private bool isReachedLastSeenLocation()
         {
             if(m_NavAgent != null)
@@ -184,6 +234,7 @@ namespace AI
         }
         private void chase()
         {
+            setAnimation(EnemyAIAnimation.Walking);
             if (!m_NavAgent.isOnNavMesh)
             {
                 Debug.Log("AI nav agent not on a nav mesh.");
@@ -228,91 +279,97 @@ namespace AI
             m_ChaseBT.AddDecisionNodeTo(rootNode, chaseNode);
 
             /// ChaseBT->AttackBT
-            DecisionNode chaseToAttack = new DecisionNode(DecisionType.RepeatUntilActionComplete, "ChaseBT->AttackBT_Node");
+            DecisionNode chaseToAttack = new DecisionNode(DecisionType.SwitchStates, "ChaseBT->AttackBT_Node");
             chaseToAttack.AddAction(new Action(switchToAttackBT));
-            chaseToAttack.AddCondition(new Condition(isReachedLastSeenLocation));
-            chaseToAttack.AddCondition(new Condition(isTargetInRange));
+            chaseToAttack.AddCondition(new Condition(isTargetInAttackRange));
             m_ChaseBT.AddDecisionNodeTo(chaseNode, chaseToAttack);
 
             /// ChaseBT->LookBT
-            DecisionNode chaseToLook = new DecisionNode(DecisionType.RepeatUntilActionComplete, "ChaseBT->LookBT_Node");
+            DecisionNode chaseToLook = new DecisionNode(DecisionType.SwitchStates, "ChaseBT->LookBT_Node");
             chaseToLook.AddAction(new Action(switchToLookBT));
             chaseToLook.AddCondition(new Condition(isReachedLastSeenLocation));
-            chaseToLook.AddCondition(new Condition(isTargetOutOfRange));
-            chaseToLook.AddCondition(new Condition(isNoThreat));
             m_ChaseBT.AddDecisionNodeTo(chaseNode, chaseToLook);
         }
 
         #region Attack Methods
-        private void idle()
-        {
-            // do nothing just used as placeholder for callback for Nodes.
-        }
         private void attack()
         {
-            // ADD AS U WISH HERE SAMMY BOY! ;)
+            // set animator to idle for AI
+            setAnimation(EnemyAIAnimation.Attacking);
         }
-        private bool isTargetOutOfRange()
+        private bool isTargetOutOfAttackRange()
         {
-            return !m_IsTargetInRange;
+            return !m_IsTargetInAttackRange;
         }
-        private bool isTargetInRange()
+        private bool isTargetInAttackRange()
         {
-            return m_IsTargetInRange;
-        }
-        private void switchToPatrolBT()
-        {
-            SetMainState(EnemyAIState.PATROLLING);
+            return m_IsTargetInAttackRange;
         }
         #endregion
 
         private void createAttackBT()
         {
-            /// Attack_Root_Node                    (does nothing)
-            ///     Basic_Attack_Node               (perform basic attack when in range)
-            ///         AttackBT->LookBT_Node       (when out of attack range go back to patrolling)
-            ///     AttackBT->LookBT_Node       (when out of attack range go back to patrolling)
+            /// Root_Attack_Node                    (performs basic attack)
+            ///     AttackBT->LookBT_Node           (will switch to look bt when target not in attack range)
 
-            DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Attack_Root_Node");
-            rootNode.AddAction(new Action(idle));
-
-            m_AttackBT = new BehaviorTree(rootNode, this, "Attack BT");
-
-            DecisionNode basicAttackNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Basic_Attack_Node");
-            basicAttackNode.AddCondition(new Condition(isTargetInRange));
+            DecisionNode basicAttackNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Root_Attack_Node");
             basicAttackNode.AddAction(new Action(attack));
-            m_AttackBT.AddDecisionNodeTo(rootNode, basicAttackNode);
 
-            DecisionNode attackToLookNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "AttackBT->LookBT_Node");
-            attackToLookNode.AddAction(new Action(switchToPatrolBT));
-            attackToLookNode.AddCondition(new Condition(isTargetOutOfRange));
+            m_AttackBT = new BehaviorTree(basicAttackNode, this, "Attack BT");
+
+            DecisionNode attackToLookNode = new DecisionNode(DecisionType.SwitchStates, "AttackBT->LookBT_Node");
+            attackToLookNode.AddAction(new Action(switchToLookBT));
+            attackToLookNode.AddCondition(new Condition(isTargetOutOfAttackRange));
             m_AttackBT.AddDecisionNodeTo(basicAttackNode, attackToLookNode);
-            m_AttackBT.AddDecisionNodeTo(rootNode, attackToLookNode);
         }
 
         #region Patrol Methods
-        private void switchToChaseBT()
+        private bool waitAtWaypoint()
         {
-            SetMainState(EnemyAIState.CHASING);
+            // set start time and end time for timer if it hasnt been set.
+            if (!m_IsTimerSet)
+            {
+                m_TimerStartTime = Time.time;
+                m_TimerEndTime = Time.time + m_CurrentWaypoint.WaitTime;
+                m_IsTimerSet = true;
+            }
+
+            // check to see if timer done.
+            if (Time.time < m_TimerEndTime)
+            {
+                return false;
+            }
+
+            // if we get this far timer is done.
+            m_IsTimerSet = false;
+            m_CurrentWaypoint = PatrolArea.GetNextWaypoint(m_CurrentWaypoint); 
+            // notify decision node that action complete.
+            return true;
         }
-        private bool isHasThreat()
+        private bool arrivedAtWaypoint()
         {
-            return m_Target != null;
+            if (m_CurrentWaypoint != null)
+            {
+                // If we made it to the waypoint.
+                if (m_NavAgent.remainingDistance < m_NavAgent.stoppingDistance)
+                {
+                    setAnimation(EnemyAIAnimation.Idling);
+                    return true;
+                }
+            }
+            else
+            {
+                Debug.Log("Current waypoint is null so AI cant get next waypoint.");
+            }
+            return false;
         }
-        private bool isNoThreat()
-        {
-            return m_Target == null;
-        }
-        private void patrol()
+        private void patrolToNextWaypoint()
         {
             // Get next waypoint from patrol area if we have one
             if (PatrolArea != null)
             {
                 if (m_CurrentWaypoint != null)
                 {
-                    // set stopping distance from waypoint (same for all waypoints right now).
-                    m_NavAgent.stoppingDistance = StopDistFromWaypoints;
-
                     if (!m_NavAgent.isOnNavMesh)
                     {
                         Debug.Log("AI nav agent not on a nav mesh.");
@@ -320,72 +377,75 @@ namespace AI
                     }
 
                     // Move to the waypoint
-                    //m_NavAgent.Resume();// SetDestination(m_CurrentWaypoint.transform.position);
                     m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
-
-                    // If we made it to the waypoint.
-                    if (m_NavAgent.remainingDistance <= StopDistFromWaypoints)
-                    {
-                        m_CurrentWaypoint = PatrolArea.GetRandomWaypoint();
-                        if (m_CurrentWaypoint != null)
-                        {
-                            m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
-                        }
-                        else
-                        {
-                            Debug.Log("Randomly generated AI waypoint destination is null.");
-                        }
-                    }
+                    m_NavAgent.stoppingDistance = StopDistFromWaypoints;
+                    setAnimation(EnemyAIAnimation.Walking);
                 }
                 else
                 {
-                    m_CurrentWaypoint = PatrolArea.GetRandomWaypoint();
-                    if (m_CurrentWaypoint != null)
-                    {
-                        m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
-                    }
+                    Debug.Log("No waypoint target specified for EnemyAISM.");
                 }
+            }
+            else
+            {
+                Debug.Log("No patrol area for EnemyAISM.");
             }
         }
         #endregion
 
         private void createPatrolBT()
         {
-            /// Patrol_Root_Node                    (patrol the waypoints)
-            ///     PatrolBT->ChaseBT               (chase enemy if seen or heard)
+            /// Patrol_Root_Node                (patrol the waypoints until get to new waypoint)
+            ///     Wait_Waypoint_Node          (wait at waypoint until time complete)
+            ///         Patrol_Root_Node        (when AI is done waiting at waypoint they will return to patrol node)
+            ///     
 
             /// Patrol_Node
             DecisionNode patrolNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Patrol_Root_Node");
-            patrolNode.AddAction(new Action(patrol));
+            patrolNode.AddAction(new Action(patrolToNextWaypoint));
+            patrolNode.AddCondition(new Condition(waitAtWaypoint));
 
             m_PatrolBT = new BehaviorTree(patrolNode, this, "Patrol BT");
 
-            /// PatrolBT->ChaseBT
-            DecisionNode patrolToChase = new DecisionNode(DecisionType.RepeatUntilActionComplete, "PatrolBT->ChaseBT_Node");
-            patrolToChase.AddCondition(new Condition(new BoolTypeDelegate(isHasThreat)));
-            patrolToChase.AddAction(new Action(switchToChaseBT));
-            m_PatrolBT.AddDecisionNodeTo(patrolNode, patrolToChase);
+            /// Wait_Waypoint_Node
+            DecisionNode waitWaypoint = new DecisionNode(DecisionType.SwitchStates, "Wait_Waypoint_Node");
+            waitWaypoint.AddAction(new Action(idle));
+            waitWaypoint.AddCondition(new Condition(arrivedAtWaypoint));
+            m_PatrolBT.AddDecisionNodeTo(patrolNode, waitWaypoint);
+            m_PatrolBT.AddDecisionNodeTo(waitWaypoint, patrolNode); // node to loop back to patrolling.
         }
 
         private void UpdateFactors()
         {
-            // get highest threat and store as target.
-            m_Target = (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection));
+            /* only look for threats when not attacking, because if we are attacking then
+            we are infinitely chasing until we die or kill the target. */
+            if(m_State != EnemyAIState.ATTACKING)
+            {
+                // get highest threat and store as target.
+                m_Target = (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection));
+                if(m_Target != null)
+                {
+                    SetMainState(EnemyAIState.CHASING);
+                    /* Just in case a timer was interrupted when we switch states.*/
+                    m_IsTimerSet = false;
+                }
+            }
 
             // update factors if our current target isnt null.
             if (m_Target != null)
             {
-                m_IsTargetInRange = Vector3.Distance(m_Target.transform.position, this.transform.position) <= m_AttackRange;
+                // if target is in attack range then attack that dude!
+                m_IsTargetInAttackRange = Vector3.Distance(m_Target.transform.position, this.transform.position) <= m_AttackRange;
+
+                // keep track of last seen position.
                 m_TargetLastPosition = m_Target.transform.position;
+
+                // keep track of target's last velcoty
                 Rigidbody rigidBody = m_Target.GetComponent<Rigidbody>();
                 if (rigidBody != null)
                 {
                     m_TargetLastVelocity = rigidBody.velocity;
                 }
-            }
-            else
-            {
-                m_IsTargetInRange = false;
             }
         }
 

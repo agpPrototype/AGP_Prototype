@@ -79,6 +79,8 @@ namespace AI
         private Vector3[] m_Corners;
 
         private StealthNavigation m_StealthNav;
+
+        private GameCritical.GameController m_GameControl;
         #endregion
 
         #region Accalia Main States
@@ -150,6 +152,8 @@ namespace AI
         private bool m_WaitStealthTimerSet = false;
         private float m_WaitStealthEndTime;
 
+        private bool m_DidPlayerLeaveZone = false;
+
         [SerializeField]
         bool switchToAttack;
 
@@ -165,6 +169,8 @@ namespace AI
         // Use this for initialization
         void Start()
         {
+            m_GameControl = GameCritical.GameController.Instance;
+
             PlayerControl playerControl = FindObjectOfType<PlayerControl>();
             if (playerControl)
             {
@@ -189,6 +195,7 @@ namespace AI
 
             InitializeStateBehaviorTrees();
 
+            m_GameControl.RegisterWolf(gameObject);
         }
 
         private void InitializeStateBehaviorTrees()
@@ -357,7 +364,8 @@ namespace AI
             /// 
             DecisionNode rotateTowardsNext = new DecisionNode(DecisionType.RepeatUntilActionComplete, "RotateToNext");
             Condition isAtStealthPt = new Condition(new BoolTypeDelegate(m_StealthNav.IsAtNextNode));
-            Action rotateWolf = new Action(RotateTowardsEnemyPath);
+            //Action rotateWolf = new Action(RotateTowardsEnemyPath);
+            Action rotateWolf = new Action(RotateTowardsNextStealthPos);
 
             rotateTowardsNext.AddCondition(isAtStealthPt);
             rotateTowardsNext.AddAction(rotateWolf);
@@ -459,12 +467,6 @@ namespace AI
                 m_CurrentBT.ContinueBehaviorTree();
             else
                 Debug.Assert(false, "CompanionAISM: current BT not initialized yet");
-
-
-            // Determine what the current state should be
-            //if (!cond2.IsMet())
-            // UpdateStateMachine();
-
         }
 
         private void UpdateFactors()
@@ -474,17 +476,32 @@ namespace AI
 
             // Determine if Stealth is correct state to be in
             bool isPlayerStealthed = Player.GetComponent<MoveComponent>().m_Crouching;
-            if (isPlayerStealthed && m_CurrentMainState != WolfMainState.Stealth)
+            if (isPlayerStealthed && m_CurrentMainState != WolfMainState.Stealth && m_GameControl.CurrentActionZone)
             {
                 SetMainState(WolfMainState.Stealth);
                 Debug.Log("Accalia Switched to Stealth state");
+
+                return;
             }
 
-            //if (false && switchToAttack)
-            //{
-            //    SetMainState(WolfMainState.Attack);
-            //    switchToAttack = false;
-            //}
+            // See if player is out of action zone and follow if 
+            if (m_DidPlayerLeaveZone && m_GameControl.CurrentActionZone) { 
+
+                if (m_GameControl.CurrentActionZone.IsAtFinalStealthPoint(transform.position))
+                {
+                    SetMainState(WolfMainState.Follow);
+                    return;
+                }
+                else
+                {
+                    m_StealthNav.FindOwnPath = true;
+                    SetMainState(WolfMainState.Stealth);
+                    return;
+                }
+
+            }
+           
+
         }
 
 
@@ -517,7 +534,7 @@ namespace AI
             //}
         }
 
-        void SetMainState(WolfMainState newState)
+        public void SetMainState(WolfMainState newState)
         {
             m_PreviousMainState = m_CurrentMainState;
             m_CurrentMainState = newState;
@@ -559,6 +576,8 @@ namespace AI
             m_PreviousMainState = newState;
         }
 
+        #region Command Functions
+
         /// <summary>
         /// Call this for Commands other than "GoTo"
         /// </summary>
@@ -576,7 +595,9 @@ namespace AI
 
         }
 
-        #region MovementFunctions
+        #endregion
+
+        #region Movement Functions
 
         public void MoveTo(Vector3 Location)
         {
@@ -666,17 +687,11 @@ namespace AI
 
         public void RotateTowardsNextStealthPos()
         {
-            //if (m_StealthNav.IsStealthPathComplete())
-            //{
-            //    m_WolfMoveComp.Stop();
-            //    CompleteCurrentActionExternal(true);
-            //}
-
-            if (m_StealthNav.NextStealthPos)
+            if (m_StealthNav.CurrentStealthPos)
             {
-                Vector3 nextStealthPos = m_StealthNav.NextStealthPos.transform.position;
+                Vector3 faceDir = m_StealthNav.CurrentStealthPos.GetComponent<StealthPosition>().AlignmentDir;
 
-                if (m_WolfMoveComp.RotateTowards(nextStealthPos))
+                if (m_WolfMoveComp.RotateTowards(faceDir))
                 {
                     m_WolfMoveComp.Stop();
                     CompleteCurrentActionExternal(true);
@@ -727,6 +742,15 @@ namespace AI
 
             m_WaitStealthTimerSet = false;
             return true;
+        }
+
+        public void PlayerLeftActionZone(bool didPlayerLeave)
+        {
+            //if (GameCritical.GameController.Instance.CurrentActionZone.IsAtFinalStealthPoint(gameObject.transform.position))
+            //{
+            //    SetMainState(WolfMainState.Follow);
+            //}
+            m_DidPlayerLeaveZone = didPlayerLeave;
         }
 
         #endregion
