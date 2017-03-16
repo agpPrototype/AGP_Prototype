@@ -109,6 +109,31 @@ namespace AI
             m_CurrentBT = m_PatrolBT;
         }
 
+        private enum EnemyAIAnimation
+        {
+            Walking,
+            Idling,
+            Attacking
+        }
+        private void setAnimation(EnemyAIAnimation anim)
+        {
+            if(anim == EnemyAIAnimation.Walking)
+            {
+                m_Animator.SetBool("Walk", true);
+                m_Animator.SetBool("Attack", false);
+            }
+            else if (anim == EnemyAIAnimation.Idling)
+            {
+                m_Animator.SetBool("Walk", false);
+                m_Animator.SetBool("Attack", false);
+            }
+            else if (anim == EnemyAIAnimation.Attacking)
+            {
+                m_Animator.SetBool("Walk", false);
+                m_Animator.SetBool("Attack", true);
+            }
+        }
+
         #region Switch BT functions / idle function
         private void idle()
         {
@@ -128,7 +153,7 @@ namespace AI
         }
         private void switchToLookBT()
         {
-            m_Animator.SetBool("Walk", false);
+            setAnimation(EnemyAIAnimation.Idling);
             SetMainState(EnemyAIState.LOOKING);
         }
         #endregion
@@ -209,7 +234,7 @@ namespace AI
         }
         private void chase()
         {
-            m_Animator.SetBool("Walk", true);
+            setAnimation(EnemyAIAnimation.Walking);
             if (!m_NavAgent.isOnNavMesh)
             {
                 Debug.Log("AI nav agent not on a nav mesh.");
@@ -272,7 +297,7 @@ namespace AI
             // ADD AS U WISH HERE SAMMY BOY! ;)
             Debug.Log("ATTACKING");
             // set animator to idle for AI
-            // m_Animator.SetBool("Attack", true);
+            setAnimation(EnemyAIAnimation.Attacking);
         }
         private bool isTargetOutOfAttackRange()
         {
@@ -287,18 +312,17 @@ namespace AI
         private void createAttackBT()
         {
             /// Root_Attack_Node                    (performs basic attack)
-            ///     Chase_Infinite_Node             (will chase down target until in attack range)
-            ///     Root_Attack_Node                (performs basic attack)
+            ///     AttackBT->LookBT_Node           (will switch to look bt when target not in attack range)
 
             DecisionNode basicAttackNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Root_Attack_Node");
             basicAttackNode.AddAction(new Action(attack));
 
             m_AttackBT = new BehaviorTree(basicAttackNode, this, "Attack BT");
 
-            DecisionNode chaseInfiniteNode = new DecisionNode(DecisionType.SwitchStates, "Chase_Infinite_Node");
-            chaseInfiniteNode.AddAction(new Action(switchToLookBT));
-            chaseInfiniteNode.AddCondition(new Condition(isTargetOutOfAttackRange));
-            m_AttackBT.AddDecisionNodeTo(basicAttackNode, chaseInfiniteNode);
+            DecisionNode attackToLookNode = new DecisionNode(DecisionType.SwitchStates, "AttackBT->LookBT_Node");
+            attackToLookNode.AddAction(new Action(switchToLookBT));
+            attackToLookNode.AddCondition(new Condition(isTargetOutOfAttackRange));
+            m_AttackBT.AddDecisionNodeTo(basicAttackNode, attackToLookNode);
         }
 
         #region Patrol Methods
@@ -331,7 +355,7 @@ namespace AI
                 // If we made it to the waypoint.
                 if (m_NavAgent.remainingDistance < m_NavAgent.stoppingDistance)
                 {
-                    m_Animator.SetBool("Walk", false);
+                    setAnimation(EnemyAIAnimation.Idling);
                     return true;
                 }
             }
@@ -357,7 +381,7 @@ namespace AI
                     // Move to the waypoint
                     m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
                     m_NavAgent.stoppingDistance = StopDistFromWaypoints;
-                    m_Animator.SetBool("Walk", true);
+                    setAnimation(EnemyAIAnimation.Walking);
                 }
                 else
                 {
