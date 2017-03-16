@@ -1,14 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Stat;
 
-namespace AI
+namespace Stat
 {
-    public class Waypoint : MonoBehaviour
+    public class EnemyHealth : MonoBehaviour
     {
-        [SerializeField]
-        private float m_WaitTime;
-        public float WaitTime { get { return m_WaitTime; } }
 
         // Use this for initialization
         void Start()

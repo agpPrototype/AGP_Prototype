@@ -1,7 +1,9 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using Utility;
 
 namespace Wolf {
     public class WolfMoveComponent : MonoBehaviour {
@@ -16,72 +18,118 @@ namespace Wolf {
         private Vector3 m_TargetPos;
         private Vector3[] m_Path;
         private float m_CurRotRate;
-        
+        private bool m_OnLinkTransition;
+        private EnumService.OffMeshLinkMoveMethod m_Method = EnumService.OffMeshLinkMoveMethod.Parabola;
+
         void Start()
         {
             m_Animator = GetComponent<Animator>();
         }
 
-        public void Move(Vector3 targetPos, Vector3[] path)
+        public IEnumerator Move(Vector3 targetPos, Vector3[] path, NavMeshAgent agent = null)
         {
-
-            //if (JumpOffMeshLink(path[1]))
-            //    return;
-
-            m_TargetPos = targetPos;
-            m_Path = path;
-
-            if (path.Length < 2)
-                return;
-
-            Vector3 nextNode = path[1]; //we only really care the next immediate node, but lets keep passing in the whole array for now cuz maybe we want more from it later
-
-            Vector3 dir = nextNode - transform.position;
-            dir.Normalize();
-
-            Vector3 cross = Vector3.zero; //will be the cross product between the wolf's forward and the move direction
-
-            #region Rotating 
-            if (transform.forward != dir) //only rotate if wolf's forward and dir are different
+            //MESH LINKS
+            if (agent)
             {
-                cross = Vector3.Cross(transform.forward, dir);
-                float angle = Vector3.Angle(transform.forward, dir);
-                float rate = angle / m_AnimRotationFactor;
-                
-                Mathf.Clamp(rate, 0, 3); //max rate is 3 in animator
-                
-                //rotate either clockwise or counter-clockwise
-                if (Vector3.Dot(cross, Vector3.up) > 0)
+                agent.SetDestination(targetPos);
+                agent.speed = 0.01f;
+                agent.autoTraverseOffMeshLink = true;
+                if (agent.isOnOffMeshLink)
                 {
-                    rate = Mathf.Lerp(m_CurRotRate, rate, Time.deltaTime*15);
-                    m_CurRotRate = rate;
+
+                    //float rateH = Mathf.Lerp(m_Animator.GetFloat("Horizontal"), 0, Time.deltaTime * 50);
+                    //float rateV = Mathf.Lerp(m_Animator.GetFloat("Vertical"), 0, Time.deltaTime * 50);
+                    m_Animator.SetFloat("Horizontal", 0);
+                    m_Animator.SetFloat("Vertical", 0);
+                    OffMeshLinkData data = agent.currentOffMeshLinkData;
+                    float height = Vector3.Dot(data.endPos - data.startPos, new Vector3(0, 1, 0));
+                    height = Math.Abs(height);
+                    yield return StartCoroutine(Parabola(agent, height, 1.0f));
+                    agent.CompleteOffMeshLink();
                 }
                 else
                 {
-                    rate *= -1;
-                    rate = Mathf.Lerp(m_CurRotRate, rate, Time.deltaTime*15);
-                    m_CurRotRate = rate;                    
+                    m_TargetPos = targetPos;
+                    m_Path = path;
+
+                    if (path.Length == 0)
+                    {
+                        Debug.Log("NO PATH");
+                        yield break;
+                    }
+                    else
+                    {
+
+                        Vector3 nextNode = path[1]; //we only really care the next immediate node, but lets keep passing in the whole array for now cuz maybe we want more from it later
+
+                        Vector3 dir = nextNode - transform.position;
+                        dir.Normalize();
+
+                        Vector3 cross = Vector3.zero; //will be the cross product between the wolf's forward and the move direction
+
+                        #region Rotating 
+                        if (transform.forward != dir) //only rotate if wolf's forward and dir are different
+                        {
+                            cross = Vector3.Cross(transform.forward, dir);
+                            float angle = Vector3.Angle(transform.forward, dir);
+                            float rate = angle / m_AnimRotationFactor;
+
+                            Mathf.Clamp(rate, 0, 3); //max rate is 3 in animator
+
+                            //rotate either clockwise or counter-clockwise
+                            if (Vector3.Dot(cross, Vector3.up) > 0)
+                            {
+                                rate = Mathf.Lerp(m_CurRotRate, rate, Time.deltaTime * 15);
+                                m_CurRotRate = rate;
+                            }
+                            else
+                            {
+                                rate *= -1;
+                                rate = Mathf.Lerp(m_CurRotRate, rate, Time.deltaTime * 15);
+                                m_CurRotRate = rate;
+                            }
+                            m_Animator.SetFloat("Horizontal", rate);
+                        }
+                        else
+                        {
+                            m_Animator.SetFloat("Horizontal", 0);
+                        }
+
+                        //draw these line to debug the rotation if needed
+                        //Debug.DrawRay(transform.position, dir * 10, Color.red);
+                        //Debug.DrawRay(transform.position, transform.forward * 10, Color.blue);
+                        //Debug.DrawRay(transform.position, cross * 10, Color.yellow);
+                        #endregion
+
+                        #region Moving
+                        float dist = Vector3.Distance(transform.position, m_TargetPos);
+
+                        dist = dist / m_AnimDistFactor;
+                        Mathf.Clamp(dist, 0, 3); //max speed is 3 in animator
+                        m_Animator.SetFloat("Vertical", dist);
+                        #endregion
+                    }
                 }
-                m_Animator.SetFloat("Horizontal", rate);
             }
-            else
+        }
+
+        private IEnumerator Parabola(NavMeshAgent agent, float height, float duration)
+        {
+            agent.speed = 3.5f;
+            OffMeshLinkData data = agent.currentOffMeshLinkData;
+            Vector3 startPos = agent.transform.position;
+            Vector3 endPos = data.endPos + Vector3.up * agent.baseOffset;
+            float normalizedTime = 0.0f;
+            m_Animator.SetBool("JumpHolder", true);
+            while (normalizedTime < 1.0f)
             {
-                m_Animator.SetFloat("Horizontal", 0);
+                float yOffset = height * 4.0f * (normalizedTime - normalizedTime * normalizedTime);
+                agent.transform.position = Vector3.Lerp(startPos, endPos, normalizedTime) + yOffset * Vector3.up;
+                normalizedTime += Time.deltaTime / duration;
+                yield return null;
             }
-
-            //draw these line to debug the rotation if needed
-            //Debug.DrawRay(transform.position, dir * 10, Color.red);
-            //Debug.DrawRay(transform.position, transform.forward * 10, Color.blue);
-            //Debug.DrawRay(transform.position, cross * 10, Color.yellow);
-            #endregion
-
-            #region Moving
-            float dist = Vector3.Distance(transform.position, m_TargetPos);
-            
-            dist = dist / m_AnimDistFactor;            
-            Mathf.Clamp(dist, 0, 3); //max speed is 3 in animator
-            m_Animator.SetFloat("Vertical", dist);
-            #endregion
+            agent.speed = 0.01f;
+            m_Animator.SetBool("JumpHolder", false);
         }
 
         public bool RotateTowards(Vector3 targetPos)
