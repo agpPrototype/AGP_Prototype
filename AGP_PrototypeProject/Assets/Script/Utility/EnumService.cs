@@ -42,5 +42,12 @@ namespace Utility {
             NONE = -1,
             Bow,
         }
+
+        public enum OffMeshLinkMoveMethod
+        {
+            Teleport,
+            NormalSpeed,
+            Parabola
+        }
     }
 }

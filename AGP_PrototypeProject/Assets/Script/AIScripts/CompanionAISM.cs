@@ -618,7 +618,7 @@ namespace AI
                 if (m_Corners[0] != path.corners[0])
                 {
                     m_Corners = path.corners;
-                    m_WolfMoveComp.Move(TargetMoveToLocation, m_Corners);
+                    StartCoroutine( m_WolfMoveComp.Move(TargetMoveToLocation, m_Corners, WolfNavAgent));
                 }
             }
         }
