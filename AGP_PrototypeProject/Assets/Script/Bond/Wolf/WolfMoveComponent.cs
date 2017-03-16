@@ -42,7 +42,9 @@ namespace Wolf {
                     m_Animator.SetFloat("Horizontal", 0);
                     m_Animator.SetFloat("Vertical", 0);
                     OffMeshLinkData data = agent.currentOffMeshLinkData;
-                    yield return StartCoroutine(Parabola(agent, 3.0f, 1.0f));
+                    float height = Vector3.Dot(data.endPos - data.startPos, new Vector3(0, 1, 0));
+                    height = Math.Abs(height);
+                    yield return StartCoroutine(Parabola(agent, height, 1.0f));
                     agent.CompleteOffMeshLink();
                 }
                 else
