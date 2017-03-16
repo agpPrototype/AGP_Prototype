@@ -6,7 +6,9 @@ namespace AI
 {
     public class Waypoint : MonoBehaviour
     {
-        /* This class could eventually store information we want waypoitns to have.*/
+        [SerializeField]
+        private float m_WaitTime;
+        public float WaitTime { get { return m_WaitTime; } }
 
         // Use this for initialization
         void Start()

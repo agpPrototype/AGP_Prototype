@@ -21,8 +21,7 @@ namespace AI
         [SerializeField]
         private List<Waypoint> m_Waypoints; // List of waypoints that define patrol area.
 
-        // Use this for initialization
-        void Start()
+        void Awake()
         {
             // For each child add the child to the list of waypoints if they were not added.
             m_Waypoints = new List<Waypoint>();
@@ -33,7 +32,7 @@ namespace AI
                 Waypoint waypointComponent = child.GetComponent<Waypoint>();
                 if (waypointComponent != null)
                 {
-                    if(!m_Waypoints.Contains(waypointComponent))
+                    if (!m_Waypoints.Contains(waypointComponent))
                     {
                         m_Waypoints.Add(waypointComponent);
                     }
