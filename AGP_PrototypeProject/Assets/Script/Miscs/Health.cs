@@ -30,10 +30,6 @@ namespace HealthCare
                 m_CurrHP -= damage;
                 if (m_CurrHP <= 0)
                 {
-                    bool isEnemy = gameObject.GetComponent<AI.EnemyAISM>() != null;
-                    if (isEnemy)
-                        GameCritical.GameController.Instance.CurrentActionZone.EnemyDestroyed(gameObject);
-
                     OnDeathBegin();
                 }
                 else

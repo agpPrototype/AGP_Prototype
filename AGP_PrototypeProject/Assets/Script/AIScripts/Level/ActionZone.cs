@@ -113,9 +113,12 @@ public class ActionZone : MonoBehaviour {
         int numChild = m_EnemyListObjectRef.transform.childCount;
         m_EnemyList = new List<GameObject>();
 
+        GameObject enemy;
         for (int i = 0; i < numChild; ++i)
         {
-            m_EnemyList.Add(m_EnemyListObjectRef.transform.GetChild(i).gameObject);
+            enemy = m_EnemyListObjectRef.transform.GetChild(i).gameObject;
+            m_EnemyList.Add(enemy);
+            enemy.GetComponent<AI.EnemyAISM>().MyActionZone = this;
         }
 
         Debug.Assert(m_EnemyList.Count > 0, "Warning: No enemies set in an action zone. Continue if this is expected behavior.");

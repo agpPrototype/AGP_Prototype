@@ -585,7 +585,7 @@ namespace AI
 
             if (CurrentCommand != WolfCommand.STAY)
             {               
-                if (isPlayerStealthed && m_CurrentMainState != WolfMainState.Stealth && m_GameControl.CurrentActionZone)
+                if (isPlayerStealthed && m_CurrentMainState != WolfMainState.Stealth && curAZ && curAZ.GetNumEnemiesAlive() > 0)
                 {
                     SetMainState(WolfMainState.Stealth);
                     Debug.Log("Accalia Switched to Stealth state");
@@ -1058,9 +1058,3 @@ namespace AI
     }
 
 }
-
-
-
-/// bool isEnemy = gameObject.GetComponent<AI.EnemyAISM>() != null;
- //                   if (isEnemy)
-//                        GameCritical.GameController.Instance.CurrentActionZone.EnemyDestroyed(gameObject);
