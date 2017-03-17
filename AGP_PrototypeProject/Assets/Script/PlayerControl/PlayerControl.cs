@@ -32,6 +32,8 @@ namespace Player
         private PCActions m_PCActions;
         private CompanionAISM m_WolfAI;
 
+        //private GameObject m_
+
         void Start()
         {
             if (Camera.main)
@@ -102,6 +104,11 @@ namespace Player
         private void CheckPowers()
         {
             m_PowerHandler.ProcessPowers(m_PCActions);
+        }
+
+        public void NotifyPlayerHitTarget(GameObject hitEnemy)
+        {
+
         }
     }
 }
