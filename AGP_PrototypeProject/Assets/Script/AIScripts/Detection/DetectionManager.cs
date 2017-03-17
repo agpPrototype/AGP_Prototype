@@ -86,33 +86,15 @@ namespace AI
                 AIVisible.VisibleDestroyEvt += this.RemoveFromVisibles;
             }
 
-            public AIDetectable GetHighestThreat(AIAudioDetection audDetect, AILineOfSightDetection losDetect)
+            public AIDetectable GetHighestThreat(AIAudioDetection audDetect)
             {
                 AIDetectable greatestThreatDetected = null;
-
-                // Look for things.
-                if (losDetect != null)
-                {
-                    AIVisible visible = losDetect.GetHighestThreat();
-                    if (visible != null)
-                    {
-                        if(greatestThreatDetected != null)
-                        {
-                            if(visible.ThreatLevel > greatestThreatDetected.ThreatLevel)
-                                greatestThreatDetected = visible;
-                        }
-                        else
-                        {
-                            greatestThreatDetected = visible;
-                        }
-                    }
-                }
 
                 // Listen for things.
                 if (audDetect != null)
                 {
                     AIAudible audible = audDetect.GetHighestThreat();
-                    if(audible != null)
+                    if (audible != null)
                     {
                         if (greatestThreatDetected != null)
                         {
@@ -126,6 +108,51 @@ namespace AI
                     }
                 }
 
+                return greatestThreatDetected;
+            }
+
+            public AIDetectable GetHighestThreat(AILineOfSightDetection losDetect)
+            {
+                AIDetectable greatestThreatDetected = null;
+
+                // Look for things.
+                if (losDetect != null)
+                {
+                    AIVisible visible = losDetect.GetHighestThreat();
+                    if (visible != null)
+                    {
+                        if (greatestThreatDetected != null)
+                        {
+                            if (visible.ThreatLevel > greatestThreatDetected.ThreatLevel)
+                                greatestThreatDetected = visible;
+                        }
+                        else
+                        {
+                            greatestThreatDetected = visible;
+                        }
+                    }
+                }
+
+                return greatestThreatDetected;
+            }
+
+            /*public AIDetectable GetHighestThreat(AIAudioDetection audDetect, AILineOfSightDetection losDetect, List<AIDetectable> ignoreDetectables)
+            {
+
+            }*/
+
+            public AIDetectable GetHighestThreat(AIAudioDetection audDetect, AILineOfSightDetection losDetect)
+            {
+                AIDetectable greatestThreatDetected = null;
+
+                AIDetectable greatestAudibleThreat = GetHighestThreat(audDetect);
+                AIDetectable greatestVisibleThreat = GetHighestThreat(losDetect);
+
+                if (greatestAudibleThreat == null) return greatestVisibleThreat;
+                if (greatestVisibleThreat == null) return greatestAudibleThreat;
+
+                greatestThreatDetected = (greatestVisibleThreat.ThreatLevel > greatestAudibleThreat.ThreatLevel) 
+                    ? greatestVisibleThreat : greatestAudibleThreat;
                 return greatestThreatDetected;
             }
 

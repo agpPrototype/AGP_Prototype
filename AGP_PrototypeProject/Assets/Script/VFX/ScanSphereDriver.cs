@@ -1,9 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using AI.Detection;
 
 namespace vfx
 {
+    [RequireComponent(typeof(AIAudible))]
     [RequireComponent(typeof(SphereCollider))]
     public class ScanSphereDriver : MonoBehaviour
     {
@@ -16,14 +18,26 @@ namespace vfx
         private float m_MaxRadius = 5.0f;
         [SerializeField]
         private bool m_IsLooping;
+        [SerializeField]
+        private bool m_IsLinkWithAudible;
 
         private bool m_IsPlaying;
         private SphereCollider m_SphereCollider;
+        private AIAudible m_AIAudible;
 
         // Use this for initialization
         void Start()
         {
             m_SphereCollider = this.GetComponent<SphereCollider>();
+            m_AIAudible = this.GetComponent<AIAudible>();
+            if(m_AIAudible != null)
+            {
+                if (m_IsLinkWithAudible)
+                {
+                    m_MaxRadius = m_AIAudible.Range;
+                }
+            }
+
             // initialize sixe to start radius.
             this.transform.localScale = new Vector3(
                 m_StartRadius,

@@ -45,7 +45,7 @@ namespace AI
     public class DecisionNode : AGPMonoBehavior
     {
 
-        static bool DEBUG = true;
+        static bool DEBUG = false;
 
         [SerializeField]
         private string m_nameTag;
