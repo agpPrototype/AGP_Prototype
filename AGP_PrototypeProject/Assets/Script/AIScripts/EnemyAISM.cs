@@ -165,7 +165,7 @@ namespace AI
 
 			if(m_AILineOfSightDetection != null)
 			{
-				m_AILineOfSightDetection.Beam.SetActive(false);
+				m_AILineOfSightDetection.Beam.IsOpen = false;
 			}
 			else
 			{
@@ -265,7 +265,7 @@ namespace AI
                     m_TargetLastPosition = m_Target.transform.position;
                 }
 
-				m_AILineOfSightDetection.Beam.SetActive(true);
+				m_AILineOfSightDetection.Beam.IsOpen = true;
             }
             else
             {

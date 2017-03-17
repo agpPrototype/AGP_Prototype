@@ -55,6 +55,7 @@ public class MoveComponent : MonoBehaviour {
     float m_StrafeForward;
     float m_StrafeRight;
     bool m_Aim;
+    bool m_WasAiming;
     CameraRig m_CamRig;
     float m_jumpDeficit;
 
@@ -139,18 +140,25 @@ public class MoveComponent : MonoBehaviour {
         #region Parse PCA to private members
         Vector3 move = pca.Move;
         m_Aim = pca.Aim;
-        if (!pca.Aim)
+        if (move.magnitude > 1f) move.Normalize();
+        move = transform.InverseTransformDirection(move);
+        CheckGroundStatus();
+        move = Vector3.ProjectOnPlane(move, m_GroundNormal);
+        m_TurnAmount = Mathf.Atan2(move.x, move.z);
+        m_ForwardAmount = move.z;
+        if (Math.Abs(m_ForwardAmount - 0.0f) < Double.Epsilon)
         {
-            //Vector3 move = pca.Move;
-            if (move.magnitude > 1f) move.Normalize();
-            move = transform.InverseTransformDirection(move);
-            CheckGroundStatus();
-            move = Vector3.ProjectOnPlane(move, m_GroundNormal);
-            m_TurnAmount = Mathf.Atan2(move.x, move.z);
-            m_ForwardAmount = move.z;
+            m_ForwardAmount = 0.0f;
+        }
+        if (Math.Abs(m_TurnAmount - 0.0f) < Double.Epsilon)
+        {
+            m_TurnAmount = 0.0f;
+        }
+        if (!pca.Aim)
+        {                     
             //crouching
             if (pca.Crouch && m_CrouchingToggleDelay > m_CrouchingToggleDelayThreshold)
-            {
+            {               
                 if (m_Crouching)
                 {
                     m_Crouching = false;
@@ -159,6 +167,8 @@ public class MoveComponent : MonoBehaviour {
                 }
                 else
                 {
+                    m_Animator.SetFloat("Forward", 0.0f);
+                    m_Animator.SetFloat("Turn", 0.0f);
                     m_Crouching = true;
                     m_Running = false;
                     m_CrouchingToggleDelay = 0.0f;
@@ -185,7 +195,14 @@ public class MoveComponent : MonoBehaviour {
         }
         else //this is where we go into aim mode
         {
-            //m_RunningToggleDelay += Time.fixedDeltaTime;            
+            //just now switch
+            if (m_WasAiming != m_Aim)
+            {
+                m_Animator.SetFloat("Forward", 0.0f);
+                m_Animator.SetFloat("Turn", 0.0f);
+            }
+            m_WasAiming = m_Aim;
+            m_RunningToggleDelay += Time.fixedDeltaTime;
             m_StrafeForward = pca.StrafeForward;
             m_StrafeRight = pca.StrafeRight;
             Vector3 forward = m_cam.TransformDirection(Vector3.forward);
@@ -226,8 +243,6 @@ public class MoveComponent : MonoBehaviour {
         {           
             m_Animator.SetFloat("Forward", m_ForwardAmount, 0.1f, Time.deltaTime);
             m_Animator.SetFloat("Turn", m_TurnAmount, 0.1f, Time.deltaTime);
-            //m_Animator.SetFloat("StrafeForward", m_StrafeForward);
-            //m_Animator.SetFloat("StrafeRight", m_StrafeRight);
             m_Animator.SetBool("Crouch", m_Crouching);
             m_Animator.SetBool("OnGround", m_IsGrounded);
             if (!m_IsGrounded)
@@ -264,6 +279,8 @@ public class MoveComponent : MonoBehaviour {
         }
         else
         {
+            m_Animator.SetFloat("Forward", m_ForwardAmount, 0.1f, Time.deltaTime);
+            m_Animator.SetFloat("Turn", m_TurnAmount, 0.1f, Time.deltaTime);
             m_Animator.SetFloat("StrafeForward", m_StrafeForward);
             m_Animator.SetFloat("StrafeRight", m_StrafeRight);
             if (m_CamRig)
