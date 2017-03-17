@@ -79,6 +79,13 @@ namespace AI
         private bool m_IsTargetInAttackRange;
         private AIDetectable m_Target; // current prioritized target.
 
+        private ActionZone m_MyActionZone;
+        public ActionZone MyActionZone
+        {
+            get { return m_MyActionZone; }
+            set { m_MyActionZone = value; }
+        }
+
         public void Awake()
         {
 

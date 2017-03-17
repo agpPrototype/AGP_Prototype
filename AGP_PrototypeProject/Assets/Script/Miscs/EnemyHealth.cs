@@ -16,6 +16,9 @@ namespace HealthCare
 
         protected override void OnDeathBegin()
         {
+            // Remove this enemy from the zone's list
+            gameObject.GetComponent<AI.EnemyAISM>().MyActionZone.EnemyDestroyed(gameObject);
+
             if (m_Animator)
             {
                 m_Animator.SetBool("Dead", true);

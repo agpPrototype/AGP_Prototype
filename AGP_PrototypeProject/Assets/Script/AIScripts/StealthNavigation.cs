@@ -60,6 +60,11 @@ namespace AI
         private bool m_isNavigating = false;
 
         [SerializeField]
+        float m_MinDistToPointSq = 2.0f;
+        [SerializeField]
+        float m_MinDistEnemyPathAvoidance;
+
+        [SerializeField]
         [Tooltip("Boundary color of debug lines drawn for stealth path")]
         private Color StealthPathColor;
 
@@ -175,8 +180,7 @@ namespace AI
             
         }
 
-        [SerializeField]
-        float MinDistToPointSq = 2.0f;
+        
 
         public bool IsAtNextNode()
         {
@@ -184,7 +188,7 @@ namespace AI
 
             float distToNextSq = (wolfPos - m_NextStealthPos.transform.position).sqrMagnitude;
 
-            if(distToNextSq < MinDistToPointSq)
+            if(distToNextSq < m_MinDistToPointSq)
             {
                 m_CurrentStealthPos = m_NextStealthPos;
                 m_isNavigating = false;
@@ -292,88 +296,101 @@ namespace AI
 
         public bool IsPathSafeToNext() // Ignore enemy FOV for now
         {
-            // Find Intersection of EnemyDir and my desired direction
-            //Vector3 EnemyPos = GetComponent<CompanionAISM>().Enemy.transform.position;
-            //Vector3 EnemyFaceDir = GetComponent<CompanionAISM>().Enemy.transform.forward;
-            //EnemyFaceDir.Normalize();
-
-            //Vector3 WolfPos = transform.position;
-            //Vector3 nextDir = m_NextStealthPos.transform.position - WolfPos;
-            //nextDir.Normalize();
-
-            //Vector3 crossDir = Vector3.Cross(EnemyFaceDir, nextDir);
-            //Vector3 leftOfDot = Vector3.Cross((WolfPos - EnemyPos), nextDir);
-
-            //float timeDirsIntersect = Vector3.Dot(leftOfDot, crossDir) / crossDir.sqrMagnitude;
-
-            //// If Enemy is walking in opposite direction, path is safe
-            //if (timeDirsIntersect < 0)
-            //    return true;
-
-            //// If my destination is before the intersection, it is safe
-            //Vector3 rayIntersection = EnemyPos + EnemyFaceDir * timeDirsIntersect;
-            //float distSqToIntersect = (rayIntersection - WolfPos).sqrMagnitude;
-            //float distSqToStealthPoint = (m_NextStealthPos.transform.position - WolfPos).sqrMagnitude;
-
-            //if (distSqToIntersect > distSqToStealthPoint)
-            //{
-            //    Debug.Log("Path Safe because destination is closer than ray intersection: dstToSP = " + distSqToStealthPoint);
-            //    return true;
-            //}
-
-            //return false;
+            GameCritical.GameController gameControl = GameCritical.GameController.Instance;
+            if (!gameControl || !gameControl.CurrentActionZone || gameControl.CurrentActionZone.GetNumEnemiesAlive() == 0)
+                return true;
 
             // Get Wolf data
             Vector3 WolfPos = transform.position;
             Vector3 nextDir = m_NextStealthPos.transform.position - WolfPos;
             nextDir.Normalize();
 
-            // Check Forward of Enemy
-            Vector3 EnemyPos = GetComponent<CompanionAISM>().Enemy.transform.position;
-            Vector3 EnemyFaceDir = GetComponent<CompanionAISM>().Enemy.transform.forward;
-            EnemyFaceDir.Normalize();
-
-            if (DoRaysIntersect(WolfPos, nextDir, EnemyPos, EnemyFaceDir))
-                return false;
-
-            //return true;
-
-            // Check Peripherals to see if my path would be seen by them
-            GameObject enemy = GetComponent<CompanionAISM>().Enemy;
-            Transform enemyTransform = enemy.transform;
-            Vector3 peripheralRight = enemy.GetComponent<Detection.AILineOfSightDetection>().GetFOVVector(enemyTransform.forward,
-                                                                                                          enemyTransform.up,
-                                                                                                          Detection.AILineOfSightDetection.FOV_REGION.PERIPHERAL,
-                                                                                                          true, true);
-            Vector3 peripheralLeft = enemy.GetComponent<Detection.AILineOfSightDetection>().GetFOVVector(enemyTransform.forward,
-                                                                                                         enemyTransform.up,
-                                                                                                         Detection.AILineOfSightDetection.FOV_REGION.PERIPHERAL,
-                                                                                                         false, true);
-            // If my path does not intersect with the peripherals, it is safe
-            float rightPeriphTime = 0;
-            float leftPeriphTime = 0;
-            if (!DoRaysIntersect(WolfPos, nextDir, EnemyPos, peripheralRight, ref rightPeriphTime) && !DoRaysIntersect(WolfPos, nextDir, EnemyPos, peripheralRight, ref leftPeriphTime))
-                return true;
-
-            if (rightPeriphTime != 0)
+            Vector3 intersectPt; // So we dont need to keep reallocating
+            GameObject Enemy;
+            int numEnemies = gameControl.CurrentActionZone.GetNumEnemiesAlive();
+            for (int i = 0; i < numEnemies; ++i)
             {
-                Vector3 rayIntersection = EnemyPos + peripheralRight * rightPeriphTime;
-                float distSqToIntersect = (rayIntersection - WolfPos).sqrMagnitude;
-                float distSqToStealthPoint = (m_NextStealthPos.transform.position - WolfPos).sqrMagnitude;
-                if (distSqToIntersect < distSqToStealthPoint)
+                Enemy = gameControl.CurrentActionZone.GetEnemy(i);
+
+                if (!Enemy)
+                    continue;
+
+                // Check Forward of Enemy
+                Vector3 EnemyPos = Enemy.transform.position;
+                Vector3 EnemyFaceDir = Enemy.transform.forward;
+                //EnemyFaceDir.Normalize();
+
+                if (DoRaysIntersect(WolfPos, nextDir, EnemyPos, EnemyFaceDir))
                 {
-                    return false;
+                    intersectPt = GetRayIntersectionPt(WolfPos, nextDir, EnemyPos, EnemyFaceDir);
+                    float distToNextSq = (m_NextStealthPos.transform.position - WolfPos).sqrMagnitude;
+                    float distToIntersectSq = (intersectPt - WolfPos).sqrMagnitude;
+
+                    float dotFaceDir = Vector3.Dot(nextDir, EnemyFaceDir);
+                    dotFaceDir = Mathf.Abs(dotFaceDir);
+
+                    if (distToNextSq > distToIntersectSq && dotFaceDir < 0.95)
+                    {
+                        return false;
+                    }
                 }
-            }
 
-            if (leftPeriphTime != 0)
-            {
-                Vector3 rayIntersection = EnemyPos + peripheralLeft * leftPeriphTime;
-                float distSqToIntersect = (rayIntersection - WolfPos).sqrMagnitude;
-                float distSqToStealthPoint = (m_NextStealthPos.transform.position - WolfPos).sqrMagnitude;
-                if (distSqToIntersect < distSqToStealthPoint)
+                // Make sure that there is enough distance in the path to not run into the Enemies
                 {
-                    return false;
+                    intersectPt = GetRayIntersectionPt(WolfPos, nextDir, EnemyPos, EnemyFaceDir);
+                    float distToEnemySq = (intersectPt - EnemyPos).sqrMagnitude;
+                    if (distToEnemySq < m_MinDistEnemyPathAvoidance * m_MinDistEnemyPathAvoidance)
+                    {
+                        return false;
+                    }
+                }
+
+                // Check Peripherals to see if my path would be seen by them
+                GameObject enemy = GetComponent<CompanionAISM>().Enemy;
+                Transform enemyTransform = enemy.transform;
+                Vector3 peripheralRight = enemy.GetComponent<Detection.AILineOfSightDetection>().GetFOVVector(enemyTransform.forward,
+                                                                                                              enemyTransform.up,
+                                                                                                              Detection.AILineOfSightDetection.FOV_REGION.PERIPHERAL,
+                                                                                                              true, true);
+                Vector3 peripheralLeft = enemy.GetComponent<Detection.AILineOfSightDetection>().GetFOVVector(enemyTransform.forward,
+                                                                                                             enemyTransform.up,
+                                                                                                             Detection.AILineOfSightDetection.FOV_REGION.PERIPHERAL,
+                                                                                                             false, true);
+                // If my path does not intersect with the peripherals, it is safe
+                float rightPeriphTime = 0;
+                float leftPeriphTime = 0;
+                if (!DoRaysIntersect(WolfPos, nextDir, EnemyPos, peripheralRight, ref rightPeriphTime) && !DoRaysIntersect(WolfPos, nextDir, EnemyPos, peripheralRight, ref leftPeriphTime))
+                {
+                    intersectPt = GetRayIntersectionPt(WolfPos, nextDir, EnemyPos, EnemyFaceDir);
+                    float distToEnemySq = (intersectPt - EnemyPos).sqrMagnitude;
+                    if (distToEnemySq < m_MinDistEnemyPathAvoidance * m_MinDistEnemyPathAvoidance)
+                    {
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                if (rightPeriphTime != 0)
+                {
+                    Vector3 rayIntersection = EnemyPos + peripheralRight * rightPeriphTime;
+                    float distSqToIntersect = (rayIntersection - WolfPos).sqrMagnitude;
+                    float distSqToStealthPoint = (m_NextStealthPos.transform.position - WolfPos).sqrMagnitude;
+                    if (distSqToIntersect < distSqToStealthPoint)
+                    {
+                        return false;
+                    }
+                }
+
+                if (leftPeriphTime != 0)
+                {
+                    Vector3 rayIntersection = EnemyPos + peripheralLeft * leftPeriphTime;
+                    float distSqToIntersect = (rayIntersection - WolfPos).sqrMagnitude;
+                    float distSqToStealthPoint = (m_NextStealthPos.transform.position - WolfPos).sqrMagnitude;
+                    if (distSqToIntersect < distSqToStealthPoint)
+                    {
+                        return false;
+                    }
                 }
             }
 
