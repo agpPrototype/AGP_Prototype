@@ -41,6 +41,7 @@ namespace Items
             if (col.gameObject.GetComponent<Health>())
             {
                 col.gameObject.GetComponent<Health>().TakeDamage(Damage);
+                GameCritical.GameController.Instance.Player.GetComponent<Player.PlayerControl>().NotifyPlayerHitTarget(col.gameObject);
             }
         }
     }

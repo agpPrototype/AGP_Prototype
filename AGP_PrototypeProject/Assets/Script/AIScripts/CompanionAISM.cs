@@ -173,11 +173,7 @@ namespace AI
 
         private bool m_DidPlayerLeaveZone = false;
 
-        [SerializeField]
-        bool switchToAttack;
-
-        [SerializeField]
-        public GameObject Enemy;
+        private GameObject m_EnemyTarget;
 
         [SerializeField]
         public StealthPosition StealthDestination;
@@ -716,11 +712,12 @@ namespace AI
                     m_CurrentCommand = WolfCommand.COME;
 
                     ActionZone curAZ = m_GameControl.GetActionZoneFromPoint(Player.transform.position);
-                    bool comeViaStealth = (curAZ && !curAZ.IsAtFinalStealthPoint(transform.position));
-                    if (comeViaStealth)
-                    {
-                        SetMainState(WolfMainState.Stealth);
-                    }
+                    //bool comeViaStealth = (curAZ && !curAZ.IsAtFinalStealthPoint(transform.position));
+                    //if (comeViaStealth)
+                    //{
+                    //    SetMainState(WolfMainState.Stealth);
+                    //    return;
+                    //}
 
                     if (curAZ)
                     {
@@ -734,10 +731,21 @@ namespace AI
                             m_StealthNav.ExecuteStealthGoToCommand(Player.transform.position);
                         }
                     }
+                    else
+                    {
+                        SetMainState(WolfMainState.Follow);
+                    }
 
                     break;
 
                 case WolfCommand.STAY:
+
+                    if (m_GameControl.BondManager.BondStatus < m_ComeBondRequirement)
+                    {
+                        Debug.Log("Bond is not hight enough to give 'Stay' command!");
+                        return;
+                    }
+
                     m_CurrentCommand = WolfCommand.STAY;
                     SetMainState(WolfMainState.Stay);
                     break;
@@ -812,7 +820,7 @@ namespace AI
             float minDistSq = 2.0f;
             if (distToPtSq < minDistSq)
             {
-                if (m_CurrentCommand == WolfCommand.GOTO)
+                if (m_CurrentCommand == WolfCommand.GOTO && m_CurrentMainState != WolfMainState.Attack)
                 {
                     m_CurrentCommand = WolfCommand.NONE;
                     return;
@@ -886,9 +894,9 @@ namespace AI
 
         private void MoveToEnemy()
         {
-            if(!ReferenceEquals(Enemy, null))
+            if(!ReferenceEquals(m_EnemyTarget, null))
             {
-                MoveTo(Enemy.transform.position);
+                MoveTo(m_EnemyTarget.transform.position);
             }
             else
             {
@@ -934,8 +942,8 @@ namespace AI
         {
             if (m_RotateToDirection == Vector3.zero)
             {
-                Vector3 EnemyPos = Enemy.transform.position;
-                Vector3 EnemyDir = Enemy.GetComponent<NavMeshAgent>().destination - EnemyPos;
+                Vector3 EnemyPos = m_EnemyTarget.transform.position;
+                Vector3 EnemyDir = m_EnemyTarget.GetComponent<NavMeshAgent>().destination - EnemyPos;
                 EnemyDir.Normalize();
 
                 Vector3 toWolfFromEnemy = transform.position - EnemyPos;

@@ -346,13 +346,12 @@ namespace AI
                 }
 
                 // Check Peripherals to see if my path would be seen by them
-                GameObject enemy = GetComponent<CompanionAISM>().Enemy;
-                Transform enemyTransform = enemy.transform;
-                Vector3 peripheralRight = enemy.GetComponent<Detection.AILineOfSightDetection>().GetFOVVector(enemyTransform.forward,
+                Transform enemyTransform = Enemy.transform;
+                Vector3 peripheralRight = Enemy.GetComponent<Detection.AILineOfSightDetection>().GetFOVVector(enemyTransform.forward,
                                                                                                               enemyTransform.up,
                                                                                                               Detection.AILineOfSightDetection.FOV_REGION.PERIPHERAL,
                                                                                                               true, true);
-                Vector3 peripheralLeft = enemy.GetComponent<Detection.AILineOfSightDetection>().GetFOVVector(enemyTransform.forward,
+                Vector3 peripheralLeft = Enemy.GetComponent<Detection.AILineOfSightDetection>().GetFOVVector(enemyTransform.forward,
                                                                                                              enemyTransform.up,
                                                                                                              Detection.AILineOfSightDetection.FOV_REGION.PERIPHERAL,
                                                                                                              false, true);
