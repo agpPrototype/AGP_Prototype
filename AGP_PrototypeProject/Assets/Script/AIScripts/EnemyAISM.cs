@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using AI.Detection;
 using AI;
+using HealthCare;
 
 namespace AI
 {
@@ -12,6 +13,32 @@ namespace AI
     [RequireComponent(typeof(NavMeshAgent))]
     public class EnemyAISM : AIStateMachine
     {
+        private enum EnemyAIAnimation
+        {
+            Walking,
+            Idling,
+            Attacking
+        }
+        private void setAnimation(EnemyAIAnimation anim)
+        {
+            if (anim == EnemyAIAnimation.Walking)
+            {
+                m_Animator.SetBool("Walk", true);
+                m_Animator.SetBool("Attack", false);
+            }
+            else if (anim == EnemyAIAnimation.Idling)
+            {
+                m_Animator.SetBool("Walk", false);
+                m_Animator.SetBool("Attack", false);
+            }
+            else if (anim == EnemyAIAnimation.Attacking)
+            {
+                m_Animator.SetBool("Walk", false);
+                m_Animator.SetBool("Attack", true);
+            }
+        }
+
+        #region Member Variables
         #region AI State Members
         public enum EnemyAIState
         {
@@ -31,6 +58,7 @@ namespace AI
         private BehaviorTree m_AttackBT;
         #endregion
 
+        #region AI Settings Members
         [SerializeField]
         [Tooltip("Speed AI turns to find target.")]
         private float m_LookRotationSpeed = 0.04f;
@@ -52,32 +80,43 @@ namespace AI
         private float m_UpdateInterval = 0.6f;
         private float m_UpdateIntervalTimer = 0.0f;
 
-        #region timer members
-        [SerializeField]
-        [Tooltip("Amount of time the AI should look for player they lost until they continue patrolling.")]
-        private float m_LookTime;
-
-        private float m_WaypointWaitTime;
-
-        private float m_TimerEndTime;
-        private float m_TimerStartTime;
-        private bool m_IsTimerSet;
-        #endregion 
-
         [SerializeField]
         private float m_AttackRange = 6.0f;
 
+        [SerializeField]
+        [Tooltip("Amount of time the AI should look for player they lost until they continue patrolling.")]
+        private float m_LookTime;
+        #endregion
+
+        #region Timer Members (general timer members to be used for any timer in AI)
+        [SerializeField]
+        [Tooltip("Timer to clear the targets that this AI ignores. This simulates a memory of sorts.")]
+        private float m_IgnorableTargetsClearTimer;
+
+        private float m_WaypointWaitTime;
+        private float m_TimerEndTime;
+        private float m_TimerStartTime;
+        private bool m_IsTimerSet;
+        #endregion
+
+        #region Component Members
         private Waypoint m_CurrentWaypoint;
         private NavMeshAgent m_NavAgent;
         private AILineOfSightDetection m_AILineOfSightDetection;
         private AIAudioDetection m_AIAudioDetection;
         private Animator m_Animator;
+        #endregion
 
+        #region Target Members (used to keep track of target)
         // target related members
         private Vector3 m_TargetLastPosition;
         private Vector3 m_TargetLastVelocity;
         private bool m_IsTargetInAttackRange;
+        private List<AIDetectable> m_ExploredIgnorableTargets; // list of objects that the AI has explored and has no interest in.
         private AIDetectable m_Target; // current prioritized target.
+
+        #endregion
+        #endregion
 
         private ActionZone m_MyActionZone;
         public ActionZone MyActionZone
@@ -102,9 +141,9 @@ namespace AI
             m_NavAgent = GetComponent<NavMeshAgent>();
             m_Animator = GetComponent<Animator>();
             m_CurrentWaypoint = PatrolArea.GetNextWaypoint(null);
+            m_ExploredIgnorableTargets = new List<AIDetectable>();
             initBehaviorTrees();
         }
-       
 
         private void initBehaviorTrees()
         {
@@ -114,31 +153,6 @@ namespace AI
             createLookBT();
 
             m_CurrentBT = m_PatrolBT;
-        }
-
-        private enum EnemyAIAnimation
-        {
-            Walking,
-            Idling,
-            Attacking
-        }
-        private void setAnimation(EnemyAIAnimation anim)
-        {
-            if(anim == EnemyAIAnimation.Walking)
-            {
-                m_Animator.SetBool("Walk", true);
-                m_Animator.SetBool("Attack", false);
-            }
-            else if (anim == EnemyAIAnimation.Idling)
-            {
-                m_Animator.SetBool("Walk", false);
-                m_Animator.SetBool("Attack", false);
-            }
-            else if (anim == EnemyAIAnimation.Attacking)
-            {
-                m_Animator.SetBool("Walk", false);
-                m_Animator.SetBool("Attack", true);
-            }
         }
 
         #region Switch BT functions / idle function
@@ -300,20 +314,26 @@ namespace AI
             DecisionNode chaseToAttack = new DecisionNode(DecisionType.SwitchStates, "ChaseBT->AttackBT_Node");
             chaseToAttack.AddAction(new Action(switchToAttackBT));
             chaseToAttack.AddCondition(new Condition(isTargetInAttackRange));
+            chaseToAttack.AddCondition(new Condition(isTargetHaveHealthComp));
             m_ChaseBT.AddDecisionNodeTo(chaseNode, chaseToAttack);
 
             /// ChaseBT->LookBT
             DecisionNode chaseToLook = new DecisionNode(DecisionType.SwitchStates, "ChaseBT->LookBT_Node");
             chaseToLook.AddAction(new Action(switchToLookBT));
             chaseToLook.AddCondition(new Condition(isReachedLastSeenLocation));
+            chaseToLook.AddCondition(new Condition(isTargetNotHaveHealthComp));
             m_ChaseBT.AddDecisionNodeTo(chaseNode, chaseToLook);
         }
 
         #region Attack Methods
         private void attack()
         {
-            // set animator to idle for AI
+            // set animator to attack for AI
             setAnimation(EnemyAIAnimation.Attacking);
+            // rotate toward the target we are attacking at all times.
+            Vector3 targetDir = m_Target.transform.position - this.transform.position;
+            Vector3 newDir = Vector3.RotateTowards(this.transform.forward, targetDir, Mathf.PI * 2, 0.0f);
+            this.transform.rotation = Quaternion.LookRotation(newDir, this.transform.up);
         }
         private bool isTargetOutOfAttackRange()
         {
@@ -322,6 +342,27 @@ namespace AI
         private bool isTargetInAttackRange()
         {
             return m_IsTargetInAttackRange;
+        }
+        private bool isTargetHaveHealthComp()
+        {
+            if(m_Target)
+            {
+                if (m_Target.GetComponent<PlayerHealth>() != null)
+                    return true;
+                else if (m_Target.GetComponent<AccaliaHealth>() != null)
+                    return true;
+            }
+            return false;
+        }
+        private bool isTargetNotHaveHealthComp()
+        {
+            if (m_Target)
+            {
+                if (m_Target.GetComponent<PlayerHealth>() != null ||
+                    m_Target.GetComponent<AccaliaHealth>() != null)
+                    return false;
+            }
+            return true;
         }
         #endregion
 
@@ -443,9 +484,16 @@ namespace AI
                 m_Target = (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection));
                 if(m_Target != null)
                 {
-                    SetMainState(EnemyAIState.CHASING);
-                    /* Just in case a timer was interrupted when we switch states.*/
-                    m_IsTimerSet = false;
+                    if(m_ExploredIgnorableTargets.Contains(m_Target))
+                    {
+                        m_Target = null;
+                    }
+                    else
+                    {
+                        SetMainState(EnemyAIState.CHASING);
+                        /* Just in case a timer was interrupted when we switch states.*/
+                        m_IsTimerSet = false;
+                    }
                 }
             }
 
