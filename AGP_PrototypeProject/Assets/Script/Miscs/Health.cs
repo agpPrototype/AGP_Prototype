@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace HealthCare
 {
@@ -8,6 +9,9 @@ namespace HealthCare
     {
         [SerializeField]
         protected float MaxHP = 100;
+
+        [SerializeField]
+        private Image m_HealthBar;
 
         protected float m_CurrHP;
         protected Animator m_Animator;
@@ -21,6 +25,15 @@ namespace HealthCare
         {
             m_CurrHP = MaxHP;
             m_Animator = GetComponent<Animator>();
+            UpdateHealthBar();
+        }
+
+        private void UpdateHealthBar()
+        {
+            if (m_HealthBar != null)
+            {
+                m_HealthBar.fillAmount = m_CurrHP / MaxHP;
+            }
         }
 
         public virtual void TakeDamage(float damage, GameObject dmgDealer = null)
@@ -28,6 +41,7 @@ namespace HealthCare
             if (m_CurrHP > 0)
             {
                 m_CurrHP -= damage;
+                UpdateHealthBar();
                 if (m_CurrHP <= 0)
                 {
                     OnDeathBegin();

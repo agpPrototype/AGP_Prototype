@@ -86,6 +86,9 @@ namespace AI
         [SerializeField]
         [Tooltip("Amount of time the AI should look for player they lost until they continue patrolling.")]
         private float m_LookTime;
+
+        [SerializeField]
+        private float m_AttackDamage = 5.0f;
         #endregion
 
         #region Timer Members (general timer members to be used for any timer in AI)
@@ -123,12 +126,6 @@ namespace AI
         {
             get { return m_MyActionZone; }
             set { m_MyActionZone = value; }
-        }
-
-        public void Awake()
-        {
-
-
         }
 
         // Use this for initialization
@@ -326,6 +323,23 @@ namespace AI
         }
 
         #region Attack Methods
+        public void applyDamageToTarget()
+        {
+            // get health and apply damage
+            if (m_Target != null)
+            {
+                PlayerHealth playerHealth = m_Target.GetComponent<PlayerHealth>();
+                if (playerHealth != null)
+                {
+                    playerHealth.TakeDamage(m_AttackDamage);
+                }
+                AccaliaHealth accaliaHealth = m_Target.GetComponent<AccaliaHealth>();
+                if (accaliaHealth != null)
+                {
+                    accaliaHealth.TakeDamage(m_AttackDamage);
+                }
+            }
+        }
         private void attack()
         {
             // set animator to attack for AI
@@ -501,7 +515,9 @@ namespace AI
             if (m_Target != null)
             {
                 // if target is in attack range then attack that dude!
-                m_IsTargetInAttackRange = Vector3.Distance(m_Target.transform.position, this.transform.position) <= m_AttackRange;
+                Vector3 vToTarget = (m_Target.transform.position - this.transform.position);
+                m_IsTargetInAttackRange = vToTarget.sqrMagnitude <= 
+                    (m_AttackRange * m_AttackRange);
 
                 // keep track of last seen position.
                 m_TargetLastPosition = m_Target.transform.position;
