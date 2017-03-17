@@ -962,13 +962,18 @@ namespace AI
             //Debug.Log("Attacking enemy!");
             if (!m_IsAttacking)
             {
-                Debug.Log("Attacking enemy!");
+                //Debug.Log("Attacking enemy!");
                 m_IsAttacking = true;
                 m_WolfMoveComp.Stop();
                 GetComponent<Animator>().SetBool("Attack1", true);
-                GetComponent<Animator>().SetInteger("IDInt", 1);
-                //GetComponent<Animator>().SetBool("Attack1", false);
+                int IDAttack = Random.Range(1, 4);
+                GetComponent<Animator>().SetInteger("IDAttack", IDAttack);
             }
+        }
+
+        public Transform GetEnemyTarget()
+        {
+            return m_EnemyTarget.transform;
         }
 
         private bool IsAttackTimerDone()

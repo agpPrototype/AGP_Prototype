@@ -14,7 +14,7 @@ namespace HealthCare
         private Image m_HealthBar;
 
         [SerializeField]
-        private bool m_IsCanDie;
+        private bool m_IsCanDie = true;
         private bool m_IsDead;
         public bool IsDead { get { return m_IsDead; } }
 
