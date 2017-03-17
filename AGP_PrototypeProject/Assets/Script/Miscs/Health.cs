@@ -13,6 +13,8 @@ namespace HealthCare
         [SerializeField]
         private Image m_HealthBar;
 
+        [SerializeField]
+        private bool m_IsCanDie;
         private bool m_IsDead;
         public bool IsDead { get { return m_IsDead; } }
 
@@ -47,8 +49,11 @@ namespace HealthCare
                 UpdateHealthBar();
                 if (m_CurrHP <= 0)
                 {
-                    m_IsDead = true;
-                    OnDeathBegin();
+                    if(m_IsCanDie)
+                    {
+                        m_IsDead = true;
+                        OnDeathBegin();
+                    }
                 }
                 else
                 {
