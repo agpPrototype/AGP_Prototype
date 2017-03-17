@@ -347,8 +347,10 @@ namespace AI
         {
             if(m_Target)
             {
-                Health healthComp = m_Target.GetComponent<Health>();
-                return healthComp != null;
+                if (m_Target.GetComponent<PlayerHealth>() != null)
+                    return true;
+                else if (m_Target.GetComponent<AccaliaHealth>() != null)
+                    return true;
             }
             return false;
         }
@@ -356,8 +358,9 @@ namespace AI
         {
             if (m_Target)
             {
-                Health healthComp = m_Target.GetComponent<Health>();
-                return healthComp == null;
+                if (m_Target.GetComponent<PlayerHealth>() != null ||
+                    m_Target.GetComponent<AccaliaHealth>() != null)
+                    return false;
             }
             return true;
         }
