@@ -79,6 +79,13 @@ namespace AI
         private bool m_IsTargetInAttackRange;
         private AIDetectable m_Target; // current prioritized target.
 
+        private ActionZone m_MyActionZone;
+        public ActionZone MyActionZone
+        {
+            get { return m_MyActionZone; }
+            set { m_MyActionZone = value; }
+        }
+
         public void Awake()
         {
 
@@ -158,7 +165,7 @@ namespace AI
 
 			if(m_AILineOfSightDetection != null)
 			{
-				m_AILineOfSightDetection.Beam.SetActive(false);
+				m_AILineOfSightDetection.Beam.IsOpen = false;
 			}
 			else
 			{
@@ -258,7 +265,7 @@ namespace AI
                     m_TargetLastPosition = m_Target.transform.position;
                 }
 
-				m_AILineOfSightDetection.Beam.SetActive(true);
+				m_AILineOfSightDetection.Beam.IsOpen = true;
             }
             else
             {
