@@ -106,9 +106,6 @@ namespace Player
             m_PowerHandler.ProcessPowers(m_PCActions);
         }
 
-        public void NotifyPlayerHitTarget(GameObject hitEnemy)
-        {
-
-        }
+        
     }
 }

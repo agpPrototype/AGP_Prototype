@@ -174,6 +174,16 @@ namespace AI
         private bool m_DidPlayerLeaveZone = false;
 
         private GameObject m_EnemyTarget;
+        private GameObject m_PlayersEnemyTarget;
+
+        [SerializeField]
+        private float m_AttackRange;
+        [SerializeField]
+        private float m_AttackCooldown;
+        private float m_AttackCooldownEndTime;
+        private bool m_AttackTimerSet = false;
+
+        private bool m_IsAttacking = false;
 
         [SerializeField]
         public StealthPosition StealthDestination;
@@ -241,7 +251,6 @@ namespace AI
             // Node to decide when to stop following the player (if close enough to player)
             // if DistToPlayer < FollowDist, switch to Idle state
             DecisionNode stopFollowingNode = new DecisionNode(DecisionType.SwitchStates, "StopFollow->Idle");
-            //Condition sfCond1 = new Condition(DistToPlayerSq, ConditionComparison.Less, new Float(FollowDistance * FollowDistance));
             Condition sfCond1 = new Condition(GetDistToPlayerSq, ConditionComparison.Less, new Float(FollowDistance * FollowDistance));
 
             Action switchToIdleAction = new Action(SetMainState, WolfMainState.Idle);
@@ -307,7 +316,7 @@ namespace AI
 
             /// NODE ///
             // Node to decide when to stop following the player (if close enough to player)
-            DecisionNode moveToTargetNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "MoveToEnemy");
+            DecisionNode moveToTargetNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "MoveToEnemy");
             Action moveToEnemy = new Action(MoveToEnemy);
             moveToTargetNode.AddAction(moveToEnemy);
 
@@ -315,19 +324,25 @@ namespace AI
 
             /// NODE ///
             /// 
-            DecisionNode attackEnemyNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "AttackEnemy");
+            DecisionNode attackEnemyNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "AttackEnemy");
+            Condition isAtEnemy = new Condition(new BoolTypeDelegate(IsAtEnemyTarget));
+            Condition isAtkTimerDone = new Condition(new BoolTypeDelegate(IsAttackTimerDone));
             Action attackEnemy = new Action(AttackMyEnemy);
             attackEnemyNode.AddAction(attackEnemy);
+            attackEnemyNode.AddCondition(isAtEnemy);
 
             m_AttackTree.AddDecisionNodeTo(moveToTargetNode, attackEnemyNode);
 
+            // Loop back to root
+            //m_AttackTree.AddDecisionNodeTo(attackEnemyNode, rootNode);
+
             /// NODE /// 
             /// 
-            DecisionNode toFollowNode = new DecisionNode(DecisionType.SwitchStates, "StopAttack->Follow");
-            Action switchToFollow = new Action(SetMainState, WolfMainState.Follow);
-            toFollowNode.AddAction(switchToFollow);
+            //DecisionNode toRevertState = new DecisionNode(DecisionType.SwitchStates, "StopAttack->GoToPrevState");
+            //Action switchToFollow = new Action(SetMainState, WolfMainState.Follow);
+            //toRevertState.AddAction(switchToFollow);
 
-            m_AttackTree.AddDecisionNodeTo(attackEnemyNode, toFollowNode);
+           // m_AttackTree.AddDecisionNodeTo(attackEnemyNode, toRevertState);
 
             //GetComponent<Animator>().SetBool("Attack1", true);
         }
@@ -904,28 +919,82 @@ namespace AI
             }
         }
 
+        private bool IsAtEnemyTarget()
+        {
+            if (!m_EnemyTarget)
+            {
+                DetermineTarget();
+            }
+
+            float distToEnemySq = (m_EnemyTarget.transform.position - transform.position).sqrMagnitude;
+            bool isAtTarget = (distToEnemySq < m_AttackRange * m_AttackRange);
+
+            if(!isAtTarget)
+                m_IsAttacking = false;
+
+            return isAtTarget;
+        }
+
         private void DetermineTarget()
         {
-            //if(m_GameControl.BondManager.BondStatus > 50)
-            //{
-
-            //}
-            GameObject target = m_GameControl.CurrentActionZone.GetClosestAgrodEnemy(transform.position);
-            if (target)
+            if (m_GameControl.BondManager.BondStatus > 50)
             {
-                m_EnemyTarget = target;
+                m_EnemyTarget = m_PlayersEnemyTarget;
             }
-            else
-            {
-                // No agrod Enemies, revert to previous state
-                Debug.Log("No agro'd enemies, reverting to previous state");
-                SetMainState(m_PreviousMainState);
+            else {
+                GameObject target = m_GameControl.CurrentActionZone.GetClosestAgrodEnemy(transform.position);
+                if (target)
+                {
+                    m_EnemyTarget = target;
+                }
+                else
+                {
+                    // No agrod Enemies, revert to previous state
+                    Debug.Log("No agro'd enemies, reverting to previous state");
+                    SetMainState(m_PreviousMainState);
+                }
             }
         }
+
 
         private void AttackMyEnemy()
         {
             //Debug.Log("Attacking enemy!");
+            if (!m_IsAttacking)
+            {
+                Debug.Log("Attacking enemy!");
+                m_IsAttacking = true;
+                m_WolfMoveComp.Stop();
+                GetComponent<Animator>().SetBool("Attack1", true);
+                GetComponent<Animator>().SetInteger("IDInt", 1);
+                //GetComponent<Animator>().SetBool("Attack1", false);
+            }
+        }
+
+        private bool IsAttackTimerDone()
+        {
+            if (!m_AttackTimerSet)
+            {
+                m_AttackTimerSet = true;
+                m_AttackCooldownEndTime = Time.time + m_AttackCooldown;
+            }
+
+            if (Time.time < m_AttackCooldownEndTime)
+            {
+                return false;
+            }
+
+            m_AttackTimerSet = false;
+            return true;
+        }
+
+        public void NotifyPlayerHitTarget(GameObject hitEnemy)
+        {
+            if (hitEnemy && hitEnemy.GetComponent<EnemyAISM>())
+            {
+                m_PlayersEnemyTarget = hitEnemy;
+                SetMainState(WolfMainState.Attack);
+            }
         }
 
         #endregion
