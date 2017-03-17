@@ -522,6 +522,16 @@ namespace AI
             m_CurrentBT.RestartTree();
         }
 
+        //public EnemyAIState GetCurrentMainState()
+        //{
+        //    return m_State;
+        //}
+
+        public bool IsAgrod()
+        {
+            return (m_State == EnemyAIState.ATTACKING || m_State == EnemyAIState.CHASING);
+        }
+
         private void OnDrawGizmos()
         {
             if (m_Target)

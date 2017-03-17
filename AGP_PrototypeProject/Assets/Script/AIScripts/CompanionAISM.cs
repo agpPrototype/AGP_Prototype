@@ -300,7 +300,7 @@ namespace AI
         {
             /// NODE ///
             // 
-            DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilActionComplete, "RootAttack");
+            DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "RootAttack");
             rootNode.AddAction(new Action(DetermineTarget));
 
             m_AttackTree = new BehaviorTree(WolfMainState.Attack, rootNode, this);
@@ -906,8 +906,21 @@ namespace AI
 
         private void DetermineTarget()
         {
-            CompleteCurrentActionExternal(true);
-            //OnActionComplete(true);
+            //if(m_GameControl.BondManager.BondStatus > 50)
+            //{
+
+            //}
+            GameObject target = m_GameControl.CurrentActionZone.GetClosestAgrodEnemy(transform.position);
+            if (target)
+            {
+                m_EnemyTarget = target;
+            }
+            else
+            {
+                // No agrod Enemies, revert to previous state
+                Debug.Log("No agro'd enemies, reverting to previous state");
+                SetMainState(m_PreviousMainState);
+            }
         }
 
         private void AttackMyEnemy()

@@ -70,7 +70,6 @@ public class ActionZone : MonoBehaviour {
         {
             m_IsWolfInZone = true;
         }
-        // If Enemy, register it with this Zone
         
 
     }
@@ -88,10 +87,6 @@ public class ActionZone : MonoBehaviour {
             m_IsWolfInZone = false;
 
         }
-        //else if (other.GetComponent<AI.EnemyAISM>())
-        //{
-        //    m_EnemyList.Remove(other.gameObject);
-        //}
 
         if (!m_IsWolfInZone && !m_IsPlayerInZone)
         {
@@ -124,6 +119,8 @@ public class ActionZone : MonoBehaviour {
         Debug.Assert(m_EnemyList.Count > 0, "Warning: No enemies set in an action zone. Continue if this is expected behavior.");
     }
 
+
+
     // Update is called once per frame
     void Update () {
 		
@@ -143,6 +140,49 @@ public class ActionZone : MonoBehaviour {
             return m_EnemyList[idx];
 
         return null;
+    }
+
+    public GameObject GetClosestEnemyTo(Vector3 location)
+    {
+        GameObject closestEnemy = null;
+
+        float minDistSq = 1000000;
+
+        for (int i = 0; i < m_EnemyList.Count; ++i)
+        {
+            float distSq = Vector3.SqrMagnitude(location - m_EnemyList[i].transform.position);
+            if (distSq < minDistSq)
+            {
+                closestEnemy = m_EnemyList[i];
+                minDistSq = distSq;
+            }
+
+        }
+
+        return closestEnemy;
+    }
+
+    public GameObject GetClosestAgrodEnemy(Vector3 location)
+    {
+
+        GameObject closestEnemy = null;
+
+        float minDistSq = 1000000;
+
+        for (int i = 0; i < m_EnemyList.Count; ++i)
+        {
+            float distSq = Vector3.SqrMagnitude(location - m_EnemyList[i].transform.position);
+            bool isAgrod = m_EnemyList[i].GetComponent<AI.EnemyAISM>().IsAgrod();
+
+            if (distSq < minDistSq && isAgrod)
+            {
+                closestEnemy = m_EnemyList[i];
+                minDistSq = distSq;
+            }
+
+        }
+
+        return closestEnemy;
     }
 
     public void EnemyDestroyed(GameObject enemy)
