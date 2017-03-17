@@ -14,8 +14,14 @@ namespace GameCritical
         private static GameController s_GameController = null;
         private BondManager m_BondManager;
         private SmellSmokeDriver m_SmellSmokeDriver;
+
         private GameObject m_Player;
         private GameObject m_Wolf;
+
+
+        [SerializeField]
+        private GameObject m_AllActionZonesRef;
+        private ActionZone[] m_ActionZoneList;
 
         private ActionZone m_CurrentActionZone;
 
@@ -32,6 +38,18 @@ namespace GameCritical
                     Destroy(this.gameObject);
                 }
             }
+
+            // Extract all Action Zones from game object reference
+            // Get all child game objects
+            int numChild = m_AllActionZonesRef.transform.childCount;
+            m_ActionZoneList = new ActionZone[numChild];
+
+            for (int i = 0; i < numChild; ++i)
+            {
+                m_ActionZoneList[i] = m_AllActionZonesRef.transform.GetChild(i).GetChild(0).gameObject.GetComponent<ActionZone>();
+            }
+
+            Debug.Assert(m_ActionZoneList.Length > 0, "ERROR: Need ActionZones on map!");
         }
 
         // Update is called once per frame
@@ -62,6 +80,24 @@ namespace GameCritical
         public void RegisterWolf(GameObject wolf)
         {
             m_Wolf = wolf;
+        }
+
+        public void RegisterEnemy(GameObject enemy)
+        {
+            GetActionZoneFromPoint(enemy.transform.position).RegisterEnemy(enemy);
+        }
+
+        public ActionZone GetActionZoneFromPoint(Vector3 location)
+        {
+            for(int i = 0; i < m_ActionZoneList.Length; ++i)
+            {
+                if (m_ActionZoneList[i].IsLocationInZone(location))
+                {
+                    return m_ActionZoneList[i];
+                }
+            }
+
+            return null;
         }
 
         public static GameController Instance { get { return s_GameController; } }

@@ -108,6 +108,11 @@ namespace AI
             private Transform m_Apex;
             public Transform Apex { get { return m_Apex; } }
 
+			[Tooltip("gameobject that represents when the enemy is alerted to the player.")]
+			[SerializeField]
+			private EnemyDetectionBeam m_Beam;
+			public EnemyDetectionBeam Beam { get { return m_Beam; } }
+
             [Tooltip("Layer mask for raycast to see if target is visible in line of sight.")]
             [SerializeField]
             private LayerMask SightRaycastLayerMask;

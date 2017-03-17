@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using AI.Detection;
 using AI;
-using Misc;
+using HealthCare;
 
 namespace AI
 {
@@ -114,8 +114,22 @@ namespace AI
         private bool m_IsTargetInAttackRange;
         private List<AIDetectable> m_ExploredIgnorableTargets; // list of objects that the AI has explored and has no interest in.
         private AIDetectable m_Target; // current prioritized target.
+
         #endregion
         #endregion
+
+        private ActionZone m_MyActionZone;
+        public ActionZone MyActionZone
+        {
+            get { return m_MyActionZone; }
+            set { m_MyActionZone = value; }
+        }
+
+        public void Awake()
+        {
+
+
+        }
 
         // Use this for initialization
         private void Start()
@@ -162,7 +176,16 @@ namespace AI
         {
             setAnimation(EnemyAIAnimation.Idling);
             SetMainState(EnemyAIState.LOOKING);
-        }
+
+			if(m_AILineOfSightDetection != null)
+			{
+				m_AILineOfSightDetection.Beam.IsOpen = false;
+			}
+			else
+			{
+				Debug.LogError("No AILineOfSightDetectin on AI.");
+			}
+		}
         #endregion
 
         #region Look Methods
@@ -255,6 +278,8 @@ namespace AI
                 {
                     m_TargetLastPosition = m_Target.transform.position;
                 }
+
+				m_AILineOfSightDetection.Beam.IsOpen = true;
             }
             else
             {
