@@ -13,6 +13,9 @@ namespace HealthCare
         [SerializeField]
         private Image m_HealthBar;
 
+        private bool m_IsDead;
+        public bool IsDead { get { return m_IsDead; } }
+
         protected float m_CurrHP;
         protected Animator m_Animator;
         // Use this for initialization
@@ -44,6 +47,7 @@ namespace HealthCare
                 UpdateHealthBar();
                 if (m_CurrHP <= 0)
                 {
+                    m_IsDead = true;
                     OnDeathBegin();
                 }
                 else

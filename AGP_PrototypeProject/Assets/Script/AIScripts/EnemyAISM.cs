@@ -349,8 +349,30 @@ namespace AI
             Vector3 newDir = Vector3.RotateTowards(this.transform.forward, targetDir, Mathf.PI * 2, 0.0f);
             this.transform.rotation = Quaternion.LookRotation(newDir, this.transform.up);
         }
-        private bool isTargetOutOfAttackRange()
+        private bool isTargetOutOfAttackRangeOrDead()
         {
+            // check to see if our target is dead. there are two types, accalia and player.
+            if (m_Target != null)
+            {
+                PlayerHealth playerHealth = m_Target.GetComponent<PlayerHealth>();
+                if (playerHealth != null)
+                {
+                    if(playerHealth.IsDead)
+                    {
+                        return true;
+                    }
+                }
+                AccaliaHealth accaliaHealth = m_Target.GetComponent<AccaliaHealth>();
+                if (accaliaHealth != null)
+                {
+                    if (accaliaHealth.IsDead)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            // check to see if within attack range
             return !m_IsTargetInAttackRange;
         }
         private bool isTargetInAttackRange()
@@ -392,7 +414,7 @@ namespace AI
 
             DecisionNode attackToLookNode = new DecisionNode(DecisionType.SwitchStates, "AttackBT->LookBT_Node");
             attackToLookNode.AddAction(new Action(switchToLookBT));
-            attackToLookNode.AddCondition(new Condition(isTargetOutOfAttackRange));
+            attackToLookNode.AddCondition(new Condition(isTargetOutOfAttackRangeOrDead));
             m_AttackBT.AddDecisionNodeTo(basicAttackNode, attackToLookNode);
         }
 
