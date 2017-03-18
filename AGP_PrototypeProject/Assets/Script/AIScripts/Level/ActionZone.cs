@@ -64,7 +64,7 @@ public class ActionZone : MonoBehaviour {
 
             GameController.Instance.CurrentActionZone = this;
             GameController.Instance.Wolf.GetComponent<AI.StealthNavigation>().CurrentActionZone = this;
-            //Debug.Log("Set Current Action Zone");
+            Debug.Log("Set Current Action Zone");
         }
         else if (other.GetComponent<AI.CompanionAISM>())
         {
@@ -90,10 +90,10 @@ public class ActionZone : MonoBehaviour {
 
         if (!m_IsWolfInZone && !m_IsPlayerInZone)
         {
-            GameController.Instance.CurrentActionZone = null;
+            //GameController.Instance.CurrentActionZone = null;
             GameController.Instance.Wolf.GetComponent<AI.StealthNavigation>().CurrentActionZone = null;
             GameController.Instance.Wolf.GetComponent<AI.CompanionAISM>().SetMainState(AI.WolfMainState.Follow);
-            Debug.Log("Both wolf and player left Action Zone");
+            Debug.Log("Both wolf and player left Action Zone: " + gameObject.transform.parent.gameObject.name);
         }
     }
 
@@ -131,6 +131,7 @@ public class ActionZone : MonoBehaviour {
         if (enemy)
         {
             m_EnemyList.Add(enemy);
+           // enemy.
         }
     }
 
@@ -173,7 +174,7 @@ public class ActionZone : MonoBehaviour {
         {
             float distSq = Vector3.SqrMagnitude(location - m_EnemyList[i].transform.position);
             bool isAgrod = m_EnemyList[i].GetComponent<AI.EnemyAISM>().IsAgrod();
-
+            
             if (distSq < minDistSq && isAgrod)
             {
                 closestEnemy = m_EnemyList[i];
@@ -187,10 +188,10 @@ public class ActionZone : MonoBehaviour {
 
     public void EnemyDestroyed(GameObject enemy)
     {
-        if (enemy)
-        {
+       // if (enemy)
+       // {
             m_EnemyList.Remove(enemy);
-        }
+       // }
     }
 
     public int GetNumEnemiesAlive()

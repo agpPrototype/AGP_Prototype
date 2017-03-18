@@ -29,6 +29,16 @@ namespace HealthCare
         public override void TakeDamage(float damage, GameObject dmgDealer = null)
         {
             base.TakeDamage(damage, dmgDealer);
+            AI.EnemyAISM enemyAI = GetComponent<AI.EnemyAISM>();
+
+            if (enemyAI)
+            {
+                if(!(enemyAI.CurrentState == AI.EnemyAISM.EnemyAIState.ATTACKING || enemyAI.CurrentState == AI.EnemyAISM.EnemyAIState.CHASING))
+                {
+                    if (dmgDealer.GetComponent<AI.Detection.AIVisible>())
+                        enemyAI.AgroToTarget(dmgDealer.GetComponent<AI.Detection.AIVisible>());
+                }
+            }
         }
     }
 }

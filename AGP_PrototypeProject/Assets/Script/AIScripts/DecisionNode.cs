@@ -111,7 +111,7 @@ namespace AI
         // This function is called when the statemachine decides to remain in the state that it is in
         public void ProcessDecision()
         {
-            if (DEBUG) Debug.Log("Processing Decision: " + m_nameTag);
+           // if (DEBUG) Debug.Log("Processing Decision: " + m_nameTag);
 
             //Debug.Log("Current DecisionNode is " + m_nameTag.ToString());
             if (m_MyType == DecisionType.RepeatUntilActionComplete)

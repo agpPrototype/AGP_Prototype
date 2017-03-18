@@ -50,6 +50,7 @@ namespace AI
 
         [SerializeField]
         private EnemyAIState m_State;
+        public EnemyAIState CurrentState { get { return m_State; } }
 
         private BehaviorTree m_CurrentBT;
         private BehaviorTree m_PatrolBT;
@@ -514,7 +515,7 @@ namespace AI
         {
             /* only look for threats when not attacking, because if we are attacking then
             we are infinitely chasing until we die or kill the target. */
-            if(m_State != EnemyAIState.ATTACKING)
+            if(m_State != EnemyAIState.ATTACKING && m_State != EnemyAIState.CHASING)
             {
                 // get highest threat and store as target.
                 m_Target = (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection));
@@ -615,7 +616,14 @@ namespace AI
 
         public bool IsAgrod()
         {
-            return (m_State == EnemyAIState.ATTACKING || m_State == EnemyAIState.CHASING);
+            return ( (m_State == EnemyAIState.ATTACKING || m_State == EnemyAIState.CHASING) || GetComponent<HealthCare.Health>().IsDead);
+        }
+
+        public void AgroToTarget(AIVisible visComp)
+        {
+            m_Target = visComp;
+            //SetMainState(EnemyAIState.ATTACKING);
+            SetMainState(EnemyAIState.CHASING);
         }
 
         private void OnDrawGizmos()

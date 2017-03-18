@@ -325,16 +325,17 @@ namespace AI
             /// NODE ///
             /// 
             DecisionNode attackEnemyNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "AttackEnemy");
-            Condition isAtEnemy = new Condition(new BoolTypeDelegate(IsAtEnemyTarget));
             Condition isAtkTimerDone = new Condition(new BoolTypeDelegate(IsAttackTimerDone));
+            Condition isAtEnemy = new Condition(new BoolTypeDelegate(IsAtEnemyTarget));
             Action attackEnemy = new Action(AttackMyEnemy);
             attackEnemyNode.AddAction(attackEnemy);
+            attackEnemyNode.AddCondition(isAtkTimerDone);
             attackEnemyNode.AddCondition(isAtEnemy);
 
             m_AttackTree.AddDecisionNodeTo(moveToTargetNode, attackEnemyNode);
 
             // Loop back to root
-            //m_AttackTree.AddDecisionNodeTo(attackEnemyNode, rootNode);
+            m_AttackTree.AddDecisionNodeTo(attackEnemyNode, rootNode);
 
             /// NODE /// 
             /// 
@@ -612,14 +613,14 @@ namespace AI
 
 
             // See if player is out of action zone and follow if 
-            if (m_DidPlayerLeaveZone && m_GameControl.CurrentActionZone) { 
+            if (m_DidPlayerLeaveZone && curAZ) { 
 
-                if (m_GameControl.CurrentActionZone.IsAtFinalStealthPoint(transform.position))
+                if (curAZ.IsAtFinalStealthPoint(transform.position))
                 {
                     SetMainState(WolfMainState.Follow);
                     return;
                 }
-                else
+                else if(Player.GetComponent<MoveComponent>().m_Crouching)
                 {
                     m_StealthNav.FindOwnPath = true;
                     SetMainState(WolfMainState.Stealth);
@@ -664,7 +665,9 @@ namespace AI
 
         public void SetMainState(WolfMainState newState)
         {
-            m_PreviousMainState = m_CurrentMainState;
+            if(m_PreviousMainState != m_CurrentMainState)
+                m_PreviousMainState = m_CurrentMainState;
+
             m_CurrentMainState = newState;
 
             //m_CurrentBT.RestartTree();
@@ -880,7 +883,7 @@ namespace AI
             WolfNavAgent.CalculatePath(TargetMoveToLocation, path);
             if (path.corners.Length == 0)
             {
-                Debug.Log("NO PATH FOUND! THIS SHOULD NOT HAPPEN!!");
+                //Debug.Log("NO PATH FOUND! THIS SHOULD NOT HAPPEN!!");
             }
             
             if (path.corners.Length != 0)
@@ -909,13 +912,18 @@ namespace AI
 
         private void MoveToEnemy()
         {
-            if(!ReferenceEquals(m_EnemyTarget, null))
+            //if(!ReferenceEquals(m_EnemyTarget, null))
+            if(m_EnemyTarget != null)
             {
-                MoveTo(m_EnemyTarget.transform.position);
+                float distToEnemySq = (m_EnemyTarget.transform.position - transform.position).sqrMagnitude;
+                if(distToEnemySq > m_AttackRange * m_AttackRange)
+                    MoveTo(m_EnemyTarget.transform.position);
             }
             else
             {
                 Debug.Log("Enemy is a null reference!");
+                // Reset tree to find a new target
+                SetMainState(WolfMainState.Attack);
             }
         }
 
@@ -924,24 +932,43 @@ namespace AI
             if (!m_EnemyTarget)
             {
                 DetermineTarget();
+                if (!m_EnemyTarget)
+                {
+                    return false;
+                }
             }
 
             float distToEnemySq = (m_EnemyTarget.transform.position - transform.position).sqrMagnitude;
             bool isAtTarget = (distToEnemySq < m_AttackRange * m_AttackRange);
 
-            if(!isAtTarget)
-                m_IsAttacking = false;
+            //if(!isAtTarget)
+             //   m_IsAttacking = false;
 
             return isAtTarget;
         }
 
         private void DetermineTarget()
         {
-            if (m_GameControl.BondManager.BondStatus > 50)
+            if (!m_GameControl.CurrentActionZone)
             {
-                m_EnemyTarget = m_PlayersEnemyTarget;
+                Debug.Assert(false, "Error! No current Action Zone!");
             }
-            else {
+
+
+            if(m_GameControl.CurrentActionZone && m_GameControl.CurrentActionZone.GetNumEnemiesAlive() == 0)
+            {
+                SetMainState(WolfMainState.Follow);
+                return;
+            }
+
+            // If Bond is good, select player's targetas my target
+            if (m_GameControl.BondManager.BondStatus >= 50)
+            {
+                if(m_PlayersEnemyTarget && !m_PlayersEnemyTarget.GetComponent<HealthCare.Health>().IsDead)
+                    m_EnemyTarget = m_PlayersEnemyTarget;
+            }
+
+            if(!m_EnemyTarget || m_GameControl.BondManager.BondStatus < 50){
                 GameObject target = m_GameControl.CurrentActionZone.GetClosestAgrodEnemy(transform.position);
                 if (target)
                 {
@@ -960,9 +987,9 @@ namespace AI
         private void AttackMyEnemy()
         {
             //Debug.Log("Attacking enemy!");
-            if (!m_IsAttacking)
+           // if (!m_IsAttacking)
             {
-                //Debug.Log("Attacking enemy!");
+                //Debug.Log("Do Attack inside!");
                 m_IsAttacking = true;
                 m_WolfMoveComp.Stop();
                 GetComponent<Animator>().SetBool("Attack1", true);
@@ -973,7 +1000,10 @@ namespace AI
 
         public Transform GetEnemyTarget()
         {
-            return m_EnemyTarget.transform;
+            if(m_EnemyTarget)
+                return m_EnemyTarget.transform;
+
+            return null;
         }
 
         private bool IsAttackTimerDone()
@@ -989,6 +1019,7 @@ namespace AI
                 return false;
             }
 
+            m_IsAttacking = false;
             m_AttackTimerSet = false;
             return true;
         }
@@ -997,7 +1028,20 @@ namespace AI
         {
             if (hitEnemy && hitEnemy.GetComponent<EnemyAISM>())
             {
+                ActionZone az = hitEnemy.GetComponent<EnemyAISM>().MyActionZone; //m_GameControl.GetActionZoneFromPoint(hitEnemy.transform.position);
+
+                if (az != m_GameControl.CurrentActionZone)
+                    m_GameControl.CurrentActionZone = az;
+
                 m_PlayersEnemyTarget = hitEnemy;
+                SetMainState(WolfMainState.Attack);
+            }
+        }
+
+        public void AgroAccalia(GameObject enemyWhoAttacked)
+        {
+            if(m_CurrentMainState != WolfMainState.Attack)
+            {
                 SetMainState(WolfMainState.Attack);
             }
         }

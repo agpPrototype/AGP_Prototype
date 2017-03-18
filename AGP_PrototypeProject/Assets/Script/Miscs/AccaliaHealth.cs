@@ -19,6 +19,8 @@ namespace HealthCare
         public override void TakeDamage(float damage, GameObject dmgDealer = null)
         {
             base.TakeDamage(damage, dmgDealer);
+
+            GetComponent<AI.CompanionAISM>().AgroAccalia(gameObject);
         }
     }
 }
