@@ -19,6 +19,18 @@ namespace HealthCare
         public bool IsDead { get { return m_IsDead; } }
 
         protected float m_CurrHP;
+        protected float m_Damage = 20.0f;
+        public float Damage
+        {
+            get
+            {
+                return m_Damage;
+            }
+            set
+            {
+                m_Damage = value;
+            }
+        }
         protected Animator m_Animator;
         // Use this for initialization
         void Start()
