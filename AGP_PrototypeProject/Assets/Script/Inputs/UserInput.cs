@@ -10,6 +10,8 @@ namespace Inputs
 {
     public class UserInput : MonoBehaviour
     {
+        public static UserInput Instance;
+
         private InputPacket[] m_inputArray;
         private InputDevice m_device;
         private Queue<InputPacket> m_InputPacketQueue;
@@ -25,6 +27,18 @@ namespace Inputs
 
         void Awake()
         {
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+            else
+            {
+                if (Instance != this)
+                {
+                    Destroy(this.gameObject);
+                }
+            }
+
             m_device = InputManager.ActiveDevice; 
             m_inputArray = new InputPacket[18];
             m_InputPacketQueue = new Queue<InputPacket>();

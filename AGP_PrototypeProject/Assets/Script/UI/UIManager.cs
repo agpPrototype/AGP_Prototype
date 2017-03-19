@@ -12,14 +12,30 @@ namespace UI
 {
     public class UIManager : MonoBehaviour
     {
-        public CommandPanel CommandPanel;
+        public static UIManager Instance;
 
-        public void SelectCommand(InputPacket inputPacket)
+        public TutorialCanvas TutorialCanvas;
+
+        private void Awake()
         {
-            // Make sure the command panel is active before passing command selections to it.
-            if (CommandPanel.gameObject.activeSelf)
+            if (Instance == null)
             {
-                CommandPanel.SelectCommand(inputPacket);
+                Instance = this;
+            }
+            else
+            {
+                if (Instance != this)
+                {
+                    Destroy(this.gameObject);
+                }
+            }
+        }
+
+        void Start()
+        {
+            if (TutorialCanvas == null)
+            {
+                TutorialCanvas = FindObjectOfType<TutorialCanvas>();
             }
         }
     }
