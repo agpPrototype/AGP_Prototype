@@ -302,11 +302,15 @@ namespace AI
 
             // Get Wolf data
             Vector3 WolfPos = transform.position;
+            WolfPos.y = 0;  // Ignore heights for safety checks
             Vector3 nextDir = m_NextStealthPos.transform.position - WolfPos;
+            nextDir.y = 0;
             nextDir.Normalize();
 
             Vector3 intersectPt; // So we dont need to keep reallocating
             GameObject Enemy;
+            Vector3 EnemyPos;
+            Vector3 EnemyFaceDir;
             int numEnemies = gameControl.CurrentActionZone.GetNumEnemiesAlive();
             for (int i = 0; i < numEnemies; ++i)
             {
@@ -316,9 +320,11 @@ namespace AI
                     continue;
 
                 // Check Forward of Enemy
-                Vector3 EnemyPos = Enemy.transform.position;
-                Vector3 EnemyFaceDir = Enemy.transform.forward;
-                //EnemyFaceDir.Normalize();
+                EnemyPos = Enemy.transform.position;
+                EnemyPos.y = 0;
+                EnemyFaceDir = Enemy.transform.forward;
+                EnemyFaceDir.y = 0;
+                EnemyFaceDir.Normalize();
 
                 if (DoRaysIntersect(WolfPos, nextDir, EnemyPos, EnemyFaceDir))
                 {
@@ -338,8 +344,11 @@ namespace AI
                 // Make sure that there is enough distance in the path to not run into the Enemies
                 {
                     intersectPt = GetRayIntersectionPt(WolfPos, nextDir, EnemyPos, EnemyFaceDir);
+
+                    float distToNextSq = (m_NextStealthPos.transform.position - WolfPos).sqrMagnitude;
+                    float distToIntersectSq = (intersectPt - WolfPos).sqrMagnitude;
                     float distToEnemySq = (intersectPt - EnemyPos).sqrMagnitude;
-                    if (distToEnemySq < m_MinDistEnemyPathAvoidance * m_MinDistEnemyPathAvoidance)
+                    if (distToEnemySq < m_MinDistEnemyPathAvoidance * m_MinDistEnemyPathAvoidance && distToNextSq > distToIntersectSq)
                     {
                         return false;
                     }
