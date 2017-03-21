@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UI;
+using AI;
+using Player;
 
 namespace Misc
 {
@@ -16,24 +18,63 @@ namespace Misc
         private string m_Tip;
 
         [SerializeField]
-        [Tooltip("Sprite to be shown on tutorial panel.")]
-        private Sprite m_Sprite;
+        private RectTransform m_UIPrefabToSpawn;
 
         [SerializeField]
-        [Tooltip("If true will closes the tutorial window for the player when exiting this zone. The player otherwise can close by themselves when they want.")]
-        private bool m_CloseOnExit;
+        [Tooltip("If true then when the player enters this tutorial zone then a tip will show.")]
+        private bool m_ShowTip = false;
 
-        // Use this for initialization
+        [SerializeField]
+        [Tooltip("If true then player can't move when entering.")]
+        private bool m_FreezePlayer = true;
+
+
+        private PlayerControl m_PlayerControl;
+
         void Start()
         {
-
+            m_PlayerControl = FindObjectOfType<PlayerControl>();
         }
 
-        // Update is called once per frame
-        void Update()
+        public virtual void OnTutorialZoneEnter(Collider col)
         {
+            if(m_ShowTip)
+            {
+                TutorialPanel tutorialPanel = UIManager.Instance.TutorialCanvas.TutorialPanel;
+                if (tutorialPanel != null)
+                {
+                    tutorialPanel.PopulatePanel(m_Title, m_Tip, m_UIPrefabToSpawn);
+                    tutorialPanel.SlideIn();
+                }
+            }
 
+            if(m_FreezePlayer)
+            {
+                if(m_PlayerControl != null)
+                {
+                    m_PlayerControl.enabled = false;
+                }
+            }
         }
+
+        public virtual void OnTutorialZoneExit(Collider col)
+        {
+            TutorialPanel tutorialPanel = UIManager.Instance.TutorialCanvas.TutorialPanel;
+            if (tutorialPanel != null)
+            {
+                tutorialPanel.SlideOut();
+            }
+
+            if (m_FreezePlayer)
+            {
+                if (m_PlayerControl != null)
+                {
+                    m_PlayerControl.enabled = true;
+                }
+            }
+        }
+
+        public virtual void OnTutorialZoneStay(Collider col) { }
 
         void OnTriggerEnter(Collider col)
         {
@@ -43,48 +84,29 @@ namespace Misc
                 return;
             }
 
-            TutorialCanvas tutorialCanvas = UIManager.Instance.TutorialCanvas;
-            if (tutorialCanvas == null)
-            {
-                return;
-            }
-
-            TutorialPanel tutorialPanel = tutorialCanvas.TutorialPanel;
-            if (tutorialPanel == null)
-            {
-                return;
-            }
-
-            tutorialPanel.PopulatePanel(this.m_Title, this.m_Tip, this.m_Sprite);
-            tutorialPanel.SlideIn();
+            OnTutorialZoneEnter(col);
         }
 
         void OnTriggerExit(Collider col)
         {
-            if(!m_CloseOnExit)
-            {
-                return;
-            }
-
             // check to see if a player exited this trigger.
             if (col.GetComponent<Player.PlayerControl>() == null)
             {
                 return;
             }
 
-            TutorialCanvas tutorialCanvas = UIManager.Instance.TutorialCanvas;
-            if(tutorialCanvas == null)
+            OnTutorialZoneExit(col);
+        }
+
+        void OnTriggerStay(Collider col)
+        {
+            // check to see if a player staying in this trigger.
+            if (col.GetComponent<Player.PlayerControl>() == null)
             {
                 return;
             }
 
-            TutorialPanel tutorialPanel = tutorialCanvas.TutorialPanel;
-            if (tutorialPanel == null)
-            {
-                return;
-            }
-
-            tutorialPanel.SlideOut();
+            OnTutorialZoneStay(col);
         }
     }
 }
