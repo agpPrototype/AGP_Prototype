@@ -6,6 +6,7 @@ using MalbersAnimations;
 using Wolf;
 using Player;
 using Bond;
+using HealthCare;
 
 namespace AI
 {
@@ -78,6 +79,7 @@ namespace AI
 
         #region Variables
         private WolfMoveComponent m_WolfMoveComp;
+        private AccaliaHealth m_Health;
         private Vector3[] m_Corners;
 
         private StealthNavigation m_StealthNav;
@@ -223,6 +225,8 @@ namespace AI
             InitializeStateBehaviorTrees();
 
             m_GameControl.RegisterWolf(gameObject);
+
+            m_Health = GetComponent<AccaliaHealth>();
         }
 
         private void InitializeStateBehaviorTrees()
@@ -995,6 +999,18 @@ namespace AI
                 GetComponent<Animator>().SetBool("Attack1", true);
                 int IDAttack = Random.Range(1, 4);
                 GetComponent<Animator>().SetInteger("IDAttack", IDAttack);
+            }
+        }
+
+        public void DealDamage()
+        {
+            if (m_EnemyTarget && m_Health)
+            {
+                float damage = m_Health.Damage;
+                if (m_EnemyTarget.GetComponent<Health>())
+                {
+                    m_EnemyTarget.GetComponent<Health>().TakeDamage(damage, gameObject);
+                }
             }
         }
 

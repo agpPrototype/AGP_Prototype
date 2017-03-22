@@ -18,9 +18,6 @@ namespace Player
     {
 
         [SerializeField]
-        private UserInput m_UserInput;
-
-        [SerializeField]
         private Transform m_cam;
 
         private MoveComponent m_moveComp;
@@ -28,11 +25,10 @@ namespace Player
         private EquipmentHandler m_EquipmentHandler;
         private PowerHandler m_PowerHandler;
         private CommandHandler m_CommandHandler;
+        private UserInput m_UserInput;
 
         private PCActions m_PCActions;
         private CompanionAISM m_WolfAI;
-
-        //private GameObject m_
 
         void Start()
         {
@@ -42,7 +38,7 @@ namespace Player
             }
             else
             {
-                Debug.Log("SCENE MSISING CAMERA");
+                Debug.Log("SCENE MISSING CAMERA");
             }
             m_moveComp = GetComponent<MoveComponent>();
             m_EquipmentHandler = GetComponent<EquipmentHandler>();
@@ -50,7 +46,7 @@ namespace Player
             m_CommandHandler = GetComponent<CommandHandler>();
             m_PCActions = new PCActions();
             m_PCActions.InputPackets = new InputPacket[18];
-            m_UserInput = FindObjectOfType<UserInput>();
+            m_UserInput = UserInput.Instance;
             m_WolfAI = FindObjectOfType<CompanionAISM>();
             Initialize();
 

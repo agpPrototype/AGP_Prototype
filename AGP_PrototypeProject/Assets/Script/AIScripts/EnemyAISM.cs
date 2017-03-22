@@ -329,6 +329,8 @@ namespace AI
             // get health and apply damage
             if (m_Target != null)
             {
+                Health health = GetComponent<Health>();
+                m_AttackDamage = health.Damage;
                 PlayerHealth playerHealth = m_Target.GetComponent<PlayerHealth>();
                 if (playerHealth != null)
                 {
