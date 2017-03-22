@@ -20,7 +20,7 @@ public class TutorialPanel : MonoBehaviour {
     private Text m_TipText;
 
     [SerializeField]
-    private Image m_Image;
+    private Transform m_UIPrefabSpawnPoint;
 
     private Animator m_Animator;
 
@@ -32,8 +32,8 @@ public class TutorialPanel : MonoBehaviour {
             Debug.LogError("Tip text is null in TutorialPanel");
         if (m_TitleText == null)
             Debug.LogError("Title text is null in TutorialPanel");
-        if (m_Image == null)
-            Debug.LogError("Image is null in TutorialPanel");
+        if (m_UIPrefabSpawnPoint == null)
+            Debug.LogError("UI prefab spawn point is null in TutorialPanel");
     }
 
     public void SlideIn()
@@ -46,11 +46,26 @@ public class TutorialPanel : MonoBehaviour {
         m_Animator.SetBool("IsOnScreen", false);
     }
 
-    public void PopulatePanel(string title, string tip, Sprite sprite)
+    public void PopulatePanel(string title, string tip, RectTransform prefabToSpawn)
     {
         m_TitleText.text = title;
         m_TipText.text = tip;
-        m_Image.sprite = sprite;
-        Debug.Log(tip);
+
+        // Destroy all children of the prefab spawn point.
+        int numChilds = m_UIPrefabSpawnPoint.childCount;
+        for(int i=0; i < numChilds; i++)
+        {
+            GameObject childGO = m_UIPrefabSpawnPoint.GetChild(i).gameObject;
+            if(childGO != null)
+            {
+                Destroy(childGO);
+            }
+        }
+
+        // spawn new prefab on prefab spawn point if it was specified.
+        if(prefabToSpawn != null)
+        {
+            Instantiate(prefabToSpawn, m_UIPrefabSpawnPoint, false);
+        }
     }
 }
