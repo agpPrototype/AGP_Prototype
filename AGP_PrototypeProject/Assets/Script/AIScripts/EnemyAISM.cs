@@ -519,6 +519,8 @@ namespace AI
             we are infinitely chasing until we die or kill the target. */
             if(m_State != EnemyAIState.ATTACKING && m_State != EnemyAIState.CHASING)
             {
+                //bool isInSameZone = GameCritical.GameController.Instance.GetActionZoneFromPoint(m_Target.transform.position) == m_MyActionZone;
+
                 // get highest threat and store as target.
                 m_Target = (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection));
                 if(m_Target != null)

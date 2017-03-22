@@ -100,6 +100,11 @@ namespace GameCritical
             return null;
         }
 
+        //public GameObject FindClosestAgrodEnemy()
+        //{
+
+        //}
+
         public static GameController Instance { get { return s_GameController; } }
         public BondManager BondManager { get { return m_BondManager; } }
         public SmellSmokeDriver SmellSmokeDriver { get { return m_SmellSmokeDriver; } }

@@ -64,7 +64,7 @@ public class ActionZone : MonoBehaviour {
 
             GameController.Instance.CurrentActionZone = this;
             GameController.Instance.Wolf.GetComponent<AI.StealthNavigation>().CurrentActionZone = this;
-            Debug.Log("Set Current Action Zone");
+            Debug.Log("Set Current Action Zone: " + gameObject.transform.parent.gameObject.name);
         }
         else if (other.GetComponent<AI.CompanionAISM>())
         {
