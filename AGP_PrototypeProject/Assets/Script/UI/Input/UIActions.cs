@@ -15,5 +15,6 @@ namespace Inputs
     {
         public InputPacket[] InputPackets;
         public bool Back;
+        public bool Start;
     }
 }

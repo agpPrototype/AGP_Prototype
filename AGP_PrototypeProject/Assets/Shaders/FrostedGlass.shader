@@ -3,7 +3,6 @@
 	Properties
 	{
 		_Radius("Radius", Range(1, 255)) = 1
-		_Color("Color", Color) = (1,1,1,1)
 	}
 
 	Category
@@ -123,7 +122,6 @@
 	sampler2D _GrabTexture;
 	float4 _GrabTexture_TexelSize;
 	float _Radius;
-	float4 _Color;
 
 	half4 frag(v2f i) : COLOR
 	{
@@ -145,7 +143,7 @@
 			measurments += 4;
 		}
 
-		return sum / measurments + _Color;
+		return sum / measurments;
 	}
 		ENDCG
 	}
