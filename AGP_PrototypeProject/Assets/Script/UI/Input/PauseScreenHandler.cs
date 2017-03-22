@@ -26,8 +26,7 @@ namespace Inputs
             {
                 if (m_PauseMenu != null)
                 {
-                    m_PauseMenu.gameObject.SetActive(true);
-                    m_PauseMenu.UpdateTitleText();
+                    m_PauseMenu.Show();
                 }
             }
             if (uia.Back)

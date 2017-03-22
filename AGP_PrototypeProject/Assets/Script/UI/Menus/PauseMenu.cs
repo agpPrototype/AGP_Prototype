@@ -11,7 +11,19 @@ namespace UI
     {
         [SerializeField]
         [Tooltip("Text that changes depending on what menu we are showing in pause menu.")]
-        private Text m_TitleText; 
+        private Text m_TitleText;
+
+        [SerializeField]
+        [Tooltip("Button first selected when pause menu opens.")]
+        private Button m_StartingSelectedButton;
+
+        public void Show()
+        {
+            gameObject.SetActive(true);
+            UpdateTitleText();
+            EventSystem.current.SetSelectedGameObject(null);
+            EventSystem.current.SetSelectedGameObject(m_StartingSelectedButton.gameObject);
+        }
 
         // update the title text which matches the current pause menu screen.
         public void UpdateTitleText()
@@ -25,6 +37,11 @@ namespace UI
                     m_TitleText.text = txt.text;
                 }
             }
+        }
+
+        public void RestartClicked()
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
         public void SaveClicked()
