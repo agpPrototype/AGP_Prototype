@@ -187,7 +187,7 @@ namespace AI
             }
 
             /* gets highest priority visible based on AILineOfSightDetection settings */
-            public AIVisible GetHighestThreat()
+            public AIVisible GetHighestThreat(GameObject detector)
             {
                 List<AIVisible> actualVisibles = GetVisibles();
                 AIVisible highestThreat = null;
@@ -201,6 +201,18 @@ namespace AI
                             if (currVisible.ThreatLevel > highestThreat.ThreatLevel)
                             {
                                 highestThreat = currVisible;
+                            }
+                            else if (currVisible.ThreatLevel == highestThreat.ThreatLevel) // deal with ties based on detector's distance from threat.
+                            {
+                                if (detector != null)
+                                {
+                                    // check to see if new visible target is closer.
+                                    if ((detector.transform.position - currVisible.transform.position).sqrMagnitude <
+                                        (detector.transform.position - highestThreat.transform.position).sqrMagnitude)
+                                    {
+                                        highestThreat = currVisible;
+                                    }
+                                }
                             }
                         }
                         else

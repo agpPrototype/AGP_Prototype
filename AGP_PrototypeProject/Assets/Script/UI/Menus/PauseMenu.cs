@@ -17,6 +17,7 @@ namespace UI
         [Tooltip("Button first selected when pause menu opens.")]
         private Button m_StartingSelectedButton;
 
+        // shows the pause menu.
         public void Show()
         {
             gameObject.SetActive(true);

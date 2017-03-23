@@ -48,7 +48,6 @@ namespace AI
             LOOKING,
         }
 
-        [SerializeField]
         private EnemyAIState m_State;
         public EnemyAIState CurrentState { get { return m_State; } }
 
@@ -120,6 +119,11 @@ namespace AI
         private AIDetectable m_Target; // current prioritized target.
 
         #endregion
+
+        #region Debug Members
+        [SerializeField]
+        private bool m_DebugDontMove = false;
+        #endregion
         #endregion
 
         private ActionZone m_MyActionZone;
@@ -132,7 +136,6 @@ namespace AI
         // Use this for initialization
         private void Start()
         {
-            m_State = EnemyAIState.PATROLLING;
             m_UpdateIntervalTimer = m_UpdateInterval;
             m_AILineOfSightDetection = GetComponent<AILineOfSightDetection>();
             m_AIAudioDetection = GetComponent<AIAudioDetection>();
@@ -141,6 +144,7 @@ namespace AI
             m_CurrentWaypoint = PatrolArea.GetNextWaypoint(null);
             m_ExploredIgnorableTargets = new List<AIDetectable>();
             initBehaviorTrees();
+            SetMainState(EnemyAIState.PATROLLING);
         }
 
         private void initBehaviorTrees()
@@ -209,9 +213,12 @@ namespace AI
         }
         private void rotateTowardLastSeenVelocity()
         {
-            Vector3 newDir = Vector3.RotateTowards(transform.forward, m_TargetLastVelocity.normalized, m_LookRotationSpeed, 0.0f);
-            Debug.DrawRay(transform.position, newDir, Color.red);
-            transform.rotation = Quaternion.LookRotation(newDir);
+            if(!m_DebugDontMove)
+            {
+                Vector3 newDir = Vector3.RotateTowards(transform.forward, m_TargetLastVelocity.normalized, m_LookRotationSpeed, 0.0f);
+                Debug.DrawRay(transform.position, newDir, Color.red);
+                transform.rotation = Quaternion.LookRotation(newDir);
+            }
         }
         #endregion
 
@@ -262,7 +269,6 @@ namespace AI
         }
         private void chase()
         {
-            setAnimation(EnemyAIAnimation.Walking);
             if (!m_NavAgent.isOnNavMesh)
             {
                 Debug.Log("AI nav agent not on a nav mesh.");
@@ -277,15 +283,19 @@ namespace AI
                     m_TargetLastPosition = m_Target.transform.position;
                 }
 
-				m_AILineOfSightDetection.Beam.IsOpen = true;
+                m_AILineOfSightDetection.Beam.IsOpen = true;
             }
             else
             {
                 Debug.LogError("No AIAudioDetection or AILineOfSightDetectin on AI.");
             }
 
-            // Keep updating target position if we can see the target.
-            m_NavAgent.SetDestination(m_TargetLastPosition);
+            if (!m_DebugDontMove)
+            {
+                // Keep updating target position if we can see the target.
+                m_NavAgent.SetDestination(m_TargetLastPosition);
+                setAnimation(EnemyAIAnimation.Walking);
+            }
             // Check to see if we have gotten close enough to target.
             m_NavAgent.stoppingDistance = StopDistFromTarget;
         }
@@ -345,12 +355,15 @@ namespace AI
         }
         private void attack()
         {
-            // set animator to attack for AI
-            setAnimation(EnemyAIAnimation.Attacking);
-            // rotate toward the target we are attacking at all times.
-            Vector3 targetDir = m_Target.transform.position - this.transform.position;
-            Vector3 newDir = Vector3.RotateTowards(this.transform.forward, targetDir, Mathf.PI * 2, 0.0f);
-            this.transform.rotation = Quaternion.LookRotation(newDir, this.transform.up);
+            if(!m_DebugDontMove)
+            {
+                // set animator to attack for AI
+                setAnimation(EnemyAIAnimation.Attacking);
+                // rotate toward the target we are attacking at all times.
+                Vector3 targetDir = m_Target.transform.position - this.transform.position;
+                Vector3 newDir = Vector3.RotateTowards(this.transform.forward, targetDir, Mathf.PI * 2, 0.0f);
+                this.transform.rotation = Quaternion.LookRotation(newDir, this.transform.up);
+            }
         }
         private bool isTargetOutOfAttackRangeOrDead()
         {
@@ -474,10 +487,13 @@ namespace AI
                         return;
                     }
 
-                    // Move to the waypoint
-                    m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
-                    m_NavAgent.stoppingDistance = StopDistFromWaypoints;
-                    setAnimation(EnemyAIAnimation.Walking);
+                    if (!m_DebugDontMove)
+                    {
+                        // Move to the waypoint
+                        m_NavAgent.SetDestination(m_CurrentWaypoint.transform.position);
+                        m_NavAgent.stoppingDistance = StopDistFromWaypoints;
+                        setAnimation(EnemyAIAnimation.Walking);
+                    }
                 }
                 else
                 {
@@ -517,12 +533,12 @@ namespace AI
         {
             /* only look for threats when not attacking, because if we are attacking then
             we are infinitely chasing until we die or kill the target. */
-            if(m_State != EnemyAIState.ATTACKING && m_State != EnemyAIState.CHASING)
+            if(m_State != EnemyAIState.ATTACKING)// && m_State != EnemyAIState.CHASING)
             {
                 //bool isInSameZone = GameCritical.GameController.Instance.GetActionZoneFromPoint(m_Target.transform.position) == m_MyActionZone;
 
                 // get highest threat and store as target.
-                m_Target = (DetectionManager.Instance.GetHighestThreat(m_AIAudioDetection, m_AILineOfSightDetection));
+                m_Target = (DetectionManager.Instance.GetHighestThreat(this.gameObject, m_AIAudioDetection, m_AILineOfSightDetection));
                 if(m_Target != null)
                 {
                     if(m_ExploredIgnorableTargets.Contains(m_Target))
@@ -612,11 +628,6 @@ namespace AI
 
             m_CurrentBT.RestartTree();
         }
-
-        //public EnemyAIState GetCurrentMainState()
-        //{
-        //    return m_State;
-        //}
 
         public bool IsAgrod()
         {
