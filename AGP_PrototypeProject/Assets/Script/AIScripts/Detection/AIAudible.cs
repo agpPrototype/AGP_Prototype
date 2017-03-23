@@ -73,6 +73,11 @@ namespace AI
                 }
             }
 
+            public void SetRange(float range)
+            {
+                m_Range = range;
+            }
+
             public override void RegisterToDetectionManager()
             {
                 /* send event to DetectionManager about spawning this audible. */
