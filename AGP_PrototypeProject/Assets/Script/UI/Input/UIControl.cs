@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Utility;
 using System.Linq;
+using UI;
 
 /*
  * author: rob neir
@@ -15,6 +16,15 @@ namespace Inputs
 {
     public class UIControl : MonoBehaviour
     {
+        [SerializeField]
+        private BondSliderEffect m_BondBar;
+
+        [SerializeField]
+        private PauseMenu m_PauseMenu;
+
+        [SerializeField]
+        private EndMenu m_EndMenu;
+
         [SerializeField]
         private List<UIHandler> m_UIHandlers;
 

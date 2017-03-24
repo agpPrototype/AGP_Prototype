@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// author: Rob Neir
@@ -15,20 +17,34 @@ namespace UI
         public AudioClip m_HoverSound;
         public AudioClip m_ClickSound;
 
+        [SerializeField]
+        [Tooltip("Button first selected when menu opens.")]
+        protected Button m_StartingSelectedButton;
+
         private AudioSource m_AudioSource;
 
         void Start()
         {
             m_AudioSource = GetComponent<AudioSource>();
+            if(m_StartingSelectedButton != null)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+                EventSystem.current.SetSelectedGameObject(m_StartingSelectedButton.gameObject);
+            }
         }
+
+        public virtual void Show() { }
 
         /* callback function for button click audio. */
         public void PlayClickSound()
         {
             if (m_ClickSound != null)
             {
-                m_AudioSource.clip = m_ClickSound;
-                m_AudioSource.Play();
+                if (m_AudioSource != null)
+                {
+                    m_AudioSource.clip = m_ClickSound;
+                    m_AudioSource.Play();
+                }
             }
         }
 
@@ -37,8 +53,11 @@ namespace UI
         {
             if (m_HoverSound != null)
             {
-                m_AudioSource.clip = m_HoverSound;
-                m_AudioSource.Play();
+                if(m_AudioSource != null)
+                {
+                    m_AudioSource.clip = m_HoverSound;
+                    m_AudioSource.Play();
+                }
             }
         }
     } // Menu class

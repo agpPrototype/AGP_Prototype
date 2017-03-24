@@ -215,7 +215,8 @@ namespace AI
         {
             if(!m_DebugDontMove)
             {
-                Vector3 newDir = Vector3.RotateTowards(transform.forward, m_TargetLastVelocity.normalized, m_LookRotationSpeed, 0.0f);
+                Vector3 targetLastVelNoY = new Vector3(m_TargetLastVelocity.x, 0, m_TargetLastVelocity.z); // take out y component of last seen velocity.
+                Vector3 newDir = Vector3.RotateTowards(transform.forward, targetLastVelNoY.normalized, m_LookRotationSpeed, 0.0f);
                 Debug.DrawRay(transform.position, newDir, Color.red);
                 transform.rotation = Quaternion.LookRotation(newDir);
             }
@@ -361,6 +362,7 @@ namespace AI
                 setAnimation(EnemyAIAnimation.Attacking);
                 // rotate toward the target we are attacking at all times.
                 Vector3 targetDir = m_Target.transform.position - this.transform.position;
+                targetDir.y = 0; // no y component of target direction so AI wont rotate upward or down.
                 Vector3 newDir = Vector3.RotateTowards(this.transform.forward, targetDir, Mathf.PI * 2, 0.0f);
                 this.transform.rotation = Quaternion.LookRotation(newDir, this.transform.up);
             }
