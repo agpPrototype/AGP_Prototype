@@ -45,7 +45,7 @@ namespace AI
             }
 
             /* gets highest priority audible sound based on AIAudioDetection settings */
-            public AIAudible GetHighestThreat()
+            public AIAudible GetHighestThreat(GameObject detector)
             {
                 List<AIAudible> actualAudibles = GetAudibles();
                 AIAudible highestThreat = null;
@@ -59,6 +59,18 @@ namespace AI
                             if (currAudible.ThreatLevel > highestThreat.ThreatLevel)
                             {
                                 highestThreat = currAudible;
+                            }
+                            else if (currAudible.ThreatLevel == highestThreat.ThreatLevel) // deal with ties based on detector's distance from threat.
+                            {
+                                if (detector != null)
+                                {
+                                    // check to see if new visible target is closer.
+                                    if ((detector.transform.position - currAudible.transform.position).sqrMagnitude <
+                                        (detector.transform.position - highestThreat.transform.position).sqrMagnitude)
+                                    {
+                                        highestThreat = currAudible;
+                                    }
+                                }
                             }
                         }
                         else

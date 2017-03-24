@@ -86,67 +86,38 @@ namespace AI
                 AIVisible.VisibleDestroyEvt += this.RemoveFromVisibles;
             }
 
-            public AIDetectable GetHighestThreat(AIAudioDetection audDetect)
+            public AIDetectable GetHighestThreat(GameObject detector, AIAudioDetection audDetect)
             {
                 AIDetectable greatestThreatDetected = null;
 
                 // Listen for things.
                 if (audDetect != null)
                 {
-                    AIAudible audible = audDetect.GetHighestThreat();
-                    if (audible != null)
-                    {
-                        if (greatestThreatDetected != null)
-                        {
-                            if (audible.ThreatLevel > greatestThreatDetected.ThreatLevel)
-                                greatestThreatDetected = audible;
-                        }
-                        else
-                        {
-                            greatestThreatDetected = audible;
-                        }
-                    }
+                    return audDetect.GetHighestThreat(detector);
                 }
 
                 return greatestThreatDetected;
             }
 
-            public AIDetectable GetHighestThreat(AILineOfSightDetection losDetect)
+            public AIDetectable GetHighestThreat(GameObject detector, AILineOfSightDetection losDetect)
             {
                 AIDetectable greatestThreatDetected = null;
 
                 // Look for things.
                 if (losDetect != null)
                 {
-                    AIVisible visible = losDetect.GetHighestThreat();
-                    if (visible != null)
-                    {
-                        if (greatestThreatDetected != null)
-                        {
-                            if (visible.ThreatLevel > greatestThreatDetected.ThreatLevel)
-                                greatestThreatDetected = visible;
-                        }
-                        else
-                        {
-                            greatestThreatDetected = visible;
-                        }
-                    }
+                    greatestThreatDetected = losDetect.GetHighestThreat(detector);
                 }
 
                 return greatestThreatDetected;
             }
 
-            /*public AIDetectable GetHighestThreat(AIAudioDetection audDetect, AILineOfSightDetection losDetect, List<AIDetectable> ignoreDetectables)
-            {
-
-            }*/
-
-            public AIDetectable GetHighestThreat(AIAudioDetection audDetect, AILineOfSightDetection losDetect)
+            public AIDetectable GetHighestThreat(GameObject detector, AIAudioDetection audDetect, AILineOfSightDetection losDetect)
             {
                 AIDetectable greatestThreatDetected = null;
 
-                AIDetectable greatestAudibleThreat = GetHighestThreat(audDetect);
-                AIDetectable greatestVisibleThreat = GetHighestThreat(losDetect);
+                AIDetectable greatestAudibleThreat = GetHighestThreat(detector, audDetect);
+                AIDetectable greatestVisibleThreat = GetHighestThreat(detector, losDetect);
 
                 if (greatestAudibleThreat == null) return greatestVisibleThreat;
                 if (greatestVisibleThreat == null) return greatestAudibleThreat;

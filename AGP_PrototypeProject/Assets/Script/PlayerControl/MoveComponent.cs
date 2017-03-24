@@ -5,6 +5,7 @@ using UnityEngine;
 using Utility;
 using Player;
 using CameraController;
+using AI.Detection;
 
 public class MoveComponent : MonoBehaviour {
 
@@ -35,6 +36,12 @@ public class MoveComponent : MonoBehaviour {
     [SerializeField]
     float m_RunningToggleDelayThreshold = 0.2f;
     [SerializeField]
+    float m_MoveSoundThreshold = .02f;
+    [SerializeField]
+    float m_CrouchSoundRange = 1.4f;
+    [SerializeField]
+    float m_WalkSoundRange = 3.0f;
+    [SerializeField]
     Transform Spine;
 
     Rigidbody m_Rigidbody;
@@ -58,6 +65,7 @@ public class MoveComponent : MonoBehaviour {
     bool m_WasAiming;
     CameraRig m_CamRig;
     float m_jumpDeficit;
+    AIAudible m_Audible;
 
     void Start()
     {
@@ -73,6 +81,8 @@ public class MoveComponent : MonoBehaviour {
         m_Animator = GetComponent<Animator>();
         m_Rigidbody = GetComponent<Rigidbody>();
         m_Capsule = GetComponent<CapsuleCollider>();
+        m_Audible = GetComponent<AIAudible>();
+        m_Audible.enabled = false;
         m_CapsuleHeight = m_Capsule.height;
         m_CapsuleCenter = m_Capsule.center;
 
@@ -135,6 +145,31 @@ public class MoveComponent : MonoBehaviour {
         Move(pca);
     }
 
+    private void ProcessMovementSound(Vector3 move)
+    {
+        // activate audible component if moving.
+        if (m_Audible != null)
+        {
+            if(m_Crouching)
+            {
+                m_Audible.SetRange(m_CrouchSoundRange);
+            }
+            else if(m_IsGrounded)
+            {
+                m_Audible.SetRange(m_WalkSoundRange);
+            }
+
+            if (move.magnitude > m_MoveSoundThreshold)
+            {
+                m_Audible.enabled = true;
+            }
+            else
+            {
+                m_Audible.enabled = false;
+            }
+        }
+    }
+
     void Move(PCActions pca)
     {
         #region Parse PCA to private members
@@ -154,6 +189,7 @@ public class MoveComponent : MonoBehaviour {
         {
             m_TurnAmount = 0.0f;
         }
+
         if (!pca.Aim)
         {                     
             //crouching
@@ -229,6 +265,8 @@ public class MoveComponent : MonoBehaviour {
         //ScaleCapsuleForCrouching(crouch);
         //ScaleCapsuleForCrouching(pca.Crouch);
         PreventStandingInLowHeadroom();
+
+        ProcessMovementSound(move);
 
         // send input and other state parameters to the animator
         UpdateAnimator(move);

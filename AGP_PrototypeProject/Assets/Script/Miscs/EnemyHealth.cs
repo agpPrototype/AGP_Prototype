@@ -8,6 +8,8 @@ namespace HealthCare
     public class EnemyHealth : Health
     {
 
+        private Dictionary<GameObject, float> m_DamagerToDamage; // map of damager to the amount of damage they gave.
+
         protected override void Initialize()
         {
             base.Initialize();

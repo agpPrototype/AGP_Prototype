@@ -25,6 +25,7 @@ namespace Utility {
             Square = 15,
             LeftStickButton = 16,
             RightStickButton = 17,
+            Command = 18,
             Size //must be last
         }
 

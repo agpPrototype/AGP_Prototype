@@ -40,7 +40,7 @@ namespace Inputs
             }
 
             m_device = InputManager.ActiveDevice; 
-            m_inputArray = new InputPacket[18];
+            m_inputArray = new InputPacket[19];
             m_InputPacketQueue = new Queue<InputPacket>();
         }
 
@@ -161,7 +161,13 @@ namespace Inputs
                 InputPacket packet = new InputPacket(EnumService.InputType.RightStickButton, amount);
                 m_inputArray[(int)EnumService.InputType.RightStickButton] = packet;
             }
-            
+
+            {
+                bool amount = m_device.CommandIsPressed;
+                InputPacket packet = new InputPacket(EnumService.InputType.Command, amount);
+                m_inputArray[(int)EnumService.InputType.Command] = packet;
+            }
+
         }
     }
 }

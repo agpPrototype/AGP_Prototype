@@ -12,7 +12,7 @@ using Utility;
 
 namespace Inputs
 {
-    public class TutorialHandler : MonoBehaviour
+    public class TutorialHandler : UIHandler
     {
         [SerializeField]
         private TutorialPanel m_TutorialPanel;
@@ -26,19 +26,9 @@ namespace Inputs
             }
         }
 
-        public void ProcessTutorialActions(UIActions uia)
+        public override void DoActions(UIActions uia)
         {
-            if (uia.InputPackets[(int)EnumService.InputType.O] != null)
-            {
-                uia.Back = Convert.ToBoolean(uia.InputPackets[(int)EnumService.InputType.O].Value);
-            }
-
-            DoActions(uia);
-        }
-
-        void DoActions(UIActions uia)
-        {
-            if(uia.Back)
+            if (uia.Back)
             {
                 m_TutorialPanel.SlideOut();
             }
