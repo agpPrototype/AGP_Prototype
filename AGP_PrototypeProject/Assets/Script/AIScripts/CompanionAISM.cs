@@ -1059,6 +1059,10 @@ namespace AI
             if(m_CurrentMainState != WolfMainState.Attack)
             {
                 SetMainState(WolfMainState.Attack);
+                if (enemyWhoAttacked)
+                {
+                    m_EnemyTarget = enemyWhoAttacked;
+                }
             }
         }
 

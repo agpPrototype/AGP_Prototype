@@ -18,6 +18,8 @@ namespace HealthCare
         public override void TakeDamage(float damage, GameObject dmgDealer = null)
         {
             base.TakeDamage(damage, dmgDealer);
+
+            GameCritical.GameController.Instance.Wolf.GetComponent<AI.CompanionAISM>().SetMainState(AI.WolfMainState.Attack);
         }
 
     }

@@ -334,12 +334,12 @@ namespace AI
                 PlayerHealth playerHealth = m_Target.GetComponent<PlayerHealth>();
                 if (playerHealth != null)
                 {
-                    playerHealth.TakeDamage(m_AttackDamage);
+                    playerHealth.TakeDamage(m_AttackDamage, gameObject);
                 }
                 AccaliaHealth accaliaHealth = m_Target.GetComponent<AccaliaHealth>();
                 if (accaliaHealth != null)
                 {
-                    accaliaHealth.TakeDamage(m_AttackDamage);
+                    accaliaHealth.TakeDamage(m_AttackDamage, gameObject);
                 }
             }
         }
