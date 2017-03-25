@@ -79,6 +79,7 @@ namespace AI
 
         #region Variables
         private WolfMoveComponent m_WolfMoveComp;
+        private Animator m_Animator;
         private AccaliaHealth m_Health;
         private Vector3[] m_Corners;
 
@@ -187,6 +188,20 @@ namespace AI
 
         private bool m_IsAttacking = false;
 
+
+        [SerializeField]
+        private float m_IdleAnimCooldownMax;
+        [SerializeField]
+        private float m_IdleAnimCooldownMin;
+        private float m_IdleCooldownEndTime;
+        private bool m_IdleTimerSet = false;
+
+        [SerializeField]
+        private float m_IdleSitTime;
+        [SerializeField]
+        private float m_IdleSleepTime;
+        private float m_IdleStateStartTime;
+
         [SerializeField]
         public StealthPosition StealthDestination;
 
@@ -208,6 +223,7 @@ namespace AI
             m_CurrentMainState =  WolfMainState.Idle;
             m_PreviousMainState = WolfMainState.Attack;
             WolfNavAgent = GetComponentInParent<NavMeshAgent>();
+            m_Animator = GetComponent<Animator>();
 
             m_CurrentCommand = WolfCommand.NONE;
 
@@ -291,22 +307,48 @@ namespace AI
             /// NODE ///
             // For now, idle will just do nothing
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "RootIdle");
-            rootNode.AddAction(new Action(DoNothing));
+            rootNode.AddAction(new Action(StartIdle));
 
             m_IdleTree = new BehaviorTree(WolfMainState.Idle, rootNode, this);
+
+            /// NODE ///
+            /// 
+            DecisionNode doNothingNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "DoNothing");
+            doNothingNode.AddAction(new Action(DoNothing));
+
+            /// NODE///
+            /// 
+            DecisionNode endIdleNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "EndIdleVars");
+            Condition tfCond1 = new Condition(DistToPlayerSq, ConditionComparison.Greater, new Float(StartToFollowDistance * StartToFollowDistance));
+            Action endIdleVar = new Action(EndIdleState);
+            endIdleNode.AddCondition(tfCond1);
+            endIdleNode.AddAction(endIdleVar);
 
             /// NODE ///
             // Node to decide if wolf should follow player
             // if DistToPlayer > StartToFollowDist, switch to Follow state
             DecisionNode toFollowNode = new DecisionNode(DecisionType.SwitchStates, "StartFollow->Follow");
-            Condition tfCond1 = new Condition(DistToPlayerSq, ConditionComparison.Greater, new Float(StartToFollowDistance * StartToFollowDistance));
             Action switchToFollowAction = new Action(SetMainState, WolfMainState.Follow);
-
-            toFollowNode.AddCondition(tfCond1);
             toFollowNode.AddAction(switchToFollowAction);
 
+            /// NODE ///
+            /// 
+            DecisionNode doIdleAnim = new DecisionNode(DecisionType.RepeatUntilCanProgress, "RandomIdleAnim");
+            Condition idleTimerCond = new Condition(IsIdleTimerDone);
+            Action playIdleAnim = new Action(PlayRandomIdleAnimation);
+
+            doIdleAnim.AddAction(playIdleAnim);
+            doIdleAnim.AddCondition(idleTimerCond);
+
             // Add new Node to parent
-            m_IdleTree.AddDecisionNodeTo(rootNode, toFollowNode);
+            m_IdleTree.AddDecisionNodeTo(rootNode, doNothingNode);
+            m_IdleTree.AddDecisionNodeTo(doNothingNode, endIdleNode);
+            m_IdleTree.AddDecisionNodeTo(endIdleNode, toFollowNode);
+
+            m_IdleTree.AddDecisionNodeTo(doNothingNode, doIdleAnim);
+
+            // Loop Back after idle anim
+            m_IdleTree.AddDecisionNodeTo(doIdleAnim, doNothingNode);
         }
 
         private void CreateAttackBT()
@@ -908,6 +950,67 @@ namespace AI
         {
             //OnActionComplete(true);
             m_WolfMoveComp.Stop();
+            
+        }
+
+        private void PlayRandomIdleAnimation()
+        {
+            if (Time.time - m_IdleStateStartTime > m_IdleSitTime)
+            {
+                // Randomly pick between Sit or Sleep
+                if ((int)Time.time % 2 == 1)
+                {
+                    m_Animator.SetInteger("IDIdle", 5);
+                    
+                }
+                else
+                {
+                    m_Animator.SetInteger("IDIdle", 6);
+                }
+                m_Animator.SetBool("Idle", true);
+                m_IdleStateStartTime = Time.time;
+            }
+            else {
+                int idInt = Random.Range(1, 5);
+                m_Animator.SetInteger("IDIdle", idInt);
+                m_Animator.SetBool("Idle", true);
+            }
+        }
+
+        private void PlayIdleAnimation(int animID)
+        {
+            GetComponent<Animator>().SetInteger("IDIdle", animID);
+            GetComponent<Animator>().SetBool("Idle", true);
+        }
+
+        private bool IsIdleTimerDone()
+        {
+            if (!m_IdleTimerSet)
+            {
+                m_IdleTimerSet = true;
+                m_IdleCooldownEndTime = Time.time + Random.Range(m_IdleAnimCooldownMin, m_IdleAnimCooldownMax);
+            }
+
+            if (Time.time < m_IdleCooldownEndTime)
+            {
+                return false;
+            }
+
+            m_IdleTimerSet = false;
+            return true;
+        }
+
+        private void StartIdle()
+        {
+            m_IdleStateStartTime = Time.time;
+
+        }
+
+        public void EndIdleState()
+        {
+            m_Animator.SetInteger("IDIdle", 0);
+            m_Animator.applyRootMotion = true;
+            m_Animator.SetBool("Idle", false);
         }
 
         #endregion
@@ -1059,6 +1162,10 @@ namespace AI
             if(m_CurrentMainState != WolfMainState.Attack)
             {
                 SetMainState(WolfMainState.Attack);
+                if (enemyWhoAttacked)
+                {
+                    m_EnemyTarget = enemyWhoAttacked;
+                }
             }
         }
 
@@ -1141,6 +1248,11 @@ namespace AI
         float GetDistToPlayerSq()
         {
             return (Player.transform.position - transform.position).sqrMagnitude;
+        }
+
+        public bool IsPlayerOutOfFollowRange()
+        {
+            return ((Player.transform.position - transform.position).sqrMagnitude > StartToFollowDistance * StartToFollowDistance);
         }
 
         #endregion

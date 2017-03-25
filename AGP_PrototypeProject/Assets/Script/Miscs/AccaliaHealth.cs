@@ -20,7 +20,7 @@ namespace HealthCare
         {
             base.TakeDamage(damage, dmgDealer);
 
-            GetComponent<AI.CompanionAISM>().AgroAccalia(gameObject);
+            GetComponent<AI.CompanionAISM>().AgroAccalia(dmgDealer);
         }
     }
 }
