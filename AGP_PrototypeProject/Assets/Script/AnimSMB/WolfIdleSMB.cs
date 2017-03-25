@@ -28,6 +28,10 @@ public class WolfIdleSMB : StateMachineBehaviour
 
     override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
+        // If we told Accalia to stay, keep her in position
+        if (m_CompanionAISM.GetCurentCommand() == AI.WolfCommand.STAY && State == "IdleSit")
+            return;
+
         if (State == "IdleSit" || State == "IdleSleep")
         {
             bool isPlayerOutOfRange = animator.transform.GetComponent<CompanionAISM>().IsPlayerOutOfFollowRange();

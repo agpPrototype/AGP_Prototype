@@ -144,7 +144,7 @@ namespace AI
             }
 
             /* gets the max distance that AI can see within a specific FOV region. */
-            private float getFOVViewDistance(FOV_REGION fovRegion)
+            public float getFOVViewDistance(FOV_REGION fovRegion)
             {
                 if (fovRegion == FOV_REGION.DIRECT)
                     return DirectRaycastMaxDistance;
