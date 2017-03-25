@@ -24,6 +24,10 @@ public class EnemyDetectionBeam : MonoBehaviour {
 	[SerializeField]
 	private GameObject Volume;
 
+	[Tooltip("Audio Source for beam SFX")]
+	[SerializeField]
+	private AudioSource Audio;
+
 	private bool m_IsOpen = false;
 	public bool IsOpen
 	{
@@ -36,18 +40,22 @@ public class EnemyDetectionBeam : MonoBehaviour {
 			m_IsOpen = value;
 			m_ShouldLerpLight = true;
 			m_ShouldLerpVolume = true;
+			m_ShouldLerpAudio = true;
 		}
 	}
 
 	private bool m_ShouldLerpLight;
 	private bool m_ShouldLerpVolume;
+	private bool m_ShouldLerpAudio;
 	private float m_LightMaxAngle;
 	private float m_VolumeMaxScale;
+	private float m_AudioMaxVolume;
 
 	void Start()
 	{
 		m_ShouldLerpLight = true;
 		m_ShouldLerpVolume = true;
+		m_ShouldLerpAudio = true;
 		if(Light != null)
 		{
 			m_LightMaxAngle = Light.spotAngle;
@@ -64,6 +72,16 @@ public class EnemyDetectionBeam : MonoBehaviour {
 		else
 		{
 			Debug.Log("Enemy Volumetric object not referenced.");
+		}
+
+		if (Audio != null)
+		{
+			m_AudioMaxVolume = Audio.volume;
+			Audio.volume = 0.0f;
+		}
+		else
+		{
+			Debug.Log("Enemy Audio Source not referenced.");
 		}
 	}
 
@@ -120,6 +138,32 @@ public class EnemyDetectionBeam : MonoBehaviour {
 				if (Volume.transform.localScale.x == 0.0f)
 				{
 					Volume.SetActive(false);
+				}
+			}
+		}
+
+		if(Audio != null && m_ShouldLerpAudio)
+		{
+			float eps = float.Epsilon;
+			Audio.enabled = true;
+			float desiredAudioVolume = m_IsOpen ? m_AudioMaxVolume : 0.0f;
+			float currentAudioVolume = Audio.volume;
+
+			float velAudio = (desiredAudioVolume - currentAudioVolume) * m_Spring;
+
+			float toAddAudio = velAudio * Time.deltaTime;
+
+			if(Mathf.Abs(toAddAudio) > eps)
+			{
+				Audio.volume = Audio.volume + toAddAudio;
+			}
+			else
+			{
+				Audio.volume = desiredAudioVolume;
+				m_ShouldLerpAudio = false;
+				if(Audio.volume == 0.0f)
+				{
+					Audio.enabled = false;
 				}
 			}
 		}

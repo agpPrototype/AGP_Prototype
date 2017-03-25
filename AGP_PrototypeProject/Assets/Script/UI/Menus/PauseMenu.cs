@@ -13,12 +13,8 @@ namespace UI
         [Tooltip("Text that changes depending on what menu we are showing in pause menu.")]
         private Text m_TitleText;
 
-        [SerializeField]
-        [Tooltip("Button first selected when pause menu opens.")]
-        private Button m_StartingSelectedButton;
-
         // shows the pause menu.
-        public void Show()
+        public override void Show()
         {
             gameObject.SetActive(true);
             UpdateTitleText();
