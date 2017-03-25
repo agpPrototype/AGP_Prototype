@@ -19,7 +19,7 @@ namespace Player
 
         void Start()
         {
-            m_CompanionAISM = GameCritical.GameController.Instance.Wolf.GetComponent<CompanionAISM>();
+            //m_CompanionAISM = GameCritical.GameController.Instance.Wolf.GetComponent<CompanionAISM>();
         }
 
         public void SetCompanionAISM(CompanionAISM wolfAI)

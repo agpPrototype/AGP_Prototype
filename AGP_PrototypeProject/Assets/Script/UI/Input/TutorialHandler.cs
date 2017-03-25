@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Utility;
+using GameCritical;
 
 /*
  * author: rob neir
@@ -31,6 +32,7 @@ namespace Inputs
             if (uia.Back)
             {
                 m_TutorialPanel.SlideOut();
+                GameController.Instance.GameState = EnumService.GameState.InGame;
             }
         }
     }

@@ -4,6 +4,8 @@ using UnityEngine;
 using UI;
 using AI;
 using Player;
+using GameCritical;
+using Utility;
 
 namespace Misc
 {
@@ -24,10 +26,6 @@ namespace Misc
         [Tooltip("If true then when the player enters this tutorial zone then a tip will show.")]
         private bool m_ShowTip = false;
 
-        [SerializeField]
-        [Tooltip("If true then player can't move when entering.")]
-        private bool m_FreezePlayer = true;
-
 
         private PlayerControl m_PlayerControl;
 
@@ -47,14 +45,7 @@ namespace Misc
                     tutorialPanel.SlideIn();
                 }
             }
-
-            if(m_FreezePlayer)
-            {
-                if(m_PlayerControl != null)
-                {
-                    m_PlayerControl.enabled = false;
-                }
-            }
+            GameController.Instance.GameState = EnumService.GameState.InTutorial;
         }
 
         public virtual void OnTutorialZoneExit(Collider col)
@@ -64,14 +55,7 @@ namespace Misc
             {
                 tutorialPanel.SlideOut();
             }
-
-            if (m_FreezePlayer)
-            {
-                if (m_PlayerControl != null)
-                {
-                    m_PlayerControl.enabled = true;
-                }
-            }
+            GameController.Instance.GameState = EnumService.GameState.InGame;
         }
 
         public virtual void OnTutorialZoneStay(Collider col) { }

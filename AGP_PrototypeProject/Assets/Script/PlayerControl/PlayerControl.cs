@@ -7,6 +7,7 @@ using System;
 using Player;
 using Items;
 using AI;
+using GameCritical;
 
 namespace Player
 {
@@ -50,7 +51,17 @@ namespace Player
             m_WolfAI = FindObjectOfType<CompanionAISM>();
             Initialize();
 
-            GameCritical.GameController.Instance.RegisterPlayer(gameObject);
+            GameController.Instance.RegisterPlayer(this);
+
+            //event subscription
+            GameController.Instance.EndGame += DoEndGame;
+            GameController.Instance.GameInterruption += DoGameInterruption;
+        }
+
+        void OnDestroy()
+        {
+            GameController.Instance.EndGame -= DoEndGame;
+            GameController.Instance.GameInterruption -= DoGameInterruption;
         }
 
         void Initialize()
@@ -66,12 +77,11 @@ namespace Player
 
         void FixedUpdate()
         {
-
-            if (m_UserInput)
+            if (m_UserInput && GameController.Instance.GameState == EnumService.GameState.InGame)
             {
                 m_PCActions.InputPackets = m_UserInput.InputPackets;
                 ProcessInput();
-            }
+            } 
         }
 
         void ProcessInput()
@@ -102,6 +112,18 @@ namespace Player
             m_PowerHandler.ProcessPowers(m_PCActions);
         }
 
-        
+        private void DoEndGame(EnumService.GameState state)
+        {
+            m_moveComp.DoEndGame();
+            m_WolfAI.DoEndGame();
+        }
+
+        private void DoGameInterruption(EnumService.GameState state)
+        {
+            m_moveComp.DoGameInterruption(state);
+        }
+
+
+
     }
 }

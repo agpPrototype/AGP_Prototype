@@ -10,7 +10,7 @@ using HealthCare;
 
 namespace AI
 {
-    
+  
 
     #region Wolf State Enums
     public enum WolfMainState
@@ -210,13 +210,14 @@ namespace AI
 
         void Awake()
         {
-            m_GameControl = GameCritical.GameController.Instance;
-            m_GameControl.RegisterWolf(gameObject);
+            
         }
         // Use this for initialization
         void Start()
         {
-           // m_GameControl = GameCritical.GameController.Instance;
+            // m_GameControl = GameCritical.GameController.Instance;
+            m_GameControl = GameCritical.GameController.Instance;
+            m_GameControl.RegisterWolf(gameObject);
 
             PlayerControl playerControl = FindObjectOfType<PlayerControl>();
             if (playerControl)
@@ -1354,6 +1355,14 @@ namespace AI
         public void TestActionPrintFunc()
         {
             Debug.Log("Action delegate worked!!!");
+        }
+
+        public void DoEndGame()
+        {
+            if (GetComponent<Animator>())
+            {
+                GetComponent<Animator>().Stop();
+            }
         }
     }
 

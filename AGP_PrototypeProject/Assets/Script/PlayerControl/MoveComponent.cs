@@ -277,6 +277,18 @@ public class MoveComponent : MonoBehaviour {
         // update the animator parameters
         //Debug.Log("FORW: " + m_ForwardAmount);
         m_Animator.SetBool("Aim", m_Aim);
+
+        MeshRenderer renderer = GetComponent<MeshRenderer>();
+        MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
+        if (renderer)
+        {
+            renderer.enabled = m_Aim;
+        }
+        foreach (MeshRenderer child in renderers)
+        {
+            child.enabled = m_Aim;
+        }
+
         if (!m_Aim)
         {           
             m_Animator.SetFloat("Forward", m_ForwardAmount, 0.1f, Time.deltaTime);
@@ -325,6 +337,8 @@ public class MoveComponent : MonoBehaviour {
             {
                 m_CamRig.Zoom(true);
             }
+            
+            
         }
         /**************TODO: CHEC THIS **************/
         // the anim speed multiplier allows the overall speed of walking/running to be tweaked in the inspector,
@@ -411,6 +425,32 @@ public class MoveComponent : MonoBehaviour {
             m_IsGrounded = false;
             m_GroundNormal = Vector3.up;
             m_Animator.applyRootMotion = false;
+        }
+    }
+
+    public void DoEndGame()
+    {
+        if (m_Animator)
+        {
+            m_Animator.SetFloat("Forward", 0f);
+            m_Animator.SetFloat("Turn", 0f);
+            m_Animator.Stop();
+        }
+    }
+
+    public void DoGameInterruption(EnumService.GameState state)
+    {
+        switch (state)
+        {
+            case EnumService.GameState.InPauseMenu:
+            case EnumService.GameState.InTutorial:
+                m_Animator.speed = 0;
+                m_Rigidbody.isKinematic = true;
+                break;
+            case EnumService.GameState.InGame:
+                m_Animator.speed = 1;
+                m_Rigidbody.isKinematic = false;
+                break;
         }
     }
 }
