@@ -50,5 +50,15 @@ namespace Utility {
             NormalSpeed,
             Parabola
         }
+
+        public enum GameState
+        {
+            Win_BellRing,
+            Win_EnemiesEliminated,
+            Lose_AccaliaDead,
+            Lose_PlayerDead,
+            InGame,
+            InTutorial
+        }
     }
 }

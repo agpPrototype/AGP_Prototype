@@ -413,4 +413,14 @@ public class MoveComponent : MonoBehaviour {
             m_Animator.applyRootMotion = false;
         }
     }
+
+    public void DoEndGame()
+    {
+        if (m_Animator)
+        {
+            m_Animator.SetFloat("Forward", 0f);
+            m_Animator.SetFloat("Turn", 0f);
+            m_Animator.Stop();
+        }
+    }
 }

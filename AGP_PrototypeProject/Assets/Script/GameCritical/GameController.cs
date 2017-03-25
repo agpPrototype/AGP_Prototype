@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using Bond;
 using vfx;
+using Utility;
+using EndGame;
 
 namespace GameCritical
 {
@@ -14,9 +16,28 @@ namespace GameCritical
         private static GameController s_GameController = null;
         private BondManager m_BondManager;
         private SmellSmokeDriver m_SmellSmokeDriver;
+        private EndGameSequence m_EndGameSequence;
 
         private GameObject m_Player;
         private GameObject m_Wolf;
+        private EnumService.GameState m_GameState;
+        public EnumService.GameState GameState
+        {
+            get { return m_GameState; }
+            set
+            {
+                m_GameState = value;
+                if (m_GameState == EnumService.GameState.Win_BellRing)
+                {
+                    //fire endgame event
+                    EndGame(m_GameState);
+                }
+            }
+        }
+
+        //END GAME
+        public delegate void EndGameEvent(EnumService.GameState state);
+        public event EndGameEvent EndGame;
 
 
         [SerializeField]
@@ -57,6 +78,8 @@ namespace GameCritical
 
         }
 
+        
+
         private void Initialize()
         {
             s_GameController = this;
@@ -70,6 +93,17 @@ namespace GameCritical
             m_SmellSmokeDriver = GetComponent<SmellSmokeDriver>();
 
             m_BondManager = GetComponent<BondManager>();
+
+            m_EndGameSequence = GetComponent<EndGameSequence>();
+
+            m_GameState = EnumService.GameState.InGame;
+
+            //initialize peacetrees
+            GameObject peaceTrees = GameObject.Find("PeaceTrees");
+            if (peaceTrees)
+            {
+                peaceTrees.SetActive(true);
+            }
         }
 
         public void RegisterPlayer(GameObject player)

@@ -80,7 +80,7 @@ namespace CameraController
         // Use this for initialization
         void Start()
         {
-            m_mainCam = Camera.main;
+            m_mainCam = GetComponentInChildren<Camera>();         
             mPivot = transform.GetChild(0);
             m_userInput = GameObject.FindObjectOfType<UserInput>();
             m_PCActions = new PCActions();

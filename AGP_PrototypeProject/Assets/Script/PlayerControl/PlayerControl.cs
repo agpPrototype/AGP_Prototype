@@ -7,6 +7,7 @@ using System;
 using Player;
 using Items;
 using AI;
+using GameCritical;
 
 namespace Player
 {
@@ -30,6 +31,9 @@ namespace Player
         private PCActions m_PCActions;
         private CompanionAISM m_WolfAI;
 
+        public bool BellRing;
+        private bool wasBellingRing;
+
         void Start()
         {
             if (Camera.main)
@@ -50,7 +54,7 @@ namespace Player
             m_WolfAI = FindObjectOfType<CompanionAISM>();
             Initialize();
 
-            GameCritical.GameController.Instance.RegisterPlayer(gameObject);
+            GameController.Instance.RegisterPlayer(gameObject);
         }
 
         void Initialize()
@@ -64,13 +68,23 @@ namespace Player
             }
         }
 
+        void Update()
+        {
+            if (BellRing && GameController.Instance.GameState != EnumService.GameState.Win_BellRing)
+            {
+                GameController.Instance.GameState = EnumService.GameState.Win_BellRing;
+            }
+        }
+
         void FixedUpdate()
         {
-
-            if (m_UserInput)
+            if (m_UserInput && GameController.Instance.GameState == EnumService.GameState.InGame)
             {
                 m_PCActions.InputPackets = m_UserInput.InputPackets;
                 ProcessInput();
+            } else if (GameController.Instance.GameState == EnumService.GameState.Win_BellRing)
+            {
+                DoEndGame();
             }
         }
 
@@ -100,6 +114,12 @@ namespace Player
         private void CheckPowers()
         {
             m_PowerHandler.ProcessPowers(m_PCActions);
+        }
+
+        private void DoEndGame()
+        {
+            m_moveComp.DoEndGame();
+            m_WolfAI.DoEndGame();
         }
 
         

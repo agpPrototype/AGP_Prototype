@@ -1210,6 +1210,14 @@ namespace AI
         {
             Debug.Log("Action delegate worked!!!");
         }
+
+        public void DoEndGame()
+        {
+            if (GetComponent<Animator>())
+            {
+                GetComponent<Animator>().Stop();
+            }
+        }
     }
 
 }
