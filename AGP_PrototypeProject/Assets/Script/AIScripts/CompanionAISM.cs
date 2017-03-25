@@ -208,11 +208,15 @@ namespace AI
         private bool m_SkipBTUpdate = false;
         #endregion
 
-
+        void Awake()
+        {
+            m_GameControl = GameCritical.GameController.Instance;
+            m_GameControl.RegisterWolf(gameObject);
+        }
         // Use this for initialization
         void Start()
         {
-            m_GameControl = GameCritical.GameController.Instance;
+           // m_GameControl = GameCritical.GameController.Instance;
 
             PlayerControl playerControl = FindObjectOfType<PlayerControl>();
             if (playerControl)
@@ -241,7 +245,7 @@ namespace AI
 
             InitializeStateBehaviorTrees();
 
-            m_GameControl.RegisterWolf(gameObject);
+            //m_GameControl.RegisterWolf(gameObject);
 
             m_Health = GetComponent<AccaliaHealth>();
         }
@@ -849,6 +853,9 @@ namespace AI
                 {
                     // Attack this enemy!
                     Debug.Log("Attack the enemy!");
+                    m_EnemyTarget = hitObject;
+                    SetMainState(WolfMainState.Attack);
+                    SetCurrentCommand(WolfCommand.NONE);
                 }
                 else
                 {
@@ -888,7 +895,7 @@ namespace AI
         private void SetCurrentCommand(WolfCommand commandType)
         {
             m_CurrentCommand = commandType;
-            m_CurrentCommandAsInt = new Int((int)commandType);
+            //m_CurrentCommandAsInt = new Int((int)commandType);
         }
 
         #endregion
