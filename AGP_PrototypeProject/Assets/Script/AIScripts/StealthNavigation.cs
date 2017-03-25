@@ -87,15 +87,18 @@ namespace AI
             Debug.Assert(!ReferenceEquals(m_PlayerRef, null), "ERROR: Need Reference to Player!");
 
             // Get all child game objects
-            int numChild = m_StealthPosGraphObject.transform.childCount;
-            m_StealthPointList = new GameObject[numChild];
-
-            for (int i = 0; i < numChild; ++i)
+            if (m_StealthPosGraphObject)
             {
-                m_StealthPointList[i] = m_StealthPosGraphObject.transform.GetChild(i).gameObject;
-            }
+                int numChild = m_StealthPosGraphObject.transform.childCount;
+                m_StealthPointList = new GameObject[numChild];
 
-            Debug.Assert(m_StealthPointList.Length > 1, "ERROR: Need stealth points on map in order to have AI Navigate!");
+                for (int i = 0; i < numChild; ++i)
+                {
+                    m_StealthPointList[i] = m_StealthPosGraphObject.transform.GetChild(i).gameObject;
+                }
+
+                Debug.Assert(m_StealthPointList.Length > 1, "ERROR: Need stealth points on map in order to have AI Navigate!");
+            }
 
             m_PathToDestination = new Stack<GameObject>();
 

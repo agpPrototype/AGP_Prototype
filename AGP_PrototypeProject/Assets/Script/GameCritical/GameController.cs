@@ -142,6 +142,9 @@ namespace GameCritical
 
         public ActionZone GetActionZoneFromPoint(Vector3 location)
         {
+            if (!m_CurrentActionZone || m_ActionZoneList == null)
+                return null;
+
             for(int i = 0; i < m_ActionZoneList.Length; ++i)
             {
                 if (m_ActionZoneList[i].IsLocationInZone(location))
@@ -151,6 +154,11 @@ namespace GameCritical
             }
 
             return null;
+        }
+
+        public ActionZone[] GetAllActionZones()
+        {
+            return m_ActionZoneList;
         }
 
         //public GameObject FindClosestAgrodEnemy()

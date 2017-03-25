@@ -94,6 +94,17 @@ namespace Items
                 RaycastHit arrowHit;
                 if (Physics.Raycast(ray, out arrowHit))
                 {
+                    // Bypass the collider of 1 Action Zone so that you can call "MoveTo" from outside of an Action Zone
+                    if (arrowHit.collider.gameObject.GetComponent<ActionZone>())
+                    {
+                        ray = new Ray(arrowHit.point, ray.direction);
+                        Physics.Raycast(ray, out arrowHit);
+                        //if ()
+                        //{
+                            
+                        //}
+                    }
+
                     worldSpace = arrowHit.point;
                     rayHitPoint = worldSpace;
                 }
