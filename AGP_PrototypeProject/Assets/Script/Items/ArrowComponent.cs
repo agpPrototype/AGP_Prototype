@@ -20,7 +20,7 @@ namespace Items
         void Start () 
         {
             m_Rigidbody = GetComponent<Rigidbody>();
-            //Physics.IgnoreCollision(GetComponent<Collider>(), GameCritical.GameController.Instance.Player.GetComponent<Collider>());
+
         }
 
         // Update is called once per frame
@@ -40,7 +40,7 @@ namespace Items
         void OnTriggerEnter(Collider col)
         {
 
-            Debug.Log("COllision hit: " + col.gameObject.name);
+            //Debug.Log("COllision hit: " + col.gameObject.name);
             if (col.gameObject.GetComponent<Health>() && !col.gameObject.GetComponent<Player.PlayerControl>())
             {
                 col.gameObject.GetComponent<Health>().TakeDamage(Damage, GameCritical.GameController.Instance.Player);

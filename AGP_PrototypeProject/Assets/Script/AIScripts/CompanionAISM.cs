@@ -170,6 +170,9 @@ namespace AI
         private float StartToFollowDistance;
 
         [SerializeField]
+        private float m_BreakStealthToAttackThreshold;
+
+        [SerializeField]
         private float m_MaxTimeToWaitAtStealthPoint;
         private bool m_WaitStealthTimerSet = false;
         private float m_WaitStealthEndTime;
@@ -227,7 +230,7 @@ namespace AI
 
 
             m_CurrentMainState =  WolfMainState.Idle;
-            m_PreviousMainState = WolfMainState.Attack;
+            m_PreviousMainState = WolfMainState.Idle;
             WolfNavAgent = GetComponentInParent<NavMeshAgent>();
             m_Animator = GetComponent<Animator>();
 
@@ -514,7 +517,15 @@ namespace AI
             Action getNextPt2 = new Action(m_StealthNav.DetermineNextStealthPointInPath);
             findNextStealthPt_path.AddAction(getNextPt2);
 
-           // m_StealthTree.AddDecisionNodeTo(rootNode, findNextStealthPt_path);
+            // m_StealthTree.AddDecisionNodeTo(rootNode, findNextStealthPt_path);
+
+            /// NODE ///
+            /// 
+            DecisionNode switchToAttackNode = new DecisionNode(DecisionType.SwitchStates, "SwitchToAttack");
+            Condition shouldBreakStealth = new Condition(ToBreakStealthForAttack);
+            Action switchToAttack = new Action(SetMainState, WolfMainState.Attack);
+            switchToAttackNode.AddCondition(shouldBreakStealth);
+            switchToAttackNode.AddAction(switchToAttack);
 
             /// NODE ///
             /// 
@@ -562,6 +573,9 @@ namespace AI
             doNothingNode.AddAction(doNothing);
 
             m_StealthTree.AddDecisionNodeTo(waitHere, doNothingNode);
+
+            //Check if should break stealth before moving to next Node
+            m_StealthTree.AddDecisionNodeTo(waitHere, switchToAttackNode);
 
             // Loop back to "nav to next" if not at end of path
             m_StealthTree.AddDecisionNodeTo(waitHere, findNextStealthPt_path);
@@ -652,7 +666,7 @@ namespace AI
 
             // Determine if Stealth is correct state to be in
 
-            if (CurrentCommand != WolfCommand.STAY)
+            if (CurrentCommand != WolfCommand.STAY && m_CurrentMainState != WolfMainState.Attack)
             {               
                 if (isPlayerStealthed && m_CurrentMainState != WolfMainState.Stealth && curAZ && curAZ.GetNumEnemiesAlive() > 0)
                 {
@@ -723,7 +737,7 @@ namespace AI
 
         public void SetMainState(WolfMainState newState)
         {
-            if(m_PreviousMainState != m_CurrentMainState)
+            if(m_CurrentMainState != newState)
                 m_PreviousMainState = m_CurrentMainState;
 
             m_CurrentMainState = newState;
@@ -764,10 +778,10 @@ namespace AI
             m_CurrentBT.RestartTree();
         }
 
-        void SetPrevousMainState(WolfMainState newState)
-        {
-            m_PreviousMainState = newState;
-        }
+        //void SetPrevousMainState(WolfMainState newState)
+        //{
+        //    m_PreviousMainState = newState;
+        //}
 
         #region Command Functions
 
@@ -1095,21 +1109,26 @@ namespace AI
                 Debug.Assert(false, "Error! No current Action Zone!");
             }
 
+            int bondStatus = m_GameControl.BondManager.BondStatus;
 
-            if(m_GameControl.CurrentActionZone && m_GameControl.CurrentActionZone.GetNumEnemiesAlive() == 0)
+            if (m_GameControl.CurrentActionZone && m_GameControl.CurrentActionZone.GetNumEnemiesAlive() == 0)
             {
                 SetMainState(WolfMainState.Follow);
                 return;
             }
 
             // If Bond is good, select player's targetas my target
-            if (m_GameControl.BondManager.BondStatus >= 50)
+            if (bondStatus >= 50)
             {
-                if(m_PlayersEnemyTarget && !m_PlayersEnemyTarget.GetComponent<HealthCare.Health>().IsDead)
+                if(m_PlayersEnemyTarget && !m_PlayersEnemyTarget.GetComponent<Health>().IsDead)
                     m_EnemyTarget = m_PlayersEnemyTarget;
             }
 
-            if(!m_EnemyTarget || m_GameControl.BondManager.BondStatus < 50){
+            // If coming from breaking stealth due to low bond, keep current target
+            if (m_EnemyTarget && !m_EnemyTarget.GetComponent<Health>().IsDead && bondStatus < 50)
+                return;
+
+            if(!m_EnemyTarget || bondStatus < 50){
                 GameObject target = m_GameControl.CurrentActionZone.GetClosestAgrodEnemy(transform.position);
                 if (target)
                 {
@@ -1157,6 +1176,15 @@ namespace AI
                 return m_EnemyTarget.transform;
 
             return null;
+        }
+
+        private void SetClosestEnemyAsTarget()
+        {
+            GameObject enemy = m_GameControl.CurrentActionZone.GetClosestEnemyTo(transform.position);
+            if (enemy){
+                m_EnemyTarget = enemy;
+            }
+
         }
 
         private bool IsAttackTimerDone()
@@ -1273,6 +1301,36 @@ namespace AI
             //    SetMainState(WolfMainState.Follow);
             //}
             m_DidPlayerLeaveZone = didPlayerLeave;
+        }
+
+        // Tests Bond to see if stealth should be broken and Accalia should be aggressive and attack instead
+        private bool ToBreakStealthForAttack()
+        {
+            // Make the chance based on the bond percentage
+            float bondStatus = m_GameControl.BondManager.GetBondStatus();
+            if (bondStatus > m_BreakStealthToAttackThreshold)
+                return false;
+
+            float percentToCheck = (m_BreakStealthToAttackThreshold - bondStatus) / m_BreakStealthToAttackThreshold;
+            float val = Random.Range(0f, 1f);
+            Debug.Log("Test if should break stealth: " + val + " < " + percentToCheck);
+            if(val < percentToCheck)
+            {
+                // Enemy has to be close enough to piss her off
+                GameObject enemy = m_GameControl.CurrentActionZone.GetClosestEnemyTo(transform.position);
+
+                float distanceThresholdMultiplierSq = 9.0f; // To increase the range that she might attack form
+                Debug.Log("EnemyDistance vs threshhold: " + (enemy.transform.position - transform.position).sqrMagnitude + " < " + distanceThresholdMultiplierSq * m_AttackRange * m_AttackRange);
+                if (enemy && (enemy.transform.position - transform.position).sqrMagnitude < distanceThresholdMultiplierSq * m_AttackRange * m_AttackRange){
+                    m_EnemyTarget = enemy;
+                    SetMainState(WolfMainState.Attack);
+                    Debug.Log("Breaking stealth to Attack due to low bond!");
+                    // Flash bond? Pop up window?
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         #endregion

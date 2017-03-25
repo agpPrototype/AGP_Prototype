@@ -76,19 +76,21 @@ public class ActionZone : MonoBehaviour {
 
     void OnTriggerExit(Collider other)
     {
+        bool didChangeHappen = false;
         // Tell Wolf that Player left the zone
         if (other.GetComponent<Player.PlayerControl>())
         {
             m_IsPlayerInZone = false;
             GameController.Instance.Wolf.GetComponent<AI.CompanionAISM>().PlayerLeftActionZone(true);
+            didChangeHappen = true;
         }
         else if (other.GetComponent<AI.CompanionAISM>())
         {
             m_IsWolfInZone = false;
-
+            didChangeHappen = true;
         }
 
-        if (!m_IsWolfInZone && !m_IsPlayerInZone)
+        if (didChangeHappen && !m_IsWolfInZone && !m_IsPlayerInZone)
         {
             //GameController.Instance.CurrentActionZone = null;
             GameController.Instance.Wolf.GetComponent<AI.StealthNavigation>().CurrentActionZone = null;
