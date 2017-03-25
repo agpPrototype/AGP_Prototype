@@ -35,7 +35,7 @@ namespace UI
         /* callback function for button hover audio. */
         public void PlayHoverSound()
         {
-            if (m_HoverSound != null)
+            if (m_AudioSource && m_AudioSource.clip && m_HoverSound != null)
             {
                 m_AudioSource.clip = m_HoverSound;
                 m_AudioSource.Play();
