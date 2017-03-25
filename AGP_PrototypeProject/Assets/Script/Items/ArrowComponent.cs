@@ -20,7 +20,7 @@ namespace Items
         void Start () 
         {
             m_Rigidbody = GetComponent<Rigidbody>();
-            Physics.IgnoreCollision(GetComponent<Collider>(), GameCritical.GameController.Instance.Player.GetComponent<Collider>());
+            //Physics.IgnoreCollision(GetComponent<Collider>(), GameCritical.GameController.Instance.Player.GetComponent<Collider>());
         }
 
         // Update is called once per frame

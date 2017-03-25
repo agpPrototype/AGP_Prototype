@@ -10,7 +10,7 @@ public class EndGameSwitch : MonoBehaviour {
     {
         if (other.GetComponent<PlayerControl>())
         {
-            GameController.Instance.GameState = Utility.EnumService.GameState.Win_BellRing;
+            GameController.Instance.GameState = Utility.EnumService.GameState.Win_SwitchActivated;
         }
     }
 }

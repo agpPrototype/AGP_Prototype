@@ -64,7 +64,7 @@ namespace EndGame
 
         void DoEndGame(EnumService.GameState state)
         {
-            if (state == EnumService.GameState.Win_BellRing)
+            if (state == EnumService.GameState.Win_SwitchActivated)
             {
                 CrumbleAndRise();
             }

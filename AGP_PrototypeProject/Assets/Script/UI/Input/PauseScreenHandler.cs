@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Utility;
 using UI;
+using GameCritical;
 
 namespace Inputs
 {
@@ -34,6 +35,7 @@ namespace Inputs
                 if (m_PauseMenu != null)
                 {
                     m_PauseMenu.gameObject.SetActive(false);
+                    GameController.Instance.GameState = EnumService.GameState.InGame;
                 }
             }
         }

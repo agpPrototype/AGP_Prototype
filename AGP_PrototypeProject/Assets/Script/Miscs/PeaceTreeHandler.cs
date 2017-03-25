@@ -28,10 +28,11 @@ namespace EndGame
 
         public void DoEndGame()
         {
+            gameObject.SetActive(true);
             StartCoroutine(DoRise());
             if (m_Animator)
             {
-                gameObject.SetActive(true);
+                
                 m_Animator.SetTrigger("Rise");
             }
         }

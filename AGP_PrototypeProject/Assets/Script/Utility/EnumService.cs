@@ -53,12 +53,13 @@ namespace Utility {
 
         public enum GameState
         {
-            Win_BellRing,
+            Win_SwitchActivated,
             Win_EnemiesEliminated,
             Lose_AccaliaDead,
             Lose_PlayerDead,
             InGame,
-            InTutorial
+            InTutorial,
+            InPauseMenu,
         }
     }
 }

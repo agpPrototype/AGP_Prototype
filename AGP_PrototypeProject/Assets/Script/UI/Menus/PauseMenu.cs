@@ -4,6 +4,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using GameCritical;
+using Utility;
 
 namespace UI
 {
@@ -20,6 +22,7 @@ namespace UI
             UpdateTitleText();
             EventSystem.current.SetSelectedGameObject(null);
             EventSystem.current.SetSelectedGameObject(m_StartingSelectedButton.gameObject);
+            GameController.Instance.GameState = EnumService.GameState.InPauseMenu;
         }
 
         // update the title text which matches the current pause menu screen.
