@@ -23,17 +23,20 @@ namespace AI
         {
             if (anim == EnemyAIAnimation.Walking)
             {
+				SetAudioIsWalking(true);
                 m_Animator.SetBool("Walk", true);
                 m_Animator.SetBool("Attack", false);
             }
             else if (anim == EnemyAIAnimation.Idling)
-            {
-                m_Animator.SetBool("Walk", false);
+			{
+				SetAudioIsWalking(false);
+				m_Animator.SetBool("Walk", false);
                 m_Animator.SetBool("Attack", false);
             }
             else if (anim == EnemyAIAnimation.Attacking)
-            {
-                m_Animator.SetBool("Walk", false);
+			{
+				SetAudioIsWalking(false);
+				m_Animator.SetBool("Walk", false);
                 m_Animator.SetBool("Attack", true);
             }
         }
@@ -89,6 +92,9 @@ namespace AI
 
         [SerializeField]
         private float m_AttackDamage = 5.0f;
+
+		[SerializeField]
+		private AudioSource m_WalkingAudioSource;
         #endregion
 
         #region Timer Members (general timer members to be used for any timer in AI)
@@ -165,21 +171,21 @@ namespace AI
         private void switchToChaseBT()
         {
             SetMainState(EnemyAIState.CHASING);
-        }
+		}
         private void switchToPatrolBT()
         {
             SetMainState(EnemyAIState.PATROLLING);
-        }
+		}
         private void switchToAttackBT()
         {
             SetMainState(EnemyAIState.ATTACKING);
-        }
+		}
         private void switchToLookBT()
         {
             setAnimation(EnemyAIAnimation.Idling);
-            SetMainState(EnemyAIState.LOOKING);
+			SetMainState(EnemyAIState.LOOKING);
 
-			if(m_AILineOfSightDetection != null)
+			if (m_AILineOfSightDetection != null)
 			{
 				m_AILineOfSightDetection.Beam.IsOpen = false;
 			}
@@ -345,12 +351,12 @@ namespace AI
                 PlayerHealth playerHealth = m_Target.GetComponent<PlayerHealth>();
                 if (playerHealth != null)
                 {
-                    playerHealth.TakeDamage(m_AttackDamage);
+                    playerHealth.TakeDamage(m_AttackDamage, gameObject);
                 }
                 AccaliaHealth accaliaHealth = m_Target.GetComponent<AccaliaHealth>();
                 if (accaliaHealth != null)
                 {
-                    accaliaHealth.TakeDamage(m_AttackDamage);
+                    accaliaHealth.TakeDamage(m_AttackDamage, gameObject);
                 }
             }
         }
@@ -583,7 +589,10 @@ namespace AI
             UpdateStateMachine();
 
             /* traverse current behavior tree */
-            m_CurrentBT.ContinueBehaviorTree();
+			//if(m_CurrentBT != null)
+			//{
+				m_CurrentBT.ContinueBehaviorTree();
+			//}
         }
 
         public override void UpdateStateMachine()
@@ -650,5 +659,17 @@ namespace AI
                 Debug.DrawLine(m_AILineOfSightDetection.Apex.position, m_Target.transform.position, Color.red);
             }
         }
+
+		private void SetAudioIsWalking(bool b)
+		{
+			if (m_WalkingAudioSource != null)
+			{
+				m_WalkingAudioSource.enabled = b;
+			}
+			else
+			{
+				Debug.Log("No Audio Source on enemy.");
+			}
+		}
     }
 }

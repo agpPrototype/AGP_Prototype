@@ -79,6 +79,7 @@ namespace AI
 
         #region Variables
         private WolfMoveComponent m_WolfMoveComp;
+        private Animator m_Animator;
         private AccaliaHealth m_Health;
         private Vector3[] m_Corners;
 
@@ -157,7 +158,7 @@ namespace AI
 
         #endregion
 
-        #region Temp Variables For Testing (To go in another file later)
+        #region StateMachine Vars
 
         private NavMeshAgent WolfNavAgent;
         private Vector3 TargetMoveToLocation;
@@ -187,16 +188,35 @@ namespace AI
 
         private bool m_IsAttacking = false;
 
+
+        [SerializeField]
+        private float m_IdleAnimCooldownMax;
+        [SerializeField]
+        private float m_IdleAnimCooldownMin;
+        private float m_IdleCooldownEndTime;
+        private bool m_IdleTimerSet = false;
+
+        [SerializeField]
+        private float m_IdleSitTime;
+        [SerializeField]
+        private float m_IdleSleepTime;
+        private float m_IdleStateStartTime;
+
         [SerializeField]
         public StealthPosition StealthDestination;
 
+        private bool m_SkipBTUpdate = false;
         #endregion
 
-
+        void Awake()
+        {
+            m_GameControl = GameCritical.GameController.Instance;
+            m_GameControl.RegisterWolf(gameObject);
+        }
         // Use this for initialization
         void Start()
         {
-            m_GameControl = GameCritical.GameController.Instance;
+           // m_GameControl = GameCritical.GameController.Instance;
 
             PlayerControl playerControl = FindObjectOfType<PlayerControl>();
             if (playerControl)
@@ -208,6 +228,7 @@ namespace AI
             m_CurrentMainState =  WolfMainState.Idle;
             m_PreviousMainState = WolfMainState.Attack;
             WolfNavAgent = GetComponentInParent<NavMeshAgent>();
+            m_Animator = GetComponent<Animator>();
 
             m_CurrentCommand = WolfCommand.NONE;
 
@@ -224,7 +245,7 @@ namespace AI
 
             InitializeStateBehaviorTrees();
 
-            m_GameControl.RegisterWolf(gameObject);
+            //m_GameControl.RegisterWolf(gameObject);
 
             m_Health = GetComponent<AccaliaHealth>();
         }
@@ -248,7 +269,6 @@ namespace AI
             // 
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "RootFollow");
             rootNode.AddAction(new Action(FollowBehind));
-
             m_FollowTree = new BehaviorTree(WolfMainState.Follow, rootNode, this);
 
             /// NODE ///
@@ -256,7 +276,6 @@ namespace AI
             // if DistToPlayer < FollowDist, switch to Idle state
             DecisionNode stopFollowingNode = new DecisionNode(DecisionType.SwitchStates, "StopFollow->Idle");
             Condition sfCond1 = new Condition(GetDistToPlayerSq, ConditionComparison.Less, new Float(FollowDistance * FollowDistance));
-
             Action switchToIdleAction = new Action(SetMainState, WolfMainState.Idle);
 
             stopFollowingNode.AddCondition(sfCond1);
@@ -291,22 +310,48 @@ namespace AI
             /// NODE ///
             // For now, idle will just do nothing
             DecisionNode rootNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "RootIdle");
-            rootNode.AddAction(new Action(DoNothing));
+            rootNode.AddAction(new Action(StartIdle));
 
             m_IdleTree = new BehaviorTree(WolfMainState.Idle, rootNode, this);
+
+            /// NODE ///
+            /// 
+            DecisionNode doNothingNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "DoNothing");
+            doNothingNode.AddAction(new Action(DoNothing));
+
+            /// NODE///
+            /// 
+            DecisionNode endIdleNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "EndIdleVars");
+            Condition tfCond1 = new Condition(DistToPlayerSq, ConditionComparison.Greater, new Float(StartToFollowDistance * StartToFollowDistance));
+            Action endIdleVar = new Action(EndIdleState);
+            endIdleNode.AddCondition(tfCond1);
+            endIdleNode.AddAction(endIdleVar);
 
             /// NODE ///
             // Node to decide if wolf should follow player
             // if DistToPlayer > StartToFollowDist, switch to Follow state
             DecisionNode toFollowNode = new DecisionNode(DecisionType.SwitchStates, "StartFollow->Follow");
-            Condition tfCond1 = new Condition(DistToPlayerSq, ConditionComparison.Greater, new Float(StartToFollowDistance * StartToFollowDistance));
             Action switchToFollowAction = new Action(SetMainState, WolfMainState.Follow);
-
-            toFollowNode.AddCondition(tfCond1);
             toFollowNode.AddAction(switchToFollowAction);
 
+            /// NODE ///
+            /// 
+            DecisionNode doIdleAnim = new DecisionNode(DecisionType.RepeatUntilCanProgress, "RandomIdleAnim");
+            Condition idleTimerCond = new Condition(IsIdleTimerDone);
+            Action playIdleAnim = new Action(PlayRandomIdleAnimation);
+
+            doIdleAnim.AddAction(playIdleAnim);
+            doIdleAnim.AddCondition(idleTimerCond);
+
             // Add new Node to parent
-            m_IdleTree.AddDecisionNodeTo(rootNode, toFollowNode);
+            m_IdleTree.AddDecisionNodeTo(rootNode, doNothingNode);
+            m_IdleTree.AddDecisionNodeTo(doNothingNode, endIdleNode);
+            m_IdleTree.AddDecisionNodeTo(endIdleNode, toFollowNode);
+
+            m_IdleTree.AddDecisionNodeTo(doNothingNode, doIdleAnim);
+
+            // Loop Back after idle anim
+            m_IdleTree.AddDecisionNodeTo(doIdleAnim, doNothingNode);
         }
 
         private void CreateAttackBT()
@@ -379,7 +424,14 @@ namespace AI
             findNextStealthPt_come.AddCondition(isCommandCome);
             findNextStealthPt_come.AddAction(getNextPt_come);
 
-            //m_StealthTree.AddDecisionNodeTo(rootNode, findNextStealthPt_come);
+            DecisionNode endComeNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "EndComeCommand");
+            Condition isAtLast = new Condition(new BoolTypeDelegate(m_StealthNav.IsAtNextNode));
+            Action endCome = new Action(EndCommand);
+            endComeNode.AddCondition(isAtLast);
+            endComeNode.AddAction(endCome);
+
+            m_StealthTree.AddDecisionNodeTo(findNextStealthPt_come, endComeNode);
+            m_StealthTree.AddDecisionNodeTo(endComeNode, rootNode);
 
             #endregion
 
@@ -390,7 +442,6 @@ namespace AI
             DecisionNode findNextStealthPt = new DecisionNode(DecisionType.RepeatUntilCanProgress, "FindNextStealthPt");
             Condition isBondHigh1 = new Condition(new FloatTypeDelegate(BondManager.Instance.GetBondStatus), ConditionComparison.Greater, new Float(50.0f));
             Condition isNotUnderCommand = new Condition(new BoolTypeDelegate(IsNotUnderCommand));
-            //Condition isNotUnderCommand = new Condition(new BoolTypeDelegate(IsCommandComeorNone));
             Action getNextPt = new Action(m_StealthNav.DetermineNextStealthPointToPlayer);
             findNextStealthPt.AddCondition(isBondHigh1);
             findNextStealthPt.AddCondition(isNotUnderCommand);
@@ -406,7 +457,6 @@ namespace AI
             Condition isPlayerAway = new Condition(new FloatTypeDelegate(GetDistToPlayerSq), ConditionComparison.Greater, new Float(StartToFollowDistance * StartToFollowDistance));
             Condition isPathSafe = new Condition(new BoolTypeDelegate(m_StealthNav.IsPathSafeToNext));
             Action navToNext = new Action(m_StealthNav.NavigateToNextNode);
-
             navigateToNextStealthPt.AddCondition(isPathSafe);
             navigateToNextStealthPt.AddCondition(isPlayerAway);
             navigateToNextStealthPt.AddAction(navToNext);
@@ -507,7 +557,6 @@ namespace AI
             /// 
             DecisionNode doNothingNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "DoNothing");
             Condition isPathComplete = new Condition(new BoolTypeDelegate(m_StealthNav.IsStealthPathComplete));
-           // Action doNothing = new Action(DoNothing);
             doNothingNode.AddCondition(isPathComplete);
             doNothingNode.AddAction(doNothing);
 
@@ -583,10 +632,13 @@ namespace AI
             // Check for events or player suggestions to switch State
 
             // Traverse current Behavior Tree
-            if (!ReferenceEquals(m_CurrentBT, null))
-                m_CurrentBT.ContinueBehaviorTree();
-            else
-                Debug.Assert(false, "CompanionAISM: current BT not initialized yet");
+            if (!m_SkipBTUpdate)
+            {
+                if (!ReferenceEquals(m_CurrentBT, null))
+                    m_CurrentBT.ContinueBehaviorTree();
+                else
+                    Debug.Assert(false, "CompanionAISM: current BT not initialized yet");
+            }
         }
 
         private void UpdateFactors()
@@ -612,6 +664,7 @@ namespace AI
 
             // Continue "GoTo" if not stealthing
             if (CurrentCommand == WolfCommand.GOTO && !isPlayerStealthed && (curAZ == null || curAZ.IsAtFinalStealthPoint(transform.position))){
+                m_SkipBTUpdate = true;
                 MoveTo(TargetMoveToLocation);
             }
 
@@ -731,6 +784,12 @@ namespace AI
                         return;
                     }
 
+                    if(m_CurrentCommand == WolfCommand.STAY)
+                    {
+                        //m_Animator.SetBool("Idle", true);
+                        m_Animator.Play("SeatToStand");
+                    }
+
                     m_CurrentCommand = WolfCommand.COME;
 
                     ActionZone curAZ = m_GameControl.GetActionZoneFromPoint(Player.transform.position);
@@ -770,6 +829,10 @@ namespace AI
 
                     m_CurrentCommand = WolfCommand.STAY;
                     SetMainState(WolfMainState.Stay);
+
+                    //m_Animator.SetInteger("IDIdle", 5);
+                    //m_Animator.SetBool("Idle", true);
+                    m_Animator.Play("IdleSit");
                     break;
 
             }
@@ -790,6 +853,9 @@ namespace AI
                 {
                     // Attack this enemy!
                     Debug.Log("Attack the enemy!");
+                    m_EnemyTarget = hitObject;
+                    SetMainState(WolfMainState.Attack);
+                    SetCurrentCommand(WolfCommand.NONE);
                 }
                 else
                 {
@@ -829,7 +895,7 @@ namespace AI
         private void SetCurrentCommand(WolfCommand commandType)
         {
             m_CurrentCommand = commandType;
-            m_CurrentCommandAsInt = new Int((int)commandType);
+            //m_CurrentCommandAsInt = new Int((int)commandType);
         }
 
         #endregion
@@ -845,6 +911,9 @@ namespace AI
                 if (m_CurrentCommand == WolfCommand.GOTO && m_CurrentMainState != WolfMainState.Attack)
                 {
                     m_CurrentCommand = WolfCommand.NONE;
+                    m_SkipBTUpdate = false;
+                    m_WolfMoveComp.Stop();
+                    SetMainState(WolfMainState.Follow);
                     return;
                 }
             }
@@ -875,9 +944,10 @@ namespace AI
             Vector3 toPlayer = Player.transform.position - this.transform.position;
             toPlayer.Normalize();
 
-            TargetMoveToLocation = Player.transform.position - FollowDistance * toPlayer;
+            TargetMoveToLocation = Player.transform.position - FollowDistance/2 * toPlayer;
 
-
+            MoveTo(TargetMoveToLocation);
+            return;
             /*
              * idealy we'd move this whole calculation into move component,but lets just do this for now
              * and wait to see how much we want the AI to calculate and how much the move comp should calculate
@@ -908,6 +978,72 @@ namespace AI
         {
             //OnActionComplete(true);
             m_WolfMoveComp.Stop();
+            
+        }
+
+        public void EndCommand()
+        {
+            m_CurrentCommand = WolfCommand.NONE;
+        }
+
+        private void PlayRandomIdleAnimation()
+        {
+            if (Time.time - m_IdleStateStartTime > m_IdleSitTime)
+            {
+                // Randomly pick between Sit or Sleep
+                if ((int)Time.time % 2 == 1)
+                {
+                    m_Animator.SetInteger("IDIdle", 5);
+                    
+                }
+                else
+                {
+                    m_Animator.SetInteger("IDIdle", 6);
+                }
+                m_Animator.SetBool("Idle", true);
+                m_IdleStateStartTime = Time.time;
+            }
+            else {
+                int idInt = Random.Range(1, 5);
+                m_Animator.SetInteger("IDIdle", idInt);
+                m_Animator.SetBool("Idle", true);
+            }
+        }
+
+        private void PlayIdleAnimation(int animID)
+        {
+            m_Animator.SetInteger("IDIdle", animID);
+            m_Animator.SetBool("Idle", true);
+        }
+
+        private bool IsIdleTimerDone()
+        {
+            if (!m_IdleTimerSet)
+            {
+                m_IdleTimerSet = true;
+                m_IdleCooldownEndTime = Time.time + Random.Range(m_IdleAnimCooldownMin, m_IdleAnimCooldownMax);
+            }
+
+            if (Time.time < m_IdleCooldownEndTime)
+            {
+                return false;
+            }
+
+            m_IdleTimerSet = false;
+            return true;
+        }
+
+        private void StartIdle()
+        {
+            m_IdleStateStartTime = Time.time;
+
+        }
+
+        public void EndIdleState()
+        {
+            m_Animator.SetInteger("IDIdle", 0);
+            m_Animator.applyRootMotion = true;
+            m_Animator.SetBool("Idle", false);
         }
 
         #endregion
@@ -1059,6 +1195,10 @@ namespace AI
             if(m_CurrentMainState != WolfMainState.Attack)
             {
                 SetMainState(WolfMainState.Attack);
+                if (enemyWhoAttacked)
+                {
+                    m_EnemyTarget = enemyWhoAttacked;
+                }
             }
         }
 
@@ -1141,6 +1281,11 @@ namespace AI
         float GetDistToPlayerSq()
         {
             return (Player.transform.position - transform.position).sqrMagnitude;
+        }
+
+        public bool IsPlayerOutOfFollowRange()
+        {
+            return ((Player.transform.position - transform.position).sqrMagnitude > StartToFollowDistance * StartToFollowDistance);
         }
 
         #endregion

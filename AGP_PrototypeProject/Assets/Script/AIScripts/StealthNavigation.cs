@@ -316,7 +316,7 @@ namespace AI
             {
                 Enemy = gameControl.CurrentActionZone.GetEnemy(i);
 
-                if (!Enemy)
+                if (!Enemy || Enemy.GetComponent<HealthCare.Health>().IsDead)
                     continue;
 
                 // Check Forward of Enemy
@@ -356,19 +356,21 @@ namespace AI
 
                 // Check Peripherals to see if my path would be seen by them
                 Transform enemyTransform = Enemy.transform;
+                //float peripheralDist = Enemy.GetComponent<Detection.AILineOfSightDetection>().getFOVViewDistance(Detection.AILineOfSightDetection.FOV_REGION.PERIPHERAL);
                 Vector3 peripheralRight = Enemy.GetComponent<Detection.AILineOfSightDetection>().GetFOVVector(enemyTransform.forward,
                                                                                                               enemyTransform.up,
-                                                                                                              Detection.AILineOfSightDetection.FOV_REGION.PERIPHERAL,
+                                                                                                              Detection.AILineOfSightDetection.FOV_REGION.SIDE,
                                                                                                               true, true);
                 Vector3 peripheralLeft = Enemy.GetComponent<Detection.AILineOfSightDetection>().GetFOVVector(enemyTransform.forward,
                                                                                                              enemyTransform.up,
-                                                                                                             Detection.AILineOfSightDetection.FOV_REGION.PERIPHERAL,
+                                                                                                             Detection.AILineOfSightDetection.FOV_REGION.SIDE,
                                                                                                              false, true);
                 // If my path does not intersect with the peripherals, it is safe
                 float rightPeriphTime = 0;
                 float leftPeriphTime = 0;
                 if (!DoRaysIntersect(WolfPos, nextDir, EnemyPos, peripheralRight, ref rightPeriphTime) && !DoRaysIntersect(WolfPos, nextDir, EnemyPos, peripheralRight, ref leftPeriphTime))
                 {
+                    // Avoid running too close to the enemy (don't want to run into)
                     intersectPt = GetRayIntersectionPt(WolfPos, nextDir, EnemyPos, EnemyFaceDir);
                     float distToEnemySq = (intersectPt - EnemyPos).sqrMagnitude;
                     if (distToEnemySq < m_MinDistEnemyPathAvoidance * m_MinDistEnemyPathAvoidance)
@@ -376,7 +378,7 @@ namespace AI
                         return false;
                     }
 
-                    return true;
+                    continue;
                 }
 
                 if (rightPeriphTime != 0)
@@ -407,6 +409,12 @@ namespace AI
 
         private bool DoRaysIntersect(Vector3 pos1, Vector3 dir1, Vector3 pos2, Vector3 dir2)
         {
+            // ignore y values for checks
+            dir1.y = 0;
+            dir2.y = 0;
+            pos1.y = 0;
+            pos2.y = 0;
+
             Vector3 crossDir = Vector3.Cross(dir2, dir1);
             Vector3 leftOfDot = Vector3.Cross((pos1 - pos2), dir1);
 
@@ -420,6 +428,12 @@ namespace AI
 
         private bool DoRaysIntersect(Vector3 pos1, Vector3 dir1, Vector3 pos2, Vector3 dir2, ref float intersectTimeOut)
         {
+            // ignore y values for checks
+            dir1.y = 0;
+            dir2.y = 0;
+            pos1.y = 0;
+            pos2.y = 0;
+
             Vector3 crossDir = Vector3.Cross(dir2, dir1);
             Vector3 leftOfDot = Vector3.Cross((pos1 - pos2), dir1);
 
@@ -431,7 +445,13 @@ namespace AI
             return false;
         }
 
-        public Vector3 GetRayIntersectionPt(Vector3 pos1, Vector3 dir1, Vector3 pos2, Vector3 dir2) {
+        public Vector3 GetRayIntersectionPt(Vector3 pos1, Vector3 dir1, Vector3 pos2, Vector3 dir2)
+        {
+            // ignore y values for checks
+            dir1.y = 0;
+            dir2.y = 0;
+            pos1.y = 0;
+            pos2.y = 0;
 
             Vector3 crossDir = Vector3.Cross(dir2, dir1);
             Vector3 leftOfDot = Vector3.Cross((pos1 - pos2), dir1);
