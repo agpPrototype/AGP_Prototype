@@ -589,7 +589,10 @@ namespace AI
             UpdateStateMachine();
 
             /* traverse current behavior tree */
-            m_CurrentBT.ContinueBehaviorTree();
+			if(m_CurrentBT != null)
+			{
+				m_CurrentBT.ContinueBehaviorTree();
+			}
         }
 
         public override void UpdateStateMachine()
