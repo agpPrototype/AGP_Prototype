@@ -156,7 +156,10 @@ namespace Items
 
         private bool ActivateKillCam(GameObject hitObject, ArrowComponent arrow)
         {
-            if (hitObject && hitObject.GetComponent<AI.EnemyAISM>()) {
+            if (hitObject && hitObject.GetComponent<AI.EnemyAISM>())
+            {
+                // play killcam noise
+                m_AudioContainer.PlaySound(2);
                 float enemyHP = hitObject.GetComponent<HealthCare.Health>().CurrentHP;
                 if(enemyHP - arrow.ArrowDamage <= 0)
                 {
