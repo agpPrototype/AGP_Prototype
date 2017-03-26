@@ -8,6 +8,7 @@ using CameraController;
 using AI.Detection;
 using Items;
 
+[RequireComponent(typeof(AudioContainer))]
 public class MoveComponent : MonoBehaviour {
 
     [SerializeField]
@@ -71,6 +72,7 @@ public class MoveComponent : MonoBehaviour {
     public CameraRig m_CamRig;
     float m_jumpDeficit;
     AIAudible m_Audible;
+    AudioContainer m_AudioContainer;
 
     void Start()
     {
@@ -87,6 +89,7 @@ public class MoveComponent : MonoBehaviour {
         m_Rigidbody = GetComponent<Rigidbody>();
         m_Capsule = GetComponent<CapsuleCollider>();
         m_Audible = GetComponent<AIAudible>();
+        m_AudioContainer = GetComponent<AudioContainer>();
         m_Audible.enabled = false;
         m_CapsuleHeight = m_Capsule.height;
         m_CapsuleCenter = m_Capsule.center;
@@ -421,6 +424,7 @@ public class MoveComponent : MonoBehaviour {
         if (jump && /*!crouch && m_Animator.GetCurrentAnimatorStateInfo(0).IsName("Grounded")*/ m_IsGrounded)
         {
             // jump!
+            // m_AudioContainer.PlaySound(0);
             m_Rigidbody.velocity = new Vector3(m_Rigidbody.velocity.x, m_JumpPower, m_Rigidbody.velocity.z);
             m_IsGrounded = false;
             m_Animator.applyRootMotion = false;
