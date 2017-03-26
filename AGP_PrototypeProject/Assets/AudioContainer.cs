@@ -64,4 +64,16 @@ public class AudioContainer : MonoBehaviour {
             Debug.LogError("No audio clips in audio container.");
         }
     }
+
+}
+
+public enum AccaliaSounds
+{
+    HOWL,
+    BARK1, BARK2,
+    GROWL1, GROWL2, GROWL3,
+    WHINE1, WHINE2,
+    COMPLAIN, WHINE3,
+    DAMAGED
+
 }

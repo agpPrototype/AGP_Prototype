@@ -80,6 +80,7 @@ namespace AI
         #region Variables
         private WolfMoveComponent m_WolfMoveComp;
         private Animator m_Animator;
+        private AudioContainer m_AudioContainer;
         private AccaliaHealth m_Health;
         private Vector3[] m_Corners;
 
@@ -233,6 +234,7 @@ namespace AI
             m_PreviousMainState = WolfMainState.Idle;
             WolfNavAgent = GetComponentInParent<NavMeshAgent>();
             m_Animator = GetComponent<Animator>();
+            m_AudioContainer = GetComponent<AudioContainer>();
 
             m_CurrentCommand = WolfCommand.NONE;
 
@@ -791,10 +793,13 @@ namespace AI
                     if (m_GameControl.BondManager.BondStatus < m_ComeBondRequirement)
                     {
                         Debug.Log("Bond is not hight enough to give 'Come' command!");
+                        m_AudioContainer.PlaySound((int)GetRandomWhineSound());
                         return;
                     }
 
-                    if(m_CurrentCommand == WolfCommand.STAY)
+                    m_AudioContainer.PlaySound((int)GetRandomBarkSound());
+
+                    if (m_CurrentCommand == WolfCommand.STAY)
                     {
                         //m_Animator.SetBool("Idle", true);
                         m_Animator.Play("SeatToStand");
@@ -834,8 +839,11 @@ namespace AI
                     if (m_GameControl.BondManager.BondStatus < m_ComeBondRequirement)
                     {
                         Debug.Log("Bond is not hight enough to give 'Stay' command!");
+                        m_AudioContainer.PlaySound((int)GetRandomWhineSound());
                         return;
                     }
+
+                    m_AudioContainer.PlaySound((int)GetRandomBarkSound());
 
                     m_CurrentCommand = WolfCommand.STAY;
                     SetMainState(WolfMainState.Stay);
@@ -857,6 +865,8 @@ namespace AI
             float bondStatus = m_GameControl.BondManager.BondStatus;
             if(bondStatus > m_GoToBondRequirement)
             {
+                m_AudioContainer.PlaySound((int)GetRandomBarkSound());
+
                 SetCurrentCommand(WolfCommand.GOTO);
 
                 if (hitObject.GetComponent<EnemyAISM>())
@@ -886,19 +896,12 @@ namespace AI
                         MoveTo(goToLocation);
                     }
 
-                    if(m_CurrentMainState == WolfMainState.Stealth)
-                    {
-                        
-                    }
-                    else
-                    {
-                        // TODO: Make a movement/command tree that just executes commands
-                    }
                 }
             }
             else
             {
                 Debug.Log("Go To failed! Bond is not high enough to give commands.");
+                m_AudioContainer.PlaySound((int)GetRandomWhineSound());
             }
         }
 
@@ -1210,6 +1213,10 @@ namespace AI
                     m_GameControl.CurrentActionZone = az;
 
                 m_PlayersEnemyTarget = hitEnemy;
+
+                if(m_PreviousMainState != WolfMainState.Attack)
+                    m_AudioContainer.PlaySound((int)GetRandomGrowlSound());
+
                 SetMainState(WolfMainState.Attack);
             }
         }
@@ -1340,6 +1347,49 @@ namespace AI
         public bool IsPlayerOutOfFollowRange()
         {
             return ((Player.transform.position - transform.position).sqrMagnitude > StartToFollowDistance * StartToFollowDistance);
+        }
+
+        #endregion
+
+        #region Audio Functions
+
+        private AccaliaSounds GetRandomWhineSound()
+        {
+            int val = Random.Range(1, 5);
+            switch (val) {
+                case 1:
+                    return AccaliaSounds.WHINE1;
+                case 2:
+                    return AccaliaSounds.WHINE2;
+                case 3:
+                    return AccaliaSounds.WHINE3;
+                default:
+                    return AccaliaSounds.GROWL1;
+            }
+        }
+
+        private AccaliaSounds GetRandomBarkSound()
+        {
+            int val = Random.Range(1, 3);
+            switch (val)
+            {
+                case 1:
+                    return AccaliaSounds.BARK1;
+                default:
+                    return AccaliaSounds.BARK2;
+            }
+        }
+
+        private AccaliaSounds GetRandomGrowlSound()
+        {
+            int val = Random.Range(1, 3);
+            switch (val)
+            {
+                case 1:
+                    return AccaliaSounds.GROWL2;
+                default:
+                    return AccaliaSounds.GROWL3;
+            }
         }
 
         #endregion
