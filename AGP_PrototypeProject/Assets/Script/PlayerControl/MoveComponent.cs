@@ -6,6 +6,7 @@ using Utility;
 using Player;
 using CameraController;
 using AI.Detection;
+using Items;
 
 public class MoveComponent : MonoBehaviour {
 
@@ -278,15 +279,17 @@ public class MoveComponent : MonoBehaviour {
         //Debug.Log("FORW: " + m_ForwardAmount);
         m_Animator.SetBool("Aim", m_Aim);
 
-        MeshRenderer renderer = GetComponent<MeshRenderer>();
         MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
-        if (renderer)
-        {
-            renderer.enabled = m_Aim;
-        }
         foreach (MeshRenderer child in renderers)
         {
-            child.enabled = m_Aim;
+            if (child.GetComponent<WeaponBow>())
+            {
+                child.enabled = m_Aim;
+                if (child.GetComponentInChildren<MeshRenderer>())
+                {
+                    child.GetComponentInChildren<MeshRenderer>().enabled = m_Aim;
+                }
+            }
         }
 
         if (!m_Aim)
@@ -446,10 +449,12 @@ public class MoveComponent : MonoBehaviour {
             case EnumService.GameState.InTutorial:
                 m_Animator.speed = 0;
                 m_Rigidbody.isKinematic = true;
+                //Time.timeScale = 0f;
                 break;
             case EnumService.GameState.InGame:
                 m_Animator.speed = 1;
                 m_Rigidbody.isKinematic = false;
+                //Time.timeScale = 1f;
                 break;
         }
     }
