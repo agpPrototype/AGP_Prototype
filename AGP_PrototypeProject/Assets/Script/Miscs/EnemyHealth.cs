@@ -47,7 +47,7 @@ namespace HealthCare
             {
                 if(m_AudioContainer)
                 {
-                    m_AudioContainer.PlaySound(2);
+                    m_AudioContainer.PlaySound(3);
                 }
                 if(!(enemyAI.CurrentState == AI.EnemyAISM.EnemyAIState.ATTACKING || enemyAI.CurrentState == AI.EnemyAISM.EnemyAIState.CHASING))
                 {

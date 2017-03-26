@@ -5,7 +5,6 @@ using AI.Detection;
 
 namespace vfx
 {
-    [RequireComponent(typeof(SphereCollider))]
     [RequireComponent(typeof(MeshRenderer))]
     public class AudioPulseDriver : MonoBehaviour
     {
