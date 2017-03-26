@@ -32,8 +32,12 @@ namespace Inputs
         {
             if (uia.Back)
             {
-                m_TutorialPanel.SlideOut();
-                GameController.Instance.GameState = EnumService.GameState.InGame;
+                if(m_TutorialPanel.GetIsActive())
+                {
+                    m_TutorialPanel.SlideOut();
+                    m_TutorialPanel.AudioContainer.Play2DSound(0);
+                    GameController.Instance.GameState = EnumService.GameState.InGame;
+                }
             }
         }
     }
