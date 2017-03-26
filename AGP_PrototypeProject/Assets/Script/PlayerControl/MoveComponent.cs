@@ -447,14 +447,14 @@ public class MoveComponent : MonoBehaviour {
         {
             case EnumService.GameState.InPauseMenu:
             case EnumService.GameState.InTutorial:
-                //m_Animator.speed = 0;
-                //m_Rigidbody.isKinematic = true;
-                Time.timeScale = 0f;
+                m_Animator.speed = 0;
+                m_Rigidbody.isKinematic = true;
+                //Time.timeScale = 0f;
                 break;
             case EnumService.GameState.InGame:
-                //m_Animator.speed = 1;
-                //m_Rigidbody.isKinematic = false;
-                Time.timeScale = 1f;
+                m_Animator.speed = 1;
+                m_Rigidbody.isKinematic = false;
+                //Time.timeScale = 1f;
                 break;
         }
     }
