@@ -45,6 +45,7 @@ namespace CameraController
             [Header("-Visual Options-")]
             public float HideMeshWhenDistance = 0.5f;
 
+            public bool IsKillCamActive = false;
         }
         [SerializeField]
         public CameraSettings CameraSetting;
@@ -92,7 +93,9 @@ namespace CameraController
         {
             if (Target)
             {
-                if (Application.isPlaying)
+                
+
+                if (Application.isPlaying && !CameraSetting.IsKillCamActive)
                 {
                     InputDevice device = InputManager.ActiveDevice;
                     RotateCamera(device.LeftTrigger);
@@ -122,6 +125,14 @@ namespace CameraController
                 Vector3 targetPosition = Target.position;
                 Quaternion targetRotation = Target.rotation;
 
+                if (Target.gameObject.GetComponent<Items.ArrowComponent>())
+                {
+                    CameraSetting.IsKillCamActive = true;
+                    targetPosition = targetPosition - 1 * Target.forward - 1 * Target.right - 1 * Target.up;
+                    transform.position = targetPosition;
+                    return;
+                }
+
                 FollowTarget(targetPosition, targetRotation);
             }
         }
@@ -137,6 +148,8 @@ namespace CameraController
                 Transform playerT = player.transform;
                 Target = playerT;
             }
+            CameraSetting.IsKillCamActive = false;
+            
         }
 
         //follow the target

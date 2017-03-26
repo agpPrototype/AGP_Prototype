@@ -63,7 +63,7 @@ public class MoveComponent : MonoBehaviour {
     float m_StrafeRight;
     bool m_Aim;
     bool m_WasAiming;
-    CameraRig m_CamRig;
+    public CameraRig m_CamRig;
     float m_jumpDeficit;
     AIAudible m_Audible;
 
