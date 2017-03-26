@@ -24,6 +24,10 @@ public class ActionZone : MonoBehaviour {
     }
 
     private List<GameObject> m_EnemyList;
+    public GameObject[] EnemyList
+    {
+        get { return m_EnemyList.ToArray(); }
+    }
 
     private bool m_IsWolfInZone = false;
     private bool m_IsPlayerInZone = false;

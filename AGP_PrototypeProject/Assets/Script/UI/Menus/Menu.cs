@@ -12,7 +12,7 @@ using UnityEngine.EventSystems;
 namespace UI
 {
     [RequireComponent(typeof(AudioSource))]
-    public class Menu : MonoBehaviour
+    public class Menu : UIComponent
     {
         public AudioClip m_HoverSound;
         public AudioClip m_ClickSound;

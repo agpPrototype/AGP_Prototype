@@ -7,6 +7,12 @@ using UnityEngine.EventSystems;
 using GameCritical;
 using Utility;
 
+
+/// <summary>
+/// author: Rob Neir
+/// </summary>
+/// 
+
 namespace UI
 {
     public class PauseMenu : Menu

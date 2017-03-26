@@ -44,6 +44,10 @@ public class MoveComponent : MonoBehaviour {
     float m_WalkSoundRange = 3.0f;
     [SerializeField]
     Transform Spine;
+    [SerializeField]
+    private AudioClip m_WalkLeftSound;
+    [SerializeField]
+    private AudioClip m_WalkRightSound;
 
     Rigidbody m_Rigidbody;
     Animator m_Animator;
@@ -144,6 +148,30 @@ public class MoveComponent : MonoBehaviour {
         //TODO later
 
         Move(pca);
+    }
+
+    public void PlayWalkLeftSound()
+    {
+        if(m_WalkLeftSound != null)
+        {
+            AudioManager.PlaySFX_3D(m_WalkLeftSound, 1.0f, this.transform);
+        }
+        else
+        {
+            Debug.LogError("No left foot walk sound.");
+        }
+    }
+
+    public void PlayWalkRightSound()
+    {
+        if (m_WalkRightSound != null)
+        {
+            AudioManager.PlaySFX_3D(m_WalkRightSound, 1.0f, this.transform);
+        }
+        else
+        {
+            Debug.LogError("No right foot walk sound.");
+        }
     }
 
     private void ProcessMovementSound(Vector3 move)

@@ -26,7 +26,6 @@ namespace Misc
         [Tooltip("If true then when the player enters this tutorial zone then a tip will show.")]
         private bool m_ShowTip = false;
 
-
         private PlayerControl m_PlayerControl;
 
         void Start()
@@ -43,19 +42,22 @@ namespace Misc
                 {
                     tutorialPanel.PopulatePanel(m_Title, m_Tip, m_UIPrefabToSpawn);
                     tutorialPanel.SlideIn();
+                    //GameController.Instance.GameState = EnumService.GameState.InTutorial;
                 }
             }
-            GameController.Instance.GameState = EnumService.GameState.InTutorial;
         }
 
         public virtual void OnTutorialZoneExit(Collider col)
         {
-            TutorialPanel tutorialPanel = UIManager.Instance.TutorialCanvas.TutorialPanel;
-            if (tutorialPanel != null)
+            if (m_ShowTip)
             {
-                tutorialPanel.SlideOut();
+                TutorialPanel tutorialPanel = UIManager.Instance.TutorialCanvas.TutorialPanel;
+                if (tutorialPanel != null)
+                {
+                    tutorialPanel.SlideOut();
+                    GameController.Instance.GameState = EnumService.GameState.InGame;
+                }
             }
-            GameController.Instance.GameState = EnumService.GameState.InGame;
         }
 
         public virtual void OnTutorialZoneStay(Collider col) { }

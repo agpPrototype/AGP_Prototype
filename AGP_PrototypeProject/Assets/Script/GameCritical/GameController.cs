@@ -161,6 +161,30 @@ namespace GameCritical
             return m_ActionZoneList;
         }
 
+        public List<GameObject> GetAllEnemies()
+        {
+            ActionZone[] actionZones = GetAllActionZones();
+            List<GameObject> enemies = new List<GameObject>();
+
+            if (actionZones != null)
+            {
+                for (int i = 0; i < actionZones.Length; i++)
+                {
+                    ActionZone az = actionZones[i];
+                    if (az != null)
+                    {
+                        GameObject[] azEnemies = az.EnemyList;
+                        if (azEnemies != null)
+                        {
+                            enemies.AddRange(azEnemies);
+                        }
+                    }
+                }
+            }
+
+            return enemies;
+        }
+
         //public GameObject FindClosestAgrodEnemy()
         //{
 

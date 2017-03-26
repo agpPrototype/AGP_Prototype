@@ -13,8 +13,13 @@ namespace Inputs
         [SerializeField]
         private PauseMenu m_PauseMenu;
 
+        [SerializeField]
+        private float m_StartButtonDelay = .01f;
+        private bool m_CanPressStart;
+
         void Start()
         {
+            m_CanPressStart = true;
             if (m_PauseMenu == null)
                 Debug.LogError("Pause Menu is null in PauseScreenHandler");
             else
@@ -25,9 +30,26 @@ namespace Inputs
         {
             if (uia.Start)
             {
-                if (m_PauseMenu != null)
+                if(m_CanPressStart) // this is check for timer delay on button press. (will be changed in future)
                 {
-                    m_PauseMenu.Show();
+                    if (m_PauseMenu != null)
+                    {
+                        StartCoroutine(StartButtonDelay()); // starts coroutine that will deal with button delay for start button press.
+
+                        if (m_PauseMenu.gameObject.activeSelf) // if menu is open then if start is pressed close menu.
+                        {
+                            m_PauseMenu.gameObject.SetActive(false);
+
+                            if(!UIManager.Instance.TutorialCanvas.TutorialPanel.GetIsActive()) // if tutorial is not open.
+                            {
+                                GameController.Instance.GameState = EnumService.GameState.InGame;
+                            }
+                        }
+                        else // Show menu if it isn't active.
+                        {
+                            m_PauseMenu.Show();
+                        }
+                    }
                 }
             }
             if (uia.Back)
@@ -35,9 +57,19 @@ namespace Inputs
                 if (m_PauseMenu != null)
                 {
                     m_PauseMenu.gameObject.SetActive(false);
-                    GameController.Instance.GameState = EnumService.GameState.InGame;
+                    if (!UIManager.Instance.TutorialCanvas.TutorialPanel.GetIsActive()) // if tutorial is not open.
+                    {
+                        GameController.Instance.GameState = EnumService.GameState.InGame;
+                    }
                 }
             }
+        }
+
+        private IEnumerator StartButtonDelay()
+        {
+            m_CanPressStart = false;
+            yield return new WaitForSeconds(m_StartButtonDelay);
+            m_CanPressStart = true;
         }
     }
 }

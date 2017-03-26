@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UI;
 
 public class BondSliderEffect : BondEffect {
 
@@ -9,30 +10,52 @@ public class BondSliderEffect : BondEffect {
 	private Slider BondBar;
 
     [SerializeField]
-    private Image m_FadeImage;
-
+    private ImageGlowEffect m_BondBarFade;
     [SerializeField]
     private Color m_GoodBondFadeColor;
-
     [SerializeField]
     private Color m_BadBondFadeColor;
-
     [SerializeField]
     private Color m_NeturalBondFadeColor;
 
-    public void ShowBadBondFade()
+    [SerializeField]
+    private Text m_Text;
+
+    public enum BondLevel
     {
-        m_FadeImage.color = m_GoodBondFadeColor;
+        Good,
+        Bad,
+        Neutral
     }
 
-    public void ShowGoodBondFade()
+    void Start()
     {
-        m_FadeImage.color = m_BadBondFadeColor;
+        SetBondLevel(BondLevel.Neutral, "Bond - neutral");
     }
 
-    public void ShowNeutralBondFade()
+    public void SetBondLevel(BondLevel level, string text)
     {
-        m_FadeImage.color = m_NeturalBondFadeColor;
+        switch (level)
+        {
+            case BondLevel.Good:
+                m_BondBarFade.m_TransitionSpeed = 4f;
+                m_BondBarFade.SetStartColor(m_NeturalBondFadeColor);
+                m_BondBarFade.SetEndColor(m_GoodBondFadeColor);
+                m_Text.text = text;
+                break;
+            case BondLevel.Bad:
+                m_BondBarFade.m_TransitionSpeed = 4f;
+                m_BondBarFade.SetStartColor(m_NeturalBondFadeColor);
+                m_BondBarFade.SetEndColor(m_BadBondFadeColor);
+                m_Text.text = text;
+                break;
+            case BondLevel.Neutral:
+                m_BondBarFade.m_TransitionSpeed = 4f;
+                m_BondBarFade.SetStartColor(m_NeturalBondFadeColor);
+                m_BondBarFade.SetEndColor(m_NeturalBondFadeColor);
+                m_Text.text = text;
+                break;
+        }
     }
 
 	public override void DoEffect() 

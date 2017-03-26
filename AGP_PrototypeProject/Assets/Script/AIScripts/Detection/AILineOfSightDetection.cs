@@ -196,6 +196,13 @@ namespace AI
                     for (int i = 0; i < actualVisibles.Count; i++)
                     {
                         AIVisible currVisible = actualVisibles[i];
+
+                        // if visible component is not enabled then continue.
+                        if (!currVisible.enabled)
+                        {
+                            continue;
+                        }
+
                         if (highestThreat)
                         {
                             if (currVisible.ThreatLevel > highestThreat.ThreatLevel)

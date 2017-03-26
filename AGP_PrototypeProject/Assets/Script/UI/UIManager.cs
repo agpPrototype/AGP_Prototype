@@ -15,6 +15,9 @@ namespace UI
         public static UIManager Instance;
 
         public TutorialCanvas TutorialCanvas;
+        public EndScreenCanvas EndScreenCanvas;
+        public PauseScreenCanvas PauseScreenCanvas;
+        public HUDCanvas HUDCanvas;
 
         private void Awake()
         {

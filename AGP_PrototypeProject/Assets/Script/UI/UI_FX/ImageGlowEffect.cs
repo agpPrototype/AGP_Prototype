@@ -8,22 +8,19 @@ namespace UI
     [RequireComponent(typeof(Image))]
     public class ImageGlowEffect : MonoBehaviour
     {
-
-        private Image m_Image;
-
         [SerializeField]
         private Color m_StartColor;
-
         [SerializeField]
         private Color m_EndColor;
 
-        [SerializeField]
-        private float m_TransitionSpeed;
+        public float m_TransitionSpeed = 4.0f;
 
         private Vector4 m_StartColAsVect;
         private Vector4 m_EndColAsVect;
         private float m_fractionLerped;
         private bool m_IsTargetEndColor;
+        private Image m_Image;
+
 
         // Use this for initialization
         void Start()
@@ -35,7 +32,19 @@ namespace UI
                 m_Image.color = m_StartColor;
 
             m_fractionLerped = 0.0f;
+            SetStartColor(m_StartColor);
+            SetEndColor(m_EndColor);
+        }
+
+        public void SetStartColor(Color color)
+        {
+            m_StartColor = color;
             m_StartColAsVect = new Vector4(m_StartColor.r, m_StartColor.g, m_StartColor.b, m_StartColor.a);
+        }
+
+        public void SetEndColor(Color color)
+        {
+            m_EndColor = color;
             m_EndColAsVect = new Vector4(m_EndColor.r, m_EndColor.g, m_EndColor.b, m_EndColor.a);
         }
 

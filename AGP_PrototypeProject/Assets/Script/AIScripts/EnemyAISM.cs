@@ -11,6 +11,7 @@ namespace AI
     [RequireComponent(typeof(AILineOfSightDetection))]
     [RequireComponent(typeof(AIAudioDetection))]
     [RequireComponent(typeof(NavMeshAgent))]
+    [RequireComponent(typeof(AudioSource))]
     public class EnemyAISM : AIStateMachine
     {
         private enum EnemyAIAnimation
@@ -84,6 +85,7 @@ namespace AI
         private float m_UpdateIntervalTimer = 0.0f;
 
         [SerializeField]
+        [Tooltip("Distance when AI starts attacking.")]
         private float m_AttackRange = 6.0f;
 
         [SerializeField]
@@ -91,10 +93,12 @@ namespace AI
         private float m_LookTime;
 
         [SerializeField]
+        [Tooltip("Damage amount per attack.")]
         private float m_AttackDamage = 5.0f;
 
-		[SerializeField]
-		private AudioSource m_WalkingAudioSource;
+        [SerializeField]
+        [Tooltip("Once is chasing something it will always keep track of it within this distance.")]
+        private float m_TrackDistance = 15.0f;
         #endregion
 
         #region Timer Members (general timer members to be used for any timer in AI)
@@ -114,6 +118,7 @@ namespace AI
         private AILineOfSightDetection m_AILineOfSightDetection;
         private AIAudioDetection m_AIAudioDetection;
         private Animator m_Animator;
+        private AudioSource m_WalkingAudioSource;
         #endregion
 
         #region Target Members (used to keep track of target)
@@ -121,7 +126,6 @@ namespace AI
         private Vector3 m_TargetLastPosition;
         private Vector3 m_TargetLastVelocity;
         private bool m_IsTargetInAttackRange;
-        private List<AIDetectable> m_ExploredIgnorableTargets; // list of objects that the AI has explored and has no interest in.
         private AIDetectable m_Target; // current prioritized target.
 
         #endregion
@@ -147,8 +151,8 @@ namespace AI
             m_AIAudioDetection = GetComponent<AIAudioDetection>();
             m_NavAgent = GetComponent<NavMeshAgent>();
             m_Animator = GetComponent<Animator>();
+            m_WalkingAudioSource = GetComponent<AudioSource>();
             m_CurrentWaypoint = PatrolArea.GetNextWaypoint(null);
-            m_ExploredIgnorableTargets = new List<AIDetectable>();
             initBehaviorTrees();
             SetMainState(EnemyAIState.PATROLLING);
         }
@@ -537,28 +541,45 @@ namespace AI
             m_PatrolBT.AddDecisionNodeTo(waitWaypoint, patrolNode); // node to loop back to patrolling.
         }
 
+        private bool IsTargetInTrackingRange()
+        {
+            if (m_Target)
+            {
+                return (m_Target.transform.position - this.transform.position).sqrMagnitude <= (m_TrackDistance * m_TrackDistance);
+            }
+            return false;
+        }
+
         private void UpdateFactors()
         {
             /* only look for threats when not attacking, because if we are attacking then
-            we are infinitely chasing until we die or kill the target. */
-            if(m_State != EnemyAIState.ATTACKING)// && m_State != EnemyAIState.CHASING)
+             * we dont want to look for other targets. */
+            if(m_State != EnemyAIState.ATTACKING)
             {
-                //bool isInSameZone = GameCritical.GameController.Instance.GetActionZoneFromPoint(m_Target.transform.position) == m_MyActionZone;
+                // get highest threat.
+                AIDetectable possibleHighestThreat = (DetectionManager.Instance.GetHighestThreat(this.gameObject, m_AIAudioDetection, m_AILineOfSightDetection));
+                // if no threat detected
+                if(possibleHighestThreat == null)
+                {
+                    // before nullifying our target make sure it is out of detection range.
+                    if (!IsTargetInTrackingRange())
+                    {
+                        // ok our original target is out of range so nullify it.
+                        m_Target = possibleHighestThreat;
+                    }
+                }
+                else
+                {
+                    // update target to highest priority threat.
+                    m_Target = possibleHighestThreat;
+                }
 
-                // get highest threat and store as target.
-                m_Target = (DetectionManager.Instance.GetHighestThreat(this.gameObject, m_AIAudioDetection, m_AILineOfSightDetection));
+                // if we have a target
                 if(m_Target != null)
                 {
-                    if(m_ExploredIgnorableTargets.Contains(m_Target))
-                    {
-                        m_Target = null;
-                    }
-                    else
-                    {
-                        SetMainState(EnemyAIState.CHASING);
-                        /* Just in case a timer was interrupted when we switch states.*/
-                        m_IsTimerSet = false;
-                    }
+                    SetMainState(EnemyAIState.CHASING);
+                    /* Just in case a timer was interrupted when we switch states.*/
+                    m_IsTimerSet = false;
                 }
             }
 

@@ -54,6 +54,13 @@ namespace AI
                     for (int i = 0; i < actualAudibles.Count; i++)
                     {
                         AIAudible currAudible = actualAudibles[i];
+
+                        // if audible is not enabled then continue.
+                        if(!currAudible.enabled)
+                        {
+                            continue;
+                        }
+
                         if (highestThreat)
                         {
                             if (currAudible.ThreatLevel > highestThreat.ThreatLevel)
