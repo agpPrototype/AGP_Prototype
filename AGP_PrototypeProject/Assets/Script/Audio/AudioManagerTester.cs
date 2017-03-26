@@ -20,7 +20,7 @@ public class AudioManagerTester : MonoBehaviour {
 		if(m_Timer >= timeToRepeat)
 		{
 			m_Timer = 0.0f;
-			AudioManager.PlaySFX_3D(clip, 1.0f, parent);
+			AudioManager.PlaySFX_3D(clip, 1.0f, new Vector3(0,0,0) , parent);
 		}
 		else
 		{

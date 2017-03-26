@@ -154,7 +154,7 @@ public class MoveComponent : MonoBehaviour {
     {
         if(m_WalkLeftSound != null)
         {
-            AudioManager.PlaySFX_3D(m_WalkLeftSound, 1.0f, this.transform);
+            AudioManager.PlaySFX_3D(m_WalkLeftSound, 1.0f, this.transform.position);
         }
         else
         {
@@ -166,7 +166,7 @@ public class MoveComponent : MonoBehaviour {
     {
         if (m_WalkRightSound != null)
         {
-            AudioManager.PlaySFX_3D(m_WalkRightSound, 1.0f, this.transform);
+            AudioManager.PlaySFX_3D(m_WalkRightSound, 1.0f, this.transform.position);
         }
         else
         {
