@@ -5,8 +5,10 @@ using UnityEngine;
 
 namespace HealthCare
 {
+    [RequireComponent(typeof(AudioContainer))]
     public class EnemyHealth : Health
     {
+        private AudioContainer m_AudioContainer;
 
         private Dictionary<GameObject, float> m_DamagerToDamage; // map of damager to the amount of damage they gave.
 
@@ -15,6 +17,10 @@ namespace HealthCare
             base.Initialize();
         }
 
+        void Start()
+        {
+            m_AudioContainer = GetComponent<AudioContainer>();
+        }
 
         protected override void OnDeathBegin()
         {
@@ -23,6 +29,10 @@ namespace HealthCare
 
             if (m_Animator)
             {
+                if (m_AudioContainer)
+                {
+                    m_AudioContainer.PlaySound(3);
+                }
                 m_Animator.SetBool("Dead", true);
                 Destroy(gameObject, 2.0f);
             }
@@ -35,6 +45,10 @@ namespace HealthCare
 
             if (enemyAI)
             {
+                if(m_AudioContainer)
+                {
+                    m_AudioContainer.PlaySound(2);
+                }
                 if(!(enemyAI.CurrentState == AI.EnemyAISM.EnemyAIState.ATTACKING || enemyAI.CurrentState == AI.EnemyAISM.EnemyAIState.CHASING))
                 {
                     if (dmgDealer.GetComponent<AI.Detection.AIVisible>())
