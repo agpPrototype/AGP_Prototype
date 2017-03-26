@@ -19,6 +19,9 @@ namespace HealthCare
         public bool IsDead { get { return m_IsDead; } }
 
         protected float m_CurrHP;
+        public float CurrentHP { get { return m_CurrHP; } }
+
+        [SerializeField]
         protected float m_Damage = 20.0f;
         public float Damage
         {

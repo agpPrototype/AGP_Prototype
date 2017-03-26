@@ -13,6 +13,7 @@ namespace Items
         private float LifeSpan = 2.0f;
         [SerializeField]
         private float Damage = 20.0f;
+        public float ArrowDamage { get { return Damage; } }
 
         private Rigidbody m_Rigidbody;
 
@@ -47,9 +48,23 @@ namespace Items
                 GameCritical.GameController.Instance.Wolf.GetComponent<AI.CompanionAISM>().NotifyPlayerHitTarget(col.gameObject);
             }
 
-            if(!col.gameObject.GetComponent<Player.PlayerControl>() && !col.gameObject.GetComponent<ActionZone>())
-                Destroy(gameObject);
+            if (!col.gameObject.GetComponent<Player.PlayerControl>() && !col.gameObject.GetComponent<ActionZone>())
+            {
+                GetComponent<MeshRenderer>().enabled = false;
+                GetComponent<Rigidbody>().useGravity = false;
+                GetComponent<Rigidbody>().velocity = Vector3.zero;
+                GetComponent<Collider>().enabled = false;
+                Time.timeScale = 1.0f;
+                StartCoroutine(DelayDestroy());
+                //Destroy(gameObject);
+            }
         }
-    }
+
+        IEnumerator DelayDestroy()
+        {
+            yield return new WaitForSeconds(1.5f);
+            Destroy(gameObject);
+        }
+    } 
 }
 

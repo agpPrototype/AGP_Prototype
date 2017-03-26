@@ -665,14 +665,11 @@ namespace AI
             ActionZone curAZ = m_GameControl.CurrentActionZone;
 
             // Determine if Stealth is correct state to be in
-
             if (CurrentCommand != WolfCommand.STAY && m_CurrentMainState != WolfMainState.Attack)
             {               
                 if (isPlayerStealthed && m_CurrentMainState != WolfMainState.Stealth && curAZ && curAZ.GetNumEnemiesAlive() > 0)
                 {
                     SetMainState(WolfMainState.Stealth);
-                    Debug.Log("Accalia Switched to Stealth state");
-
                     return;
                 }
             }
@@ -692,7 +689,7 @@ namespace AI
                     SetMainState(WolfMainState.Follow);
                     return;
                 }
-                else if(Player.GetComponent<MoveComponent>().m_Crouching)
+                else if(isPlayerStealthed)
                 {
                     m_StealthNav.FindOwnPath = true;
                     SetMainState(WolfMainState.Stealth);
@@ -741,8 +738,6 @@ namespace AI
                 m_PreviousMainState = m_CurrentMainState;
 
             m_CurrentMainState = newState;
-
-            //m_CurrentBT.RestartTree();
 
             // Switch the current behavior tree to the new state's tree
             switch (m_CurrentMainState)

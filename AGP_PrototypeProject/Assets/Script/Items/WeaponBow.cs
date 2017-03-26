@@ -125,6 +125,12 @@ namespace Items
                 SpendArrow();
                 m_IsPulling = true;
                 m_CurrentArrow.GetComponent<ArrowComponent>().Initialize();
+
+                if (ActivateKillCam(arrowHit.collider.gameObject, m_CurrentArrow.GetComponent<ArrowComponent>()))
+                {
+                    Time.timeScale = 0.45f;
+                    GameCritical.GameController.Instance.Player.GetComponent<MoveComponent>().m_CamRig.Target = m_CurrentArrow.transform;
+                }
             }
         }
 
@@ -136,6 +142,22 @@ namespace Items
 
             // reset force
             m_ArrowForce = 0.0f;
+        }
+
+        private bool ActivateKillCam(GameObject hitObject, ArrowComponent arrow)
+        {
+            if (hitObject && hitObject.GetComponent<AI.EnemyAISM>()) {
+                float enemyHP = hitObject.GetComponent<HealthCare.Health>().CurrentHP;
+                if(enemyHP - arrow.ArrowDamage <= 0)
+                {
+                    if(GameCritical.GameController.Instance.BondManager.BondStatus > 50.0f)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         void AddArrow(int num)

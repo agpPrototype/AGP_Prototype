@@ -25,14 +25,18 @@ public class AudioManager : MonoBehaviour {
 		}
 	}
 
-	public static void PlaySFX_3D(AudioClip clip, float volume, Transform parent = null)
+	// plays a 3d sound at a position relative to the passed parent transform
+	// by default the transform is null and the relativePos parameter will be in world space
+	// otherwise, the relativePos parameter will be in the parent space
+	public static void PlaySFX_3D(AudioClip clip, float volume, Vector3 relativePos, Transform parent = null)
 	{
 		if(Instance != null)
 		{
-			Instance.Play3DSound(clip, volume, parent);
+			Instance.Play3DSound(clip, volume, relativePos, parent);
 		}
 	}
 
+	// plays a 2d sound
 	public static void PlaySFX_2D(AudioClip clip, float volume)
 	{
 		if(Instance != null)
@@ -42,9 +46,11 @@ public class AudioManager : MonoBehaviour {
 	}
 
 	// Plays a sound that is in 3D space and can be parented to an object.
-	private void Play3DSound(AudioClip clip, float volume, Transform parent)
+	private void Play3DSound(AudioClip clip, float volume, Vector3 relativePos, Transform parent)
 	{
 		AudioSource audInstance = (AudioSource)Instantiate(audioSourcePrefab, parent);
+
+		audInstance.transform.localPosition = relativePos;
 
 		StartCoroutine(PlaySoundCoroutine(audInstance, clip, volume, 1.0f));
 	}
