@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Player;
+using Audio;
 
 
 namespace Items
 {
+    [RequireComponent(typeof(AudioContainer))]
     public class WeaponBow : EquipableItem {
 
         [SerializeField] 
@@ -25,6 +27,8 @@ namespace Items
 
         private float m_FireDelay = 0.0f;
 
+        private AudioContainer m_AudioContainer;
+
 
         // Use this for initialization
         void Awake () 
@@ -35,6 +39,11 @@ namespace Items
             }
             m_IsPulling = false;
             m_ArrowForce = 0f;
+        }
+
+        void Start()
+        {
+            m_AudioContainer = GetComponent<AudioContainer>();
         }
 
         // Update is called once per frame
@@ -86,6 +95,8 @@ namespace Items
                 m_CurrentArrow = Instantiate(Arrow, ArrowSpawnLocation.position, GetComponentInParent<PlayerControl>().transform.rotation) as GameObject;
                 float horizontalAmmount = (Screen.width / 2.0f) / Camera.main.pixelWidth;
                 float verticalAmmount = (Screen.height / 2.0f) / Camera.main.pixelHeight;
+
+                m_AudioContainer.PlaySound(1); // play shoot arrow sound.
 
                 //ray hit point
                 Vector3 rayHitPoint = Vector3.zero;
@@ -146,7 +157,10 @@ namespace Items
 
         private bool ActivateKillCam(GameObject hitObject, ArrowComponent arrow)
         {
-            if (hitObject && hitObject.GetComponent<AI.EnemyAISM>()) {
+            if (hitObject && hitObject.GetComponent<AI.EnemyAISM>())
+            {
+                // play killcam noise
+                m_AudioContainer.PlaySound(2);
                 float enemyHP = hitObject.GetComponent<HealthCare.Health>().CurrentHP;
                 if(enemyHP - arrow.ArrowDamage <= 0)
                 {

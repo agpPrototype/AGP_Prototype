@@ -12,6 +12,9 @@ public class BondButton : MonoBehaviour {
 	[SerializeField]
 	private float ease = 0.0f;
 
+	[SerializeField]
+	private Canvas MyCanvas;
+
 	private bool m_CanDrag = false;
 
 	public void UpdatePosition()
@@ -35,8 +38,23 @@ public class BondButton : MonoBehaviour {
 		
 		if (m_CanDrag && Input.GetMouseButton(0))
 		{
+			Vector2 pos;
+			RectTransformUtility.ScreenPointToLocalPointInRectangle(MyCanvas.transform as RectTransform, Input.mousePosition, MyCanvas.worldCamera, out pos);
+			transform.position = new Vector3(transform.position.x, MyCanvas.transform.TransformPoint(pos).y, transform.position.z);
+
+			transform.localPosition = new Vector3(transform.localPosition.x, Mathf.Clamp(transform.localPosition.y, -75.0f, 75.0f), transform.localPosition.z);
+
+			Bond.BondManager b = Bond.BondManager.Instance;
+			if (b)
+			{
+				b.BondStatus = (int)((transform.localPosition.y + 75.0f) / 1.5f);
+			}
+
+
+			/*
 			float mouseY = Input.mousePosition.y;
-			float buttonY = this.gameObject.transform.position.y;
+			float buttonY = this.GetComponent<RectTransform>().position.y;
+			
 
 			float v = mouseY - buttonY;
 
@@ -45,9 +63,10 @@ public class BondButton : MonoBehaviour {
 				Bond.BondManager b = Bond.BondManager.Instance;
 				if (b)
 				{
-					b.BondStatus = b.BondStatus + (int)(v * 0.75f);
+					b.BondStatus = b.BondStatus + (int)(v * 13.333f);
 				}
 			}
+			*/
 		}
 	}
 }

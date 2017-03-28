@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Inputs;
+using Audio;
 
 /// <summary>
 /// author: Rob Neir
@@ -12,6 +13,7 @@ using Inputs;
 namespace UI
 {
     [RequireComponent(typeof(Animator))]
+    [RequireComponent(typeof(AudioContainer))]
     public class TutorialPanel : UIComponent
     {
         [SerializeField]
@@ -24,11 +26,14 @@ namespace UI
         private Transform m_UIPrefabSpawnPoint;
 
         private Animator m_Animator;
+        private AudioContainer m_AudioContainer;
+        public AudioContainer AudioContainer { get { return m_AudioContainer; } }
 
         // Use this for initialization
         void Start()
         {
             m_Animator = GetComponent<Animator>();
+            m_AudioContainer = GetComponent<AudioContainer>();
 
             if (m_TipText == null)
                 Debug.LogError("Tip text is null in TutorialPanel");
@@ -40,6 +45,7 @@ namespace UI
 
         public void SlideIn()
         {
+            m_AudioContainer.Play2DSound(1);
             m_Animator.SetBool("IsOnScreen", true);
             Activate();
         }

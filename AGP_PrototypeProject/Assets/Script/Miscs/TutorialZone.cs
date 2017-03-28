@@ -42,7 +42,7 @@ namespace Misc
                 {
                     tutorialPanel.PopulatePanel(m_Title, m_Tip, m_UIPrefabToSpawn);
                     tutorialPanel.SlideIn();
-                    //GameController.Instance.GameState = EnumService.GameState.InTutorial;
+                    GameController.Instance.GameState = EnumService.GameState.InTutorial;
                 }
             }
         }
