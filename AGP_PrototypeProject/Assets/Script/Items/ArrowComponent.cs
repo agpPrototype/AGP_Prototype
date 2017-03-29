@@ -10,7 +10,8 @@ namespace Items
     {
 
         [SerializeField]
-        private float LifeSpan = 2.0f;
+        private float m_LifeSpan = 2.0f;
+        public float LifeSpan { get { return m_LifeSpan; } }
         [SerializeField]
         private float Damage = 20.0f;
         public float ArrowDamage { get { return Damage; } }
@@ -48,7 +49,7 @@ namespace Items
                 GameCritical.GameController.Instance.Wolf.GetComponent<AI.CompanionAISM>().NotifyPlayerHitTarget(col.gameObject);
             }
 
-            if (!col.gameObject.GetComponent<Player.PlayerControl>() && !col.gameObject.GetComponent<ActionZone>())
+            if (!col.gameObject.GetComponent<Player.PlayerControl>() && !col.gameObject.GetComponent<ActionZone>() && !col.gameObject.GetComponent<Misc.TutorialZone>())
             {
                 GetComponent<MeshRenderer>().enabled = false;
                 GetComponent<Rigidbody>().useGravity = false;

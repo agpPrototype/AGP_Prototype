@@ -74,6 +74,7 @@ public class AudioManager : MonoBehaviour {
 
 		// Destroy audio source after it has completely played.
 		yield return new WaitForSeconds(audInstance.clip.length);
-		Destroy(audInstance.gameObject);
+        if(audInstance && audInstance.gameObject)
+		    Destroy(audInstance.gameObject);
 	}
 }

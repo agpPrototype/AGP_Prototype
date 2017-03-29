@@ -114,7 +114,10 @@ namespace Audio
         GROWL1, GROWL2, GROWL3,
         WHINE1, WHINE2,
         COMPLAIN, WHINE3,
-        DAMAGED
+        DAMAGED,
+        WHINE4, WHINE5, WHINE6,
+        GROWL4,
+        BARK3
 
     }
 }

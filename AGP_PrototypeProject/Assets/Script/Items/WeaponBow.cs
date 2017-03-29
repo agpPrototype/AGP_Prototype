@@ -24,8 +24,10 @@ namespace Items
         private LayerMask m_LayerMask;
 
         [SerializeField]
-        [Tooltip("If the distance is greater than this then the kill cam won't play.")]
-        private float m_MaxKillCamdistance;
+        [Tooltip("Speed of the arrow shot.")]
+        float m_ArrowSpeed = 30.0f;
+        
+        private float m_MaxKillCamdistance; // If the distance is greater than this then the kill cam won't play
 
         private GameObject m_CurrentArrow;
 
@@ -63,29 +65,6 @@ namespace Items
                 m_ArrowForce += 1.0f;
             }
             m_FireDelay += Time.deltaTime;
-            ////ray hit point
-            //Vector3 rayHitPoint = Vector3.zero;
-            //Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0.0f));
-            //Vector3 worldSpace = Vector3.zero;
-            //RaycastHit arrowHit;
-            //if (Physics.Raycast(ray, out arrowHit))
-            //{
-            //    worldSpace = arrowHit.point;
-            //    rayHitPoint = worldSpace;
-            //}
-
-            //Vector3 connectVec = Vector3.zero;
-            //if (rayHitPoint != Vector3.zero)
-            //{
-            //    connectVec = rayHitPoint - ArrowSpawnLocation.position;
-            //}
-            //else
-            //{
-            //    Vector3 ininiteHitPoint = Camera.main.transform.position + ray.direction * 1000.0f;
-            //    connectVec = ininiteHitPoint - ArrowSpawnLocation.position;
-            //}
-            //Debug.DrawRay(ArrowSpawnLocation.position, connectVec, Color.red);
-            //Debug.DrawRay(ArrowSpawnLocation.position, ray.direction, Color.yellow);
         }
 
         public override void DoAction()
@@ -129,8 +108,8 @@ namespace Items
                 }
                 connectVec.Normalize();
 
-                m_CurrentArrow.GetComponent<Rigidbody>().velocity = connectVec * 30.0f;
-                
+                m_CurrentArrow.GetComponent<Rigidbody>().velocity = connectVec * m_ArrowSpeed;
+
                 // rotate arrow immediately to correct orientation.
                 Vector3 newDir = Vector3.RotateTowards(m_CurrentArrow.transform.forward, connectVec, 1, 0.0f);
                 m_CurrentArrow.transform.rotation = Quaternion.LookRotation(newDir);
@@ -143,6 +122,7 @@ namespace Items
                 Collider arrowHitCol = arrowHit.collider;
                 if(arrowHitCol != null)
                 {
+                    m_MaxKillCamdistance = m_ArrowSpeed * m_CurrentArrow.GetComponent<ArrowComponent>().LifeSpan; // max distance Arrow should travel and if it is too large then don't play killcam.
                     float distToTarget = (arrowHitCol.transform.position - ArrowSpawnLocation.position).magnitude;
                     if (distToTarget < m_MaxKillCamdistance) // only allow for the kill cam if distance is within range.
                     {
@@ -171,12 +151,12 @@ namespace Items
             if (hitObject && hitObject.GetComponent<AI.EnemyAISM>())
             {
                 // play killcam noise
-                m_AudioContainer.PlaySound(2);
                 float enemyHP = hitObject.GetComponent<HealthCare.Health>().CurrentHP;
                 if(enemyHP - arrow.ArrowDamage <= 0)
                 {
                     if(GameCritical.GameController.Instance.BondManager.BondStatus > 50.0f)
                     {
+                        m_AudioContainer.PlaySound(2);
                         return true;
                     }
                 }

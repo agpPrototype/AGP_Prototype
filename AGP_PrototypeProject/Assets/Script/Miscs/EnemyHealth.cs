@@ -20,6 +20,7 @@ namespace HealthCare
 
         void Start()
         {
+            Initialize();
             m_AudioContainer = GetComponent<AudioContainer>();
         }
 
