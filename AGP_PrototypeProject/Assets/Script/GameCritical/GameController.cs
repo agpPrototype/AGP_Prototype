@@ -7,6 +7,8 @@ using Utility;
 using EndGame;
 using Player;
 using AI;
+using UI;
+using UnityEngine.SceneManagement;
 
 namespace GameCritical
 {
@@ -20,6 +22,7 @@ namespace GameCritical
         private SmellSmokeDriver m_SmellSmokeDriver;
         private EndGameSequence m_EndGameSequence;
         private PlayerControl m_PlayerControl;
+        private HUDCanvas m_HUDCanvas;
 
         private GameObject m_Player;
         private GameObject m_Wolf;
@@ -113,6 +116,8 @@ namespace GameCritical
 
             m_EndGameSequence = GetComponent<EndGameSequence>();
 
+            m_HUDCanvas = GetComponentInChildren<HUDCanvas>();
+
             m_GameState = EnumService.GameState.InGame;
 
             //initialize peacetrees
@@ -195,6 +200,9 @@ namespace GameCritical
         public SmellSmokeDriver SmellSmokeDriver { get { return m_SmellSmokeDriver; } }
         public GameObject Player { get { return m_Player; } }
         public GameObject Wolf { get { return m_Wolf; } }
+        public EndGameSequence EndGameSequence { get { return m_EndGameSequence; } }
+        public PlayerControl PlayerControl { get { return m_PlayerControl; } }
+        public HUDCanvas HUDCanvas { get { return m_HUDCanvas; } }
 
         public ActionZone CurrentActionZone {
             get { return m_CurrentActionZone; }
@@ -216,6 +224,21 @@ namespace GameCritical
 
             }
 
+        }
+
+        public void RestartGameOnDeath(string deathText)
+        {
+            StartCoroutine("DoRestartingOnDeath", deathText);
+        }
+
+        IEnumerator DoRestartingOnDeath(string deathText)
+        {
+            if (m_HUDCanvas)
+            {
+                m_HUDCanvas.ShowDeathText(deathText);
+            }
+            yield return new WaitForSeconds(3);
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name, LoadSceneMode.Single);
         }
     }
 

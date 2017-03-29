@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using GameCritical;
 
 namespace HealthCare
 {
@@ -13,6 +14,8 @@ namespace HealthCare
             {
                 m_Animator.SetBool("Dead", true);                              
             }
+            //showing death text
+            GameController.Instance.RestartGameOnDeath("Player is dead! Restarting...");
         }
 
         public override void TakeDamage(float damage, GameObject dmgDealer = null)
