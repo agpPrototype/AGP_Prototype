@@ -66,7 +66,17 @@ namespace EndGame
         {
             if (state == EnumService.GameState.Win_SwitchActivated)
             {
+                DisableHUD();
                 CrumbleAndRise();
+            }
+        }
+
+        void DisableHUD()
+        {
+            GameObject HUD = GameController.Instance.GetComponentInChildren<HUDCanvas>().gameObject;
+            if (HUD)
+            {
+                HUD.SetActive(false);
             }
         }
 
