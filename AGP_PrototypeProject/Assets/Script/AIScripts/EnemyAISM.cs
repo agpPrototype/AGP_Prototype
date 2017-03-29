@@ -38,7 +38,10 @@ namespace AI
 			{
 				SetAudioIsWalking(false);
 				m_Animator.SetBool("Walk", false);
+                int IDAttack = Random.Range(1, 4);
+                m_Animator.SetInteger("IDAttack", IDAttack);
                 m_Animator.SetBool("Attack", true);
+                
             }
         }
 
