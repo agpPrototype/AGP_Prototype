@@ -48,7 +48,7 @@ namespace Items
                 GameCritical.GameController.Instance.Wolf.GetComponent<AI.CompanionAISM>().NotifyPlayerHitTarget(col.gameObject);
             }
 
-            if (!col.gameObject.GetComponent<Player.PlayerControl>() && !col.gameObject.GetComponent<ActionZone>())
+            if (!col.gameObject.GetComponent<Player.PlayerControl>() && !col.gameObject.GetComponent<ActionZone>() && !col.gameObject.GetComponent<Misc.TutorialZone>())
             {
                 GetComponent<MeshRenderer>().enabled = false;
                 GetComponent<Rigidbody>().useGravity = false;

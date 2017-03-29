@@ -157,6 +157,11 @@ namespace AI
         [SerializeField]
         private float m_ComeBondRequirement;
 
+        [SerializeField]
+        private float m_MaxTimeToStay;
+        private bool m_StayTimerSet = false;
+        private float m_StayEndTime;
+
         #endregion
 
         #region StateMachine Vars
@@ -549,6 +554,8 @@ namespace AI
 
             m_StealthTree.AddDecisionNodeTo(navToNextStealthPt_path, rotateTowardsNextSP);
 
+            //Check if should break stealth before moving to next Node
+            m_StealthTree.AddDecisionNodeTo(rotateTowardsNextSP, switchToAttackNode);
 
             /// NODE ///
             /// 
@@ -577,7 +584,7 @@ namespace AI
             m_StealthTree.AddDecisionNodeTo(waitHere, doNothingNode);
 
             //Check if should break stealth before moving to next Node
-            m_StealthTree.AddDecisionNodeTo(waitHere, switchToAttackNode);
+            //m_StealthTree.AddDecisionNodeTo(waitHere, switchToAttackNode);
 
             // Loop back to "nav to next" if not at end of path
             m_StealthTree.AddDecisionNodeTo(waitHere, findNextStealthPt_path);
@@ -601,6 +608,13 @@ namespace AI
             rootNode.AddAction(doNothing);
 
             m_StayTree = new BehaviorTree(WolfMainState.Stay, rootNode, this);
+
+            DecisionNode endStay = new DecisionNode(DecisionType.SwitchStates, "SwitchToPrevState");
+            Condition stayTimer = new Condition(IsStayTimerDone);
+            Action switchToPrevState = new Action(SetMainState, m_PreviousMainState);
+            endStay.AddCondition(stayTimer);
+            endStay.AddAction(switchToPrevState);
+            m_StayTree.AddDecisionNodeTo(rootNode, endStay);
         }
 
         #endregion
@@ -635,6 +649,23 @@ namespace AI
                 return true;
 
             return false;
+        }
+
+        private bool IsStayTimerDone()
+        {
+            if (!m_StayTimerSet)
+            {
+                m_StayTimerSet = true;
+                m_StayEndTime = Time.time + m_MaxTimeToStay;
+            }
+
+            if (Time.time < m_StayEndTime)
+            {
+                return false;
+            }
+
+            m_StayTimerSet = false;
+            return true;
         }
 
         #endregion
@@ -876,6 +907,9 @@ namespace AI
                     m_EnemyTarget = hitObject;
                     SetMainState(WolfMainState.Attack);
                     SetCurrentCommand(WolfCommand.NONE);
+
+                    //if (m_PreviousMainState != WolfMainState.Attack)
+                    m_AudioContainer.PlaySound((int)GetRandomGrowlSound());
                 }
                 else
                 {
@@ -939,7 +973,7 @@ namespace AI
             WolfNavAgent.CalculatePath(Location, path);
             if (path.corners.Length == 0)
             {
-                Debug.Log("NO PATH FOUND! THIS SHOULD NOT HAPPEN!!");
+                //Debug.Log("NO PATH FOUND! THIS SHOULD NOT HAPPEN!!");
             }
 
             if (path.corners.Length != 0)
@@ -1077,6 +1111,7 @@ namespace AI
                 Debug.Log("Enemy is a null reference!");
                 // Reset tree to find a new target
                 SetMainState(WolfMainState.Attack);
+                m_AudioContainer.PlaySound((int)GetRandomGrowlSound());
             }
         }
 
@@ -1144,15 +1179,16 @@ namespace AI
 
         private void AttackMyEnemy()
         {
-            //Debug.Log("Attacking enemy!");
-           // if (!m_IsAttacking)
+
             {
-                //Debug.Log("Do Attack inside!");
                 m_IsAttacking = true;
                 m_WolfMoveComp.Stop();
                 GetComponent<Animator>().SetBool("Attack1", true);
                 int IDAttack = Random.Range(1, 4);
                 GetComponent<Animator>().SetInteger("IDAttack", IDAttack);
+
+                if (Random.Range(1, 3) % 2 == 0)
+                    m_AudioContainer.PlaySound((int)GetRandomGrowlSound());
             }
         }
 
@@ -1225,6 +1261,7 @@ namespace AI
         {
             if(m_CurrentMainState != WolfMainState.Attack)
             {
+                m_AudioContainer.PlaySound((int)GetRandomGrowlSound());
                 SetMainState(WolfMainState.Attack);
                 if (enemyWhoAttacked)
                 {
@@ -1326,7 +1363,11 @@ namespace AI
                 if (enemy && (enemy.transform.position - transform.position).sqrMagnitude < distanceThresholdMultiplierSq * m_AttackRange * m_AttackRange){
                     m_EnemyTarget = enemy;
                     SetMainState(WolfMainState.Attack);
+
                     Debug.Log("Breaking stealth to Attack due to low bond!");
+
+                    m_AudioContainer.PlaySound((int)GetRandomGrowlSound());
+
                     // Flash bond? Pop up window?
                     return true;
                 }
@@ -1355,7 +1396,7 @@ namespace AI
 
         private AccaliaSounds GetRandomWhineSound()
         {
-            int val = Random.Range(1, 5);
+            int val = Random.Range(1, 8);
             switch (val) {
                 case 1:
                     return AccaliaSounds.WHINE1;
@@ -1363,6 +1404,12 @@ namespace AI
                     return AccaliaSounds.WHINE2;
                 case 3:
                     return AccaliaSounds.WHINE3;
+                case 4:
+                    return AccaliaSounds.WHINE4;
+                case 5:
+                    return AccaliaSounds.WHINE5;
+                case 6:
+                    return AccaliaSounds.WHINE6;
                 default:
                     return AccaliaSounds.GROWL1;
             }
@@ -1370,25 +1417,29 @@ namespace AI
 
         private AccaliaSounds GetRandomBarkSound()
         {
-            int val = Random.Range(1, 3);
+            int val = Random.Range(1, 4);
             switch (val)
             {
                 case 1:
                     return AccaliaSounds.BARK1;
-                default:
+                case 2:
                     return AccaliaSounds.BARK2;
+                default:
+                    return AccaliaSounds.BARK3;
             }
         }
 
         private AccaliaSounds GetRandomGrowlSound()
         {
-            int val = Random.Range(1, 3);
+            int val = Random.Range(1, 4);
             switch (val)
             {
                 case 1:
                     return AccaliaSounds.GROWL2;
-                default:
+                case 2:
                     return AccaliaSounds.GROWL3;
+                default:
+                    return AccaliaSounds.GROWL4;
             }
         }
 

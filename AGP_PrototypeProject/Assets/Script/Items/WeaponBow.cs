@@ -106,14 +106,11 @@ namespace Items
                 if (Physics.Raycast(ray, out arrowHit))
                 {
                     // Bypass the collider of 1 Action Zone so that you can call "MoveTo" from outside of an Action Zone
-                    if (arrowHit.collider.gameObject.GetComponent<ActionZone>())
+                    if (arrowHit.collider.gameObject.GetComponent<ActionZone>() || arrowHit.collider.gameObject.GetComponent<Misc.TutorialZone>())
                     {
                         ray = new Ray(arrowHit.point, ray.direction);
                         Physics.Raycast(ray, out arrowHit);
-                        //if ()
-                        //{
-                            
-                        //}
+
                     }
 
                     worldSpace = arrowHit.point;
@@ -160,12 +157,12 @@ namespace Items
             if (hitObject && hitObject.GetComponent<AI.EnemyAISM>())
             {
                 // play killcam noise
-                m_AudioContainer.PlaySound(2);
                 float enemyHP = hitObject.GetComponent<HealthCare.Health>().CurrentHP;
                 if(enemyHP - arrow.ArrowDamage <= 0)
                 {
                     if(GameCritical.GameController.Instance.BondManager.BondStatus > 50.0f)
                     {
+                        m_AudioContainer.PlaySound(2);
                         return true;
                     }
                 }

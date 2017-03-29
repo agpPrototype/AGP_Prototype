@@ -77,6 +77,9 @@ namespace Player
                         }
                     }
 
+                    if (!hit.collider || hit.point == Vector3.zero)
+                        return;
+
                     worldSpace = hit.point;
                     rayHitPoint = worldSpace;
 
