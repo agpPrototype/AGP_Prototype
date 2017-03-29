@@ -10,7 +10,8 @@ namespace Items
     {
 
         [SerializeField]
-        private float LifeSpan = 2.0f;
+        private float m_LifeSpan = 2.0f;
+        public float LifeSpan { get { return m_LifeSpan; } }
         [SerializeField]
         private float Damage = 20.0f;
         public float ArrowDamage { get { return Damage; } }
