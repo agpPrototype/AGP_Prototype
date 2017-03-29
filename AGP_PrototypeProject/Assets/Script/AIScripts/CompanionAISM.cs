@@ -226,7 +226,7 @@ namespace AI
         {
             // m_GameControl = GameCritical.GameController.Instance;
             m_GameControl = GameCritical.GameController.Instance;
-            m_GameControl.RegisterWolf(gameObject);
+            m_GameControl.RegisterWolf(this);
 
             PlayerControl playerControl = FindObjectOfType<PlayerControl>();
             if (playerControl)

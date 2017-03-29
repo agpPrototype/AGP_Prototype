@@ -134,10 +134,10 @@ namespace GameCritical
             m_PlayerControl = player;
         }
 
-        public void RegisterWolf(GameObject wolf)
+        public void RegisterWolf(CompanionAISM compAISM)
         {
-            m_Wolf = wolf;
-            m_Player.GetComponent<CommandHandler>().SetCompanionAISM(m_Wolf.GetComponent<CompanionAISM>());
+            m_Wolf = compAISM.gameObject;
+            m_PlayerControl.GetComponent<CommandHandler>().SetCompanionAISM(compAISM);
         }
 
         public void RegisterEnemy(GameObject enemy)

@@ -7,20 +7,28 @@ namespace Misc
 {
     public class AccaliaTutorialZone : TutorialZone
     {
-        private CompanionAISM cAISM;
+        private CompanionAISM m_AISM;
+        private Animator m_Animator;
 
         // Use this for initialization
         void Start()
         {
-            cAISM = FindObjectOfType<CompanionAISM>();
-            cAISM.enabled = false;
+            m_AISM = FindObjectOfType<CompanionAISM>();
+            m_Animator = m_AISM.GetComponent<Animator>();
+            if(m_Animator != null)
+            {
+                m_Animator.speed = 0;
+            }            
         }
 
         public override void OnTutorialZoneEnter(Collider col)
         {
             base.OnTutorialZoneEnter(col);
 
-            cAISM.enabled = true;
+            if (m_Animator != null)
+            {
+                m_Animator.speed = 1;
+            }
         }
     }
 }
