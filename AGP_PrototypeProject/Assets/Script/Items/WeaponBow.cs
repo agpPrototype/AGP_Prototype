@@ -19,6 +19,14 @@ namespace Items
         [SerializeField]
         private Transform ArrowSpawnLocation;
 
+        [SerializeField]
+        [Tooltip("Layermask that defines what the arrow shooting raycast can hit.")]
+        private LayerMask m_LayerMask;
+
+        [SerializeField]
+        [Tooltip("If the distance is greater than this then the kill cam won't play.")]
+        private float m_MaxKillCamdistance;
+
         private GameObject m_CurrentArrow;
 
         private float m_ArrowForce;
@@ -103,19 +111,8 @@ namespace Items
                 Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0.0f));
                 Vector3 worldSpace = Vector3.zero;
                 RaycastHit arrowHit;
-                if (Physics.Raycast(ray, out arrowHit))
+                if (Physics.Raycast(ray, out arrowHit, Mathf.Infinity, m_LayerMask))
                 {
-                    // Bypass the collider of 1 Action Zone so that you can call "MoveTo" from outside of an Action Zone
-                    if (arrowHit.collider.gameObject.GetComponent<ActionZone>())
-                    {
-                        ray = new Ray(arrowHit.point, ray.direction);
-                        Physics.Raycast(ray, out arrowHit);
-                        //if ()
-                        //{
-                            
-                        //}
-                    }
-
                     worldSpace = arrowHit.point;
                     rayHitPoint = worldSpace;
                 }
@@ -133,14 +130,28 @@ namespace Items
                 connectVec.Normalize();
 
                 m_CurrentArrow.GetComponent<Rigidbody>().velocity = connectVec * 30.0f;
+                
+                // rotate arrow immediately to correct orientation.
+                Vector3 newDir = Vector3.RotateTowards(m_CurrentArrow.transform.forward, connectVec, 1, 0.0f);
+                m_CurrentArrow.transform.rotation = Quaternion.LookRotation(newDir);
+
                 SpendArrow();
                 m_IsPulling = true;
                 m_CurrentArrow.GetComponent<ArrowComponent>().Initialize();
 
-                if (ActivateKillCam(arrowHit.collider.gameObject, m_CurrentArrow.GetComponent<ArrowComponent>()))
+                // check to see if our raycast hit something before trying to do a killcam.
+                Collider arrowHitCol = arrowHit.collider;
+                if(arrowHitCol != null)
                 {
-                    Time.timeScale = 0.45f;
-                    GameCritical.GameController.Instance.Player.GetComponent<MoveComponent>().m_CamRig.Target = m_CurrentArrow.transform;
+                    float distToTarget = (arrowHitCol.transform.position - ArrowSpawnLocation.position).magnitude;
+                    if (distToTarget < m_MaxKillCamdistance) // only allow for the kill cam if distance is within range.
+                    {
+                        if (ActivateKillCam(arrowHitCol.gameObject, m_CurrentArrow.GetComponent<ArrowComponent>()))
+                        {
+                            Time.timeScale = 0.45f;
+                            GameCritical.GameController.Instance.Player.GetComponent<MoveComponent>().m_CamRig.Target = m_CurrentArrow.transform;
+                        }
+                    }
                 }
             }
         }
