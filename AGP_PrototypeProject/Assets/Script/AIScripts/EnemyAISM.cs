@@ -402,6 +402,10 @@ namespace AI
                     }
                 }
             }
+            else
+            {
+                return true; // because target is null get out of this function.
+            }
 
             // check to see if within attack range
             return !m_IsTargetInAttackRange;

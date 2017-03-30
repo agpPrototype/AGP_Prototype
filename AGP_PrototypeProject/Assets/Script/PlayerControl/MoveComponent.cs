@@ -8,6 +8,7 @@ using CameraController;
 using AI.Detection;
 using Items;
 using Audio;
+using vfx;
 
 [RequireComponent(typeof(AudioContainer))]
 public class MoveComponent : MonoBehaviour {
@@ -70,6 +71,7 @@ public class MoveComponent : MonoBehaviour {
     float m_jumpDeficit;
     AIAudible m_Audible;
     AudioContainer m_AudioContainer;
+    AudioPulse m_AudioPulse;
 
     void Start()
     {
@@ -87,6 +89,7 @@ public class MoveComponent : MonoBehaviour {
         m_Capsule = GetComponent<CapsuleCollider>();
         m_Audible = GetComponent<AIAudible>();
         m_AudioContainer = GetComponent<AudioContainer>();
+        m_AudioPulse = GetComponent<AudioPulse>();
         m_Audible.enabled = false;
         m_CapsuleHeight = m_Capsule.height;
         m_CapsuleCenter = m_Capsule.center;
@@ -158,10 +161,12 @@ public class MoveComponent : MonoBehaviour {
             if(m_Crouching)
             {
                 m_Audible.SetRange(m_CrouchSoundRange);
+                m_AudioPulse.Disable();
             }
             else if(m_IsGrounded)
             {
                 m_Audible.SetRange(m_WalkSoundRange);
+                m_AudioPulse.Enable();
             }
 
             if (move.magnitude > m_MoveSoundThreshold)
