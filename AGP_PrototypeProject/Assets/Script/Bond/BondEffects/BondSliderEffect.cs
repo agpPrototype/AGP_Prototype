@@ -30,7 +30,7 @@ public class BondSliderEffect : BondEffect {
 
     void Start()
     {
-        SetBondLevel(BondLevel.Neutral, "Bond - neutral");
+        SetBondLevel(BondLevel.Neutral, "");
     }
 
     public void SetBondLevel(BondLevel level, string text)
@@ -42,12 +42,14 @@ public class BondSliderEffect : BondEffect {
                 m_BondBarFade.SetStartColor(m_NeturalBondFadeColor);
                 m_BondBarFade.SetEndColor(m_GoodBondFadeColor);
                 m_Text.text = text;
+                //StartCoroutine(FlashForSeconds(3f));
                 break;
             case BondLevel.Bad:
                 m_BondBarFade.m_TransitionSpeed = 4f;
                 m_BondBarFade.SetStartColor(m_NeturalBondFadeColor);
                 m_BondBarFade.SetEndColor(m_BadBondFadeColor);
                 m_Text.text = text;
+                StartCoroutine(FlashForSeconds(3f));
                 break;
             case BondLevel.Neutral:
                 m_BondBarFade.m_TransitionSpeed = 4f;
@@ -70,4 +72,10 @@ public class BondSliderEffect : BondEffect {
 
 		BondBar.GetComponent<Slider>().value = newBond;
 	}
+
+    IEnumerator FlashForSeconds(float time)
+    {
+        yield return new WaitForSeconds(time);
+        SetBondLevel(BondLevel.Neutral, "");
+    }
 }

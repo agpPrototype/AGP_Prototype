@@ -825,6 +825,7 @@ namespace AI
                     {
                         Debug.Log("Bond is not hight enough to give 'Come' command!");
                         m_AudioContainer.PlaySound((int)GetRandomWhineSound());
+                        UI.UIManager.Instance.HUDCanvas.BondBar.SetBondLevel(BondSliderEffect.BondLevel.Bad, "Bond too low!");
                         return;
                     }
 
@@ -870,6 +871,7 @@ namespace AI
                     if (m_GameControl.BondManager.BondStatus < m_ComeBondRequirement)
                     {
                         Debug.Log("Bond is not hight enough to give 'Stay' command!");
+                        UI.UIManager.Instance.HUDCanvas.BondBar.SetBondLevel(BondSliderEffect.BondLevel.Bad, "Bond too low!");
                         m_AudioContainer.PlaySound((int)GetRandomWhineSound());
                         return;
                     }
