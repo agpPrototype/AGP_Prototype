@@ -29,13 +29,11 @@ namespace vfx
         private bool m_IsInTimeInterval;
 
         private bool m_IsPlaying;
-        private SphereCollider m_SphereCollider;
         private MeshRenderer m_MeshRenderer;
 
         // Use this for initialization
         void Start()
         {
-            m_SphereCollider = this.GetComponent<SphereCollider>();
             m_MeshRenderer = GetComponent<MeshRenderer>();
 
             m_DangerRangeSquared = m_DangerRange * m_DangerRange;
@@ -85,26 +83,23 @@ namespace vfx
                 // make sphere expand.
                 if (m_IsPlaying)
                 {
-                    if (m_SphereCollider != null)
+                    if (this.transform.localScale.x < m_MaxRadius)
                     {
-                        if (this.transform.localScale.x < m_MaxRadius)
+                        Vector3 currScale = transform.localScale;
+                        m_MeshRenderer.enabled = true;
+                        m_IsInTimeInterval = false;
+                        this.transform.localScale = new Vector3(
+                            currScale.x * m_ExpandPercentage,
+                            currScale.y * m_ExpandPercentage,
+                            currScale.z * m_ExpandPercentage);
+                    }
+                    else
+                    {
+                        m_MeshRenderer.enabled = false;
+                        if (m_IsLooping)
                         {
-                            Vector3 currScale = transform.localScale;
-                            m_MeshRenderer.enabled = true;
-                            m_IsInTimeInterval = false;
-                            this.transform.localScale = new Vector3(
-                                currScale.x * m_ExpandPercentage,
-                                currScale.y * m_ExpandPercentage,
-                                currScale.z * m_ExpandPercentage);
-                        }
-                        else
-                        {
-                            m_MeshRenderer.enabled = false;
-                            if (m_IsLooping)
-                            {
-                                m_IsInTimeInterval = true;
-                                StartCoroutine(WaitForInterval());
-                            }
+                            m_IsInTimeInterval = true;
+                            StartCoroutine(WaitForInterval());
                         }
                     }
                 }

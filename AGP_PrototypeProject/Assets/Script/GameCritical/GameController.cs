@@ -26,6 +26,7 @@ namespace GameCritical
 
         private GameObject m_Player;
         private GameObject m_Wolf;
+        private CompanionAISM m_cAISM;
         private EnumService.GameState m_GameState;
         public EnumService.GameState GameState
         {
@@ -137,7 +138,8 @@ namespace GameCritical
         public void RegisterWolf(CompanionAISM compAISM)
         {
             m_Wolf = compAISM.gameObject;
-            m_PlayerControl.GetComponent<CommandHandler>().SetCompanionAISM(compAISM);
+            m_cAISM = compAISM;
+            //m_PlayerControl.GetComponent<CommandHandler>().SetCompanionAISM(compAISM);
         }
 
         public void RegisterEnemy(GameObject enemy)
@@ -203,6 +205,7 @@ namespace GameCritical
         public EndGameSequence EndGameSequence { get { return m_EndGameSequence; } }
         public PlayerControl PlayerControl { get { return m_PlayerControl; } }
         public HUDCanvas HUDCanvas { get { return m_HUDCanvas; } }
+        public CompanionAISM CompanionAISM { get { return m_cAISM; } }
 
         public ActionZone CurrentActionZone {
             get { return m_CurrentActionZone; }

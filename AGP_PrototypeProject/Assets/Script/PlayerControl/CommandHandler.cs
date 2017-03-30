@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Utility;
 using AI;
+using GameCritical;
 
 namespace Player
 {
@@ -84,9 +85,9 @@ namespace Player
                     rayHitPoint = worldSpace;
 
                     // Limit command to a certain range
-                    float distSq = (rayHitPoint - m_CompanionAISM.gameObject.transform.position).sqrMagnitude;
+                    float distSq = (rayHitPoint - GameController.Instance.CompanionAISM.gameObject.transform.position).sqrMagnitude;
                     if(distSq < m_MaxDistanceMoveTo * m_MaxDistanceMoveTo)
-                        m_CompanionAISM.GiveGoToCommand(hit.transform.gameObject, worldSpace);
+                        GameController.Instance.CompanionAISM.GiveGoToCommand(hit.transform.gameObject, worldSpace);
                     else
                     {
                         Debug.Log("Cannot command Accalia to move that far! Distance Given: " + Mathf.Sqrt(distSq) + ", Max is:" + m_MaxDistanceMoveTo);
@@ -102,14 +103,14 @@ namespace Player
             {
                 Debug.Log("Gave 'Stay' command");
                 m_StayDelay = 0.0f;
-                m_CompanionAISM.GiveCommand(WolfCommand.STAY);
+                GameController.Instance.CompanionAISM.GiveCommand(WolfCommand.STAY);
             }
 
             if (pca.Come && m_ComeDelay > 0.5f)
             {
                 Debug.Log("Gave 'Come' command");
                 m_ComeDelay = 0.0f;
-                m_CompanionAISM.GiveCommand(WolfCommand.COME);
+                GameController.Instance.CompanionAISM.GiveCommand(WolfCommand.COME);
             }
         }
 
