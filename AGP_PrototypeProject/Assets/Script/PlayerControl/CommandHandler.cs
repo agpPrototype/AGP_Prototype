@@ -45,9 +45,9 @@ namespace Player
                 pca.Stay = Convert.ToBoolean(pca.InputPackets[(int)EnumService.InputType.DDown].Value);
             }
 
-            if (pca.InputPackets[(int)EnumService.InputType.Square] != null)
+            if (pca.InputPackets[(int)EnumService.InputType.DUp] != null)
             {
-                pca.Come = Convert.ToBoolean(pca.InputPackets[(int)EnumService.InputType.Square].Value);
+                pca.Come = Convert.ToBoolean(pca.InputPackets[(int)EnumService.InputType.DUp].Value);
             }
 
             DoCommands(pca);
