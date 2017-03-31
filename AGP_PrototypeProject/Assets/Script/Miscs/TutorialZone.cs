@@ -27,15 +27,17 @@ namespace Misc
         private bool m_ShowTip = false;
 
         private PlayerControl m_PlayerControl;
+        private bool m_AlreadyShowedTip;
 
         void Start()
         {
+            m_AlreadyShowedTip = false;
             m_PlayerControl = FindObjectOfType<PlayerControl>();
         }
 
         public virtual void OnTutorialZoneEnter(Collider col)
         {
-            if(m_ShowTip)
+            if(m_ShowTip && !m_AlreadyShowedTip)
             {
                 TutorialPanel tutorialPanel = UIManager.Instance.TutorialCanvas.TutorialPanel;
                 if (tutorialPanel != null)
@@ -55,6 +57,7 @@ namespace Misc
                 if (tutorialPanel != null)
                 {
                     tutorialPanel.SlideOut();
+                    m_AlreadyShowedTip = true;
                     GameController.Instance.GameState = EnumService.GameState.InGame;
                 }
             }
