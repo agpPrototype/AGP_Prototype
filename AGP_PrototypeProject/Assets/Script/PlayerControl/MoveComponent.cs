@@ -161,7 +161,7 @@ public class MoveComponent : MonoBehaviour {
             if(m_Crouching)
             {
                 m_Audible.SetRange(m_CrouchSoundRange);
-                if(m_AudioPulse != null)
+                if(m_AudioPulse != null && m_AudioPulse.enabled)
                 {
                     m_AudioPulse.Disable();
                 }
@@ -169,7 +169,7 @@ public class MoveComponent : MonoBehaviour {
             else if(m_IsGrounded)
             {
                 m_Audible.SetRange(m_WalkSoundRange);
-                if (m_AudioPulse != null)
+                if (m_AudioPulse != null && m_AudioPulse.enabled)
                 {
                     m_AudioPulse.Enable();
                 }
