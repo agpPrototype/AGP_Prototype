@@ -102,6 +102,11 @@ namespace AI
         [SerializeField]
         [Tooltip("Once is chasing something it will always keep track of it within this distance.")]
         private float m_TrackDistance = 15.0f;
+
+        [SerializeField]
+        [Tooltip("Radius which if other enemies are within it, they will be notified if this AI detects an enemy.")]
+        private float m_NotifyRadius = 10.0f;
+        private float m_NotifyRadiusSquared;
         #endregion
 
         #region Timer Members (general timer members to be used for any timer in AI)
@@ -130,7 +135,23 @@ namespace AI
         private Vector3 m_TargetLastVelocity;
         private bool m_IsTargetInAttackRange;
         private AIDetectable m_Target; // current prioritized target.
-
+        public AIDetectable Target {
+            get
+            {
+                return m_Target;
+            }
+            set
+            {
+                if (m_Target == null)
+                {
+                    m_Target = value;
+                }
+                else if(value.ThreatLevel > m_Target.ThreatLevel)
+                {
+                    m_Target = value;
+                }
+            }
+        }
         #endregion
 
         #region Debug Members
@@ -156,16 +177,17 @@ namespace AI
             m_Animator = GetComponent<Animator>();
             m_WalkingAudioSource = GetComponent<AudioSource>();
             m_CurrentWaypoint = PatrolArea.GetNextWaypoint(null);
-            initBehaviorTrees();
+            m_NotifyRadiusSquared = m_NotifyRadius * m_NotifyRadius;
+            InitBehaviorTrees();
             SetMainState(EnemyAIState.PATROLLING);
         }
 
-        private void initBehaviorTrees()
+        private void InitBehaviorTrees()
         {
-            createChaseBT();
-            createPatrolBT();
-            createAttackBT();
-            createLookBT();
+            CreateChaseBT();
+            CreatePatrolBT();
+            CreateAttackBT();
+            CreateLookBT();
 
             m_CurrentBT = m_PatrolBT;
         }
@@ -204,7 +226,7 @@ namespace AI
         #endregion
 
         #region Look Methods
-        private bool isLookTimeOver()
+        private bool IsLookTimeOver()
         {
             // set start time and end time for timer if it hasnt been set.
             if (!m_IsTimerSet)
@@ -224,7 +246,7 @@ namespace AI
             m_IsTimerSet = false;
             return true;
         }
-        private void rotateTowardLastSeenVelocity()
+        private void RotateTowardLastSeenVelocity()
         {
             if(!m_DebugDontMove)
             {
@@ -236,7 +258,7 @@ namespace AI
         }
         #endregion
 
-        private void createLookBT()
+        private void CreateLookBT()
         {
             /// Look_Root_Node
             ///     Wait_Node
@@ -249,18 +271,18 @@ namespace AI
 
             /// Look_Node
             DecisionNode lookNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Look_Node");
-            lookNode.AddAction(new Action(rotateTowardLastSeenVelocity));
+            lookNode.AddAction(new Action(RotateTowardLastSeenVelocity));
             m_LookBT.AddDecisionNodeTo(rootNode, lookNode);
 
             /// LookBT->PatrolBT
             DecisionNode lookToPatrol = new DecisionNode(DecisionType.RepeatUntilActionComplete, "LookBT->PatrolBT_Node");
             lookToPatrol.AddAction(new Action(switchToPatrolBT));
-            lookToPatrol.AddCondition(new Condition(isLookTimeOver));
+            lookToPatrol.AddCondition(new Condition(IsLookTimeOver));
             m_LookBT.AddDecisionNodeTo(lookNode, lookToPatrol);
         }
 
         #region Chase Methods
-        private bool isReachedLastSeenLocation()
+        private bool IsReachedLastSeenLocation()
         {
             if(m_NavAgent != null)
             {
@@ -281,7 +303,7 @@ namespace AI
             }
             return false;
         }
-        private void chase()
+        private void Chase()
         {
             if (!m_NavAgent.isOnNavMesh)
             {
@@ -315,7 +337,7 @@ namespace AI
         }
         #endregion
 
-        private void createChaseBT()
+        private void CreateChaseBT()
         {
             /// Chase_Root_Node                         (does nothing)
             ///     Chase_Node                          (chase enemy if seen or heard)
@@ -329,26 +351,26 @@ namespace AI
 
             /// Chase_Node
             DecisionNode chaseNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Chase_Node");
-            chaseNode.AddAction(new Action(chase));
+            chaseNode.AddAction(new Action(Chase));
             m_ChaseBT.AddDecisionNodeTo(rootNode, chaseNode);
 
             /// ChaseBT->AttackBT
             DecisionNode chaseToAttack = new DecisionNode(DecisionType.SwitchStates, "ChaseBT->AttackBT_Node");
             chaseToAttack.AddAction(new Action(switchToAttackBT));
-            chaseToAttack.AddCondition(new Condition(isTargetInAttackRange));
-            chaseToAttack.AddCondition(new Condition(isTargetHaveHealthComp));
+            chaseToAttack.AddCondition(new Condition(IsTargetInAttackRange));
+            chaseToAttack.AddCondition(new Condition(IsTargetHaveHealthComp));
             m_ChaseBT.AddDecisionNodeTo(chaseNode, chaseToAttack);
 
             /// ChaseBT->LookBT
             DecisionNode chaseToLook = new DecisionNode(DecisionType.SwitchStates, "ChaseBT->LookBT_Node");
             chaseToLook.AddAction(new Action(switchToLookBT));
-            chaseToLook.AddCondition(new Condition(isReachedLastSeenLocation));
-            chaseToLook.AddCondition(new Condition(isTargetNotHaveHealthComp));
+            chaseToLook.AddCondition(new Condition(IsReachedLastSeenLocation));
+            chaseToLook.AddCondition(new Condition(IsTargetNotHaveHealthComp));
             m_ChaseBT.AddDecisionNodeTo(chaseNode, chaseToLook);
         }
 
         #region Attack Methods
-        public void applyDamageToTarget()
+        public void ApplyDamageToTarget()
         {
             // get health and apply damage
             if (m_Target != null)
@@ -367,12 +389,34 @@ namespace AI
                 }
             }
         }
-        private void attack()
+        private void NotifyEnemiesInRange()
+        {
+            List<GameObject> enemies = GameCritical.GameController.Instance.GetAllEnemies();
+            for(int i = 0; i < enemies.Count; i++)
+            {
+                GameObject go = enemies[i];
+                if(go != null)
+                {
+                    float dist = (go.transform.position - this.transform.position).sqrMagnitude;
+                    if(dist <= m_NotifyRadiusSquared)
+                    {
+                        EnemyAISM enemy = go.GetComponent<EnemyAISM>();
+                        if(enemy != null)
+                        {
+                            enemy.Target = m_Target;
+                        }
+                    }
+                }
+            }
+        }
+        private void Attack()
         {
             if(!m_DebugDontMove)
             {
                 // set animator to attack for AI
                 setAnimation(EnemyAIAnimation.Attacking);
+                // Notify all other robots within radius
+                NotifyEnemiesInRange();
                 // rotate toward the target we are attacking at all times.
                 Vector3 targetDir = m_Target.transform.position - this.transform.position;
                 targetDir.y = 0; // no y component of target direction so AI wont rotate upward or down.
@@ -380,7 +424,7 @@ namespace AI
                 this.transform.rotation = Quaternion.LookRotation(newDir, this.transform.up);
             }
         }
-        private bool isTargetOutOfAttackRangeOrDead()
+        private bool IsTargetOutOfAttackRangeOrDead()
         {
             // check to see if our target is dead. there are two types, accalia and player.
             if (m_Target != null)
@@ -410,11 +454,11 @@ namespace AI
             // check to see if within attack range
             return !m_IsTargetInAttackRange;
         }
-        private bool isTargetInAttackRange()
+        private bool IsTargetInAttackRange()
         {
             return m_IsTargetInAttackRange;
         }
-        private bool isTargetHaveHealthComp()
+        private bool IsTargetHaveHealthComp()
         {
             if(m_Target)
             {
@@ -425,7 +469,7 @@ namespace AI
             }
             return false;
         }
-        private bool isTargetNotHaveHealthComp()
+        private bool IsTargetNotHaveHealthComp()
         {
             if (m_Target)
             {
@@ -437,24 +481,24 @@ namespace AI
         }
         #endregion
 
-        private void createAttackBT()
+        private void CreateAttackBT()
         {
             /// Root_Attack_Node                    (performs basic attack)
             ///     AttackBT->LookBT_Node           (will switch to look bt when target not in attack range)
 
             DecisionNode basicAttackNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Root_Attack_Node");
-            basicAttackNode.AddAction(new Action(attack));
+            basicAttackNode.AddAction(new Action(Attack));
 
             m_AttackBT = new BehaviorTree(basicAttackNode, this, "Attack BT");
 
             DecisionNode attackToLookNode = new DecisionNode(DecisionType.SwitchStates, "AttackBT->LookBT_Node");
             attackToLookNode.AddAction(new Action(switchToLookBT));
-            attackToLookNode.AddCondition(new Condition(isTargetOutOfAttackRangeOrDead));
+            attackToLookNode.AddCondition(new Condition(IsTargetOutOfAttackRangeOrDead));
             m_AttackBT.AddDecisionNodeTo(basicAttackNode, attackToLookNode);
         }
 
         #region Patrol Methods
-        private bool waitAtWaypoint()
+        private bool WaitAtWaypoint()
         {
             // set start time and end time for timer if it hasnt been set.
             if (!m_IsTimerSet)
@@ -476,7 +520,7 @@ namespace AI
             // notify decision node that action complete.
             return true;
         }
-        private bool arrivedAtWaypoint()
+        private bool ArrivedAtWaypoint()
         {
             if (m_CurrentWaypoint != null)
             {
@@ -493,7 +537,7 @@ namespace AI
             }
             return false;
         }
-        private void patrolToNextWaypoint()
+        private void PatrolToNextWaypoint()
         {
             // Get next waypoint from patrol area if we have one
             if (PatrolArea != null)
@@ -526,7 +570,7 @@ namespace AI
         }
         #endregion
 
-        private void createPatrolBT()
+        private void CreatePatrolBT()
         {
             /// Patrol_Root_Node                (patrol the waypoints until get to new waypoint)
             ///     Wait_Waypoint_Node          (wait at waypoint until time complete)
@@ -535,15 +579,15 @@ namespace AI
 
             /// Patrol_Node
             DecisionNode patrolNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Patrol_Root_Node");
-            patrolNode.AddAction(new Action(patrolToNextWaypoint));
-            patrolNode.AddCondition(new Condition(waitAtWaypoint));
+            patrolNode.AddAction(new Action(PatrolToNextWaypoint));
+            patrolNode.AddCondition(new Condition(WaitAtWaypoint));
 
             m_PatrolBT = new BehaviorTree(patrolNode, this, "Patrol BT");
 
             /// Wait_Waypoint_Node
             DecisionNode waitWaypoint = new DecisionNode(DecisionType.SwitchStates, "Wait_Waypoint_Node");
             waitWaypoint.AddAction(new Action(idle));
-            waitWaypoint.AddCondition(new Condition(arrivedAtWaypoint));
+            waitWaypoint.AddCondition(new Condition(ArrivedAtWaypoint));
             m_PatrolBT.AddDecisionNodeTo(patrolNode, waitWaypoint);
             m_PatrolBT.AddDecisionNodeTo(waitWaypoint, patrolNode); // node to loop back to patrolling.
         }
@@ -563,6 +607,14 @@ namespace AI
              * we dont want to look for other targets. */
             if(m_State != EnemyAIState.ATTACKING)
             {
+                // if we have a target
+                if (m_Target != null)
+                {
+                    SetMainState(EnemyAIState.CHASING);
+                    /* Just in case a timer was interrupted when we switch states.*/
+                    m_IsTimerSet = false;
+                }
+
                 // get highest threat.
                 AIDetectable possibleHighestThreat = (DetectionManager.Instance.GetHighestThreat(this.gameObject, m_AIAudioDetection, m_AILineOfSightDetection));
                 // if no threat detected
@@ -579,14 +631,6 @@ namespace AI
                 {
                     // update target to highest priority threat.
                     m_Target = possibleHighestThreat;
-                }
-
-                // if we have a target
-                if(m_Target != null)
-                {
-                    SetMainState(EnemyAIState.CHASING);
-                    /* Just in case a timer was interrupted when we switch states.*/
-                    m_IsTimerSet = false;
                 }
             }
 

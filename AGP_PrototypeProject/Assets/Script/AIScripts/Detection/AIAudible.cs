@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// 
@@ -21,8 +22,11 @@ namespace AI
 
             [SerializeField]
             [Tooltip("How loud this AIAudible source is which determines area of effect.")]
-            private float m_Range = 10.0f;
+            private float m_Range;
             public float Range { get { return m_Range;  } }
+
+            private float m_MaxRange = 10.0f;
+            public float MaxRange { get { return m_MaxRange; } }
 
             [SerializeField]
             [Tooltip("How much this audio gets dampened when travelling through objects. This number will be multiplied by range of audio when hitting an object.")]
@@ -55,6 +59,7 @@ namespace AI
             protected override void Start()
             {
                 base.Start();
+                m_Range = m_MaxRange;
                 m_AudioSource = GetComponent<AudioSource>();
             }
 
@@ -73,9 +78,10 @@ namespace AI
                 }
             }
 
+            // range between 0.0f - 1.0f
             public void SetRange(float range)
             {
-                m_Range = range;
+                m_Range = m_MaxRange * Mathf.Clamp(range, 0.0f, 1.0f);
             }
 
             public override void RegisterToDetectionManager()

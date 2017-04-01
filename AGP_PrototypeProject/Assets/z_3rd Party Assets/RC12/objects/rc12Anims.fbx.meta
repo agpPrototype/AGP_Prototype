@@ -1525,7 +1525,7 @@ ModelImporter:
         intParameter: 0
         messageOptions: 0
       - time: 0.4810127
-        functionName: applyDamageToTarget
+        functionName: ApplyDamageToTarget
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -1687,7 +1687,7 @@ ModelImporter:
         intParameter: 0
         messageOptions: 0
       - time: 0.5114659
-        functionName: applyDamageToTarget
+        functionName: ApplyDamageToTarget
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -1842,7 +1842,7 @@ ModelImporter:
       curves: []
       events:
       - time: 0.41784105
-        functionName: applyDamageToTarget
+        functionName: ApplyDamageToTarget
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0

@@ -11,6 +11,7 @@ using Audio;
 using vfx;
 
 [RequireComponent(typeof(AudioContainer))]
+[RequireComponent(typeof(AIAudible))]
 public class MoveComponent : MonoBehaviour {
 
     [SerializeField]
@@ -40,12 +41,6 @@ public class MoveComponent : MonoBehaviour {
     [SerializeField]
     float m_RunningToggleDelayThreshold = 0.2f;
     [SerializeField]
-    float m_MoveSoundThreshold = .02f;
-    [SerializeField]
-    float m_CrouchSoundRange = 1.4f;
-    [SerializeField]
-    float m_WalkSoundRange = 3.0f;
-    [SerializeField]
     Transform Spine;
 
     Rigidbody m_Rigidbody;
@@ -69,9 +64,14 @@ public class MoveComponent : MonoBehaviour {
     bool m_WasAiming;
     public CameraRig m_CamRig;
     float m_jumpDeficit;
-    AIAudible m_Audible;
     AudioContainer m_AudioContainer;
     AudioPulse m_AudioPulse;
+
+    AIAudible m_AIAudible;
+    [SerializeField]
+    private float m_CrouchMaxVolume = 0.3f;
+    [SerializeField]
+    private float m_WalkMaxVolume = 1.0f;
 
     void Start()
     {
@@ -84,13 +84,12 @@ public class MoveComponent : MonoBehaviour {
             Debug.Log("SCENE MSISING CAMERA");
         }
 
+        m_AIAudible = GetComponent<AIAudible>();
         m_Animator = GetComponent<Animator>();
         m_Rigidbody = GetComponent<Rigidbody>();
         m_Capsule = GetComponent<CapsuleCollider>();
-        m_Audible = GetComponent<AIAudible>();
         m_AudioContainer = GetComponent<AudioContainer>();
         m_AudioPulse = GetComponent<AudioPulse>();
-        m_Audible.enabled = false;
         m_CapsuleHeight = m_Capsule.height;
         m_CapsuleCenter = m_Capsule.center;
 
@@ -156,32 +155,24 @@ public class MoveComponent : MonoBehaviour {
     private void ProcessMovementSound(Vector3 move)
     {
         // activate audible component if moving.
-        if (m_Audible != null)
+        if (m_AIAudible != null)
         {
-            if(m_Crouching)
+            float magnitude = move.magnitude;
+            if (m_Crouching)
             {
-                m_Audible.SetRange(m_CrouchSoundRange);
-                if(m_AudioPulse != null && m_AudioPulse.enabled)
+                m_AIAudible.SetRange(m_CrouchMaxVolume * magnitude);
+                if (m_AudioPulse != null && m_AudioPulse.enabled)
                 {
                     m_AudioPulse.Disable();
                 }
             }
             else if(m_IsGrounded)
             {
-                m_Audible.SetRange(m_WalkSoundRange);
+                m_AIAudible.SetRange(m_WalkMaxVolume * magnitude);
                 if (m_AudioPulse != null && m_AudioPulse.enabled)
                 {
                     m_AudioPulse.Enable();
                 }
-            }
-
-            if (move.magnitude > m_MoveSoundThreshold)
-            {
-                m_Audible.enabled = true;
-            }
-            else
-            {
-                m_Audible.enabled = false;
             }
         }
     }
@@ -308,11 +299,12 @@ public class MoveComponent : MonoBehaviour {
         }
 
         if (!m_Aim)
-        {           
+        {
             m_Animator.SetFloat("Forward", m_ForwardAmount, 0.1f, Time.deltaTime);
             m_Animator.SetFloat("Turn", m_TurnAmount, 0.1f, Time.deltaTime);
             m_Animator.SetBool("Crouch", m_Crouching);
             m_Animator.SetBool("OnGround", m_IsGrounded);
+
             if (!m_IsGrounded)
             {
                 m_Animator.SetFloat("Jump", m_Rigidbody.velocity.y);
