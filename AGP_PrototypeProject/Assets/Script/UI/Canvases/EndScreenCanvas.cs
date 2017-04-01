@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UI
 {
-    public class EndScreenCanvas : MonoBehaviour
+    public class EndScreenCanvas : UIComponent
     {
         [SerializeField]
         private EndMenu m_EndMenu;

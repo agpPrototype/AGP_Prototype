@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace UI
 {
-    public class HUDCanvas : MonoBehaviour
+    public class HUDCanvas : UIComponent
     {
         [SerializeField]
         private Text DeathText;

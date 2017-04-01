@@ -5,7 +5,7 @@ using Inputs;
 
 namespace UI
 {
-    public class TutorialCanvas : MonoBehaviour
+    public class TutorialCanvas : UIComponent
     {
         [SerializeField]
         private TutorialPanel m_TutorialPanel;

@@ -5,8 +5,12 @@ using UnityEngine.UI;
 using AI.Detection;
 using Player;
 
+namespace UI
+{
+
 [RequireComponent(typeof(Slider))]
-public class AudioSlider : MonoBehaviour {
+public class AudioSlider : UIComponent
+{
 
     [SerializeField]
     [Tooltip("AIAudible component of player")]
@@ -20,12 +24,13 @@ public class AudioSlider : MonoBehaviour {
 
     private float m_TargetVolume;
 
-	void Start () {
+    void Start()
+    {
         m_Slider = GetComponent<Slider>();
 
         // get audible component from Player
         PlayerControl playerControl = FindObjectOfType<PlayerControl>();
-        if(playerControl != null)
+        if (playerControl != null)
         {
             m_AIAudible = playerControl.GetComponent<AIAudible>();
         }
@@ -33,18 +38,21 @@ public class AudioSlider : MonoBehaviour {
         {
             Debug.LogWarning("AudioSlider could not find a player to get AIAudible component from.");
         }
-	}
-	
-	void Update () {
+    }
+
+    void Update()
+    {
         // Update slider position
-        if(m_AIAudible != null)
+        if (m_AIAudible != null)
         {
             m_TargetVolume = m_AIAudible.Range / m_AIAudible.MaxRange;
             m_Slider.value = Mathf.Lerp(m_Slider.value, m_TargetVolume, m_LerpSpeed);
-            if(Mathf.Abs(m_Slider.value - m_TargetVolume) < 0.01f) // snap to target volume if close enough.
+            if (Mathf.Abs(m_Slider.value - m_TargetVolume) < 0.01f) // snap to target volume if close enough.
             {
                 m_Slider.value = m_TargetVolume;
             }
         }
-	}
+    }
+}
+
 }

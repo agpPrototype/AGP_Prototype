@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UI
 {
-    public class PauseScreenCanvas : MonoBehaviour
+    public class PauseScreenCanvas : UIComponent
     {
         [SerializeField]
         private PauseMenu m_PauseMenu;
