@@ -1517,7 +1517,7 @@ namespace AI
         {
             if (GetComponent<Animator>())
             {
-                GetComponent<Animator>().Stop();
+                GetComponent<Animator>().StopPlayback();
             }
         }
     }

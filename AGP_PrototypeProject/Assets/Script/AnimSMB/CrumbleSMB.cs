@@ -24,7 +24,7 @@ public class CrumbleSMB : StateMachineBehaviour
         if (compiledTime >= maxTime)
         {
             //imator.SetBool("End", true);
-            animator.Stop();
+            animator.StopPlayback();
         }
         else
         {

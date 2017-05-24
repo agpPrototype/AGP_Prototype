@@ -1,4 +1,6 @@
-﻿Shader "Hidden/ScannerEffect"
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Hidden/ScannerEffect"
 {
 	Properties
 	{
@@ -46,7 +48,7 @@
 			VertOut vert(VertIn v)
 			{
 				VertOut o;
-				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = v.uv.xy;
 				o.uv_depth = v.uv.xy;
 

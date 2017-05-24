@@ -445,7 +445,7 @@ public class MoveComponent : MonoBehaviour {
         {
             m_Animator.SetFloat("Forward", 0f);
             m_Animator.SetFloat("Turn", 0f);
-            m_Animator.Stop();
+            m_Animator.StopPlayback();
         }
     }
 
