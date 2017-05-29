@@ -61,5 +61,12 @@ namespace Utility {
             InTutorial,
             InPauseMenu,
         }
+
+        public enum CPNeighborType
+        {
+            JumpTo,
+            ClimbTo,
+            Dispatch
+        }
     }
 }
