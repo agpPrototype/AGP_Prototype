@@ -18,7 +18,6 @@ namespace AI
         public class AIVisible : AIDetectable
         {
             #region Member Variables
-
             [SerializeField]
             [Tooltip("Target point AI will raycast to to try and find this visible.")]
             private Transform m_TargetPoint;
@@ -32,11 +31,14 @@ namespace AI
             public delegate void Visible_Destroy_EventHandler(AIVisible visible);
             public static event Visible_Destroy_EventHandler VisibleDestroyEvt;
 
+            private float m_Visibility = 1.0f; // 1.0f = fully &  0.0f = not visible
+
             #endregion
 
             protected override void Start()
             {
                 base.Start();
+                m_Visibility = 1.0f;
                 if(m_TargetPoint == null)
                 {
                     Debug.LogError("AIVisible has no target point for detection.");

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Player;
 
 [ExecuteInEditMode]
 public class ScannerEffectDriver : MonoBehaviour {
@@ -21,6 +22,14 @@ public class ScannerEffectDriver : MonoBehaviour {
     void Start()
     {
         _scanning = false;
+
+        // set origin to player position.
+        PlayerControl playerControl = FindObjectOfType<PlayerControl>();
+        if (playerControl != null)
+        {
+            ScannerOrigin = playerControl.transform;
+        }
+
         m_CurrScanSpeed = m_ScanSpeed;
     }
 

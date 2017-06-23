@@ -27,17 +27,9 @@ namespace HealthCare
         protected override void OnDeathBegin()
         {
             // Remove this enemy from the zone's list
-            gameObject.GetComponent<AI.EnemyAISM>().MyActionZone.EnemyDestroyed(gameObject);
-
-            if (m_Animator)
-            {
-                if (m_AudioContainer)
-                {
-                    m_AudioContainer.PlaySound(3);
-                }
-                m_Animator.SetBool("Dead", true);
-                Destroy(gameObject, 2.0f);
-            }
+            AI.EnemyAISM enemyAISM = gameObject.GetComponent<AI.EnemyAISM>();
+            enemyAISM.MyActionZone.EnemyDestroyed(gameObject);
+            enemyAISM.Kill();
         }
 
         public override void TakeDamage(float damage, GameObject dmgDealer = null)

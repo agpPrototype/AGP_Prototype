@@ -170,6 +170,15 @@ namespace AI
                 }
                 m_Visibles.Remove(visible);
             }
+
+            void OnDrawGizmos()
+            {
+                // set main camera as only camera to draw gizmos
+                if (Application.isEditor)
+                {
+                    Camera.SetupCurrent(Camera.main); 
+                }
+            }
         }; // Detection Manager class
     }; // Detection namespace
 }; // AI namespace

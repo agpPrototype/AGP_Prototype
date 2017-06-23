@@ -19,12 +19,11 @@ namespace AI
         public class AIAudible : AIDetectable
         {
             #region Member Variables
-
-            [SerializeField]
-            [Tooltip("How loud this AIAudible source is which determines area of effect.")]
             private float m_Range;
             public float Range { get { return m_Range;  } }
 
+            [SerializeField]
+            [Tooltip("How loud this AIAudible source is which determines area of effect.")]
             private float m_MaxRange = 10.0f;
             public float MaxRange { get { return m_MaxRange; } }
 

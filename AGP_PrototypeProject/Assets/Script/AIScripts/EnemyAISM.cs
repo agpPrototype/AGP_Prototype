@@ -5,6 +5,7 @@ using UnityEngine.AI;
 using AI.Detection;
 using AI;
 using HealthCare;
+using Audio;
 
 namespace AI
 {
@@ -12,6 +13,7 @@ namespace AI
     [RequireComponent(typeof(AIAudioDetection))]
     [RequireComponent(typeof(NavMeshAgent))]
     [RequireComponent(typeof(AudioSource))]
+    [RequireComponent(typeof(AudioContainer))]
     public class EnemyAISM : AIStateMachine
     {
         private enum EnemyAIAnimation
@@ -53,6 +55,7 @@ namespace AI
             ATTACKING,
             CHASING,
             LOOKING,
+            DEAD,
         }
 
         private EnemyAIState m_State;
@@ -63,6 +66,7 @@ namespace AI
         private BehaviorTree m_ChaseBT;
         private BehaviorTree m_LookBT;
         private BehaviorTree m_AttackBT;
+        private BehaviorTree m_DeadBT;
         #endregion
 
         #region AI Settings Members
@@ -127,6 +131,7 @@ namespace AI
         private AIAudioDetection m_AIAudioDetection;
         private Animator m_Animator;
         private AudioSource m_WalkingAudioSource;
+        private AudioContainer m_AudioContainer;
         #endregion
 
         #region Target Members (used to keep track of target)
@@ -167,17 +172,21 @@ namespace AI
             set { m_MyActionZone = value; }
         }
 
-        // Use this for initialization
-        private void Start()
+        void Awake()
         {
             m_UpdateIntervalTimer = m_UpdateInterval;
+            m_NotifyRadiusSquared = m_NotifyRadius * m_NotifyRadius;
+        }
+
+        private void Start()
+        {
             m_AILineOfSightDetection = GetComponent<AILineOfSightDetection>();
             m_AIAudioDetection = GetComponent<AIAudioDetection>();
             m_NavAgent = GetComponent<NavMeshAgent>();
             m_Animator = GetComponent<Animator>();
             m_WalkingAudioSource = GetComponent<AudioSource>();
+            m_AudioContainer = GetComponent<AudioContainer>();
             m_CurrentWaypoint = PatrolArea.GetNextWaypoint(null);
-            m_NotifyRadiusSquared = m_NotifyRadius * m_NotifyRadius;
             InitBehaviorTrees();
             SetMainState(EnemyAIState.PATROLLING);
         }
@@ -188,6 +197,7 @@ namespace AI
             CreatePatrolBT();
             CreateAttackBT();
             CreateLookBT();
+            CreateDeadBT();
 
             m_CurrentBT = m_PatrolBT;
         }
@@ -592,17 +602,25 @@ namespace AI
             m_PatrolBT.AddDecisionNodeTo(waitWaypoint, patrolNode); // node to loop back to patrolling.
         }
 
-        private bool IsTargetInTrackingRange()
+        private void CreateDeadBT()
         {
-            if (m_Target)
-            {
-                return (m_Target.transform.position - this.transform.position).sqrMagnitude <= (m_TrackDistance * m_TrackDistance);
-            }
-            return false;
+            /// Dead_Root_Node                (Does nothing)
+            ///     
+
+            /// Dead_Root_Node
+            DecisionNode deadNode = new DecisionNode(DecisionType.RepeatUntilCanProgress, "Dead_Root_Node");
+            deadNode.AddAction(new Action(idle));
+
+            m_DeadBT = new BehaviorTree(deadNode, this, "Dead BT");
         }
 
         private void UpdateFactors()
         {
+            if(m_State == EnemyAIState.DEAD)
+            {
+                return;
+            }
+
             /* only look for threats when not attacking, because if we are attacking then
              * we dont want to look for other targets. */
             if(m_State != EnemyAIState.ATTACKING)
@@ -654,7 +672,6 @@ namespace AI
             }
         }
 
-        // Update is called once per frame
         public override void Update()
         {
             // Calling base update ends up calling UpdateStateMachine() in parent's parent.
@@ -702,6 +719,10 @@ namespace AI
                     m_CurrentBT = m_LookBT;
                     break;
 
+                case EnemyAIState.DEAD:
+                    m_CurrentBT = m_DeadBT;
+                    break;
+
                 default:
                     Debug.Log("Error: EnemyAISM.cs : No Behavior Tree to switch to for desired new state.");
                     break;
@@ -710,6 +731,15 @@ namespace AI
             }
 
             m_CurrentBT.RestartTree();
+        }
+
+        private bool IsTargetInTrackingRange()
+        {
+            if (m_Target)
+            {
+                return (m_Target.transform.position - this.transform.position).sqrMagnitude <= (m_TrackDistance * m_TrackDistance);
+            }
+            return false;
         }
 
         public bool IsAgrod()
@@ -722,6 +752,22 @@ namespace AI
             m_Target = visComp;
             //SetMainState(EnemyAIState.ATTACKING);
             SetMainState(EnemyAIState.CHASING);
+        }
+
+        public void Kill()
+        {
+            m_NavAgent.enabled = false; // don't allow movement when dead.
+            this.enabled = false; // don't allow any updating in this class to happen when dead.
+            if (m_Animator != null)
+            {
+                if (m_AudioContainer != null)
+                {
+                    m_AudioContainer.PlaySound(3);
+                }
+                m_Animator.SetBool("Dead", true);
+                Destroy(gameObject, 2.0f);
+            }
+            SetMainState(EnemyAIState.DEAD); // this state doesnt really do anything as of now.
         }
 
         private void OnDrawGizmos()

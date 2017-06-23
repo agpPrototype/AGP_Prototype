@@ -459,7 +459,7 @@ namespace AI
 #if UNITY_EDITOR
             void OnDrawGizmos()
             {
-                if(IsDrawFrustum)
+                if (IsDrawFrustum)
                 {
                     Gizmos.color = DirectFOVColor;
                     float angleOfLines = m_DirectFOVHalfed;
